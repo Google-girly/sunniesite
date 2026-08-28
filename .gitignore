@@ -56,6 +56,12 @@ next-env.d.ts
 # referenced by any code, not needed by other chapters.
 /event-report-C.1-sample.docx
 
-# local Claude Code settings (machine-specific paths) — not meant to be
-# shared/committed.
+# local Claude Code settings/runtime state (machine-specific) — not
+# meant to be shared/committed.
 /.claude/settings.local.json
+/.claude/scheduled_tasks.lock
+
+# superseded SQLite migration history, kept locally for reference after
+# the Aug 2026 move to Postgres (see README's Database section) — not
+# useful to a fresh Postgres-based fork.
+/prisma/migrations_sqlite_backup/

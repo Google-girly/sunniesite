@@ -51,7 +51,7 @@ export default async function DashboardPage() {
           <Link
             key={mod.key}
             href={mod.href}
-            className="rounded-lg border border-stone-200 bg-white p-5 transition-colors hover:border-rose-300 hover:shadow-sm"
+            className="rounded-lg border border-stone-200 bg-white p-5 transition-colors hover:border-burgundy-300 hover:shadow-sm"
           >
             <div className="flex items-start justify-between">
               <h2 className="font-medium text-stone-900">{mod.title}</h2>
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
               )}
             </div>
             {mod.key === "roster" && (
-              <p className="mt-3 text-sm font-medium text-rose-700">
+              <p className="mt-3 text-sm font-medium text-burgundy-700">
                 {memberCount} member{memberCount === 1 ? "" : "s"} on file
               </p>
             )}

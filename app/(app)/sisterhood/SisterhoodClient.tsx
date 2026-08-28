@@ -130,7 +130,7 @@ function ProbationSection({ members, initial }: { members: Member[]; initial: Pr
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>
@@ -299,7 +299,7 @@ function MeetingAttendanceSection({
             type="checkbox"
             checked={quorumMet}
             onChange={(e) => setQuorumMet(e.target.checked)}
-            className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+            className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
           />
           Quorum met
         </label>
@@ -308,7 +308,7 @@ function MeetingAttendanceSection({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save meeting"}
           </button>
@@ -483,7 +483,7 @@ function SisterOfMonthSection({
             type="checkbox"
             checked={notApplicable}
             onChange={(e) => setNotApplicable(e.target.checked)}
-            className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+            className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
           />
           N/A (not in session)
         </label>
@@ -492,7 +492,7 @@ function SisterOfMonthSection({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
           </button>
@@ -639,7 +639,7 @@ function CertificationSection({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>
@@ -727,7 +727,7 @@ export function SisterhoodClient({
         </div>
         <a
           href={`/api/standards/export?term=${encodeURIComponent(term)}&year=${year}`}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           Export Full Standards Packet
         </a>

@@ -21,7 +21,7 @@ export function CalendarEmbed() {
             onClick={() => setMode(v.mode)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium ${
               mode === v.mode
-                ? "bg-rose-600 text-white"
+                ? "bg-burgundy-600 text-white"
                 : "border border-stone-300 text-stone-700 hover:bg-stone-50"
             }`}
           >

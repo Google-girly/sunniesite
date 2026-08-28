@@ -80,7 +80,7 @@ function VersionCard({
         <button
           onClick={handleCreate}
           disabled={creating}
-          className="mt-4 rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+          className="mt-4 rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
         >
           {creating ? "Creating..." : `Create ${BUDGET_STAGE_LABELS[stage]} Budget`}
         </button>
@@ -94,7 +94,7 @@ function VersionCard({
   return (
     <Link
       href={`/budgets/${budgetId}/${stage.toLowerCase()}`}
-      className="block rounded-lg border border-stone-200 bg-white p-6 transition-colors hover:border-rose-300 hover:shadow-sm"
+      className="block rounded-lg border border-stone-200 bg-white p-6 transition-colors hover:border-burgundy-300 hover:shadow-sm"
     >
       <div className="flex items-center gap-2">
         <p className="text-sm font-medium text-stone-900">
@@ -114,7 +114,7 @@ function VersionCard({
       <p className="mt-1 text-sm text-stone-500">
         {version.lineItems.length} line item{version.lineItems.length === 1 ? "" : "s"}
       </p>
-      <p className="mt-3 text-lg font-semibold text-rose-700">{money(total)}</p>
+      <p className="mt-3 text-lg font-semibold text-burgundy-700">{money(total)}</p>
       <p className="mt-1 text-xs text-stone-400">total</p>
     </Link>
   );
@@ -191,7 +191,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
 
   return (
     <div>
-      <Link href="/budgets" className="text-sm text-stone-500 hover:text-rose-700">
+      <Link href="/budgets" className="text-sm text-stone-500 hover:text-burgundy-700">
         ← Back to Budgets
       </Link>
 
@@ -235,7 +235,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
       >
         <div>
           <label className="block text-xs font-medium text-stone-600">
-            Event Name <span className="text-rose-500">*</span>
+            Event Name <span className="text-burgundy-500">*</span>
           </label>
           <input
             value={headerForm.eventName}
@@ -244,12 +244,12 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
               setHeaderSaved(false);
             }}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           />
         </div>
         <div>
           <label className="block text-xs font-medium text-stone-600">
-            Chair <span className="text-rose-500">*</span>
+            Chair <span className="text-burgundy-500">*</span>
           </label>
           <select
             value={headerForm.chair}
@@ -258,7 +258,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
               setHeaderSaved(false);
             }}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           >
             <option value="">— Select —</option>
             {OFFICER_POSITIONS.map((position) => (
@@ -270,7 +270,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
         </div>
         <div>
           <label className="block text-xs font-medium text-stone-600">
-            Date of Event <span className="text-rose-500">*</span>
+            Date of Event <span className="text-burgundy-500">*</span>
           </label>
           <input
             type="date"
@@ -280,14 +280,14 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
               setHeaderSaved(false);
             }}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           />
         </div>
         <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-3">
           <button
             type="submit"
             disabled={savingHeader}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {savingHeader ? "Saving..." : "Save details"}
           </button>

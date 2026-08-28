@@ -45,7 +45,7 @@ export function AccountClient() {
         type="password"
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
-        className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+        className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
       />
 
       <label className="mt-3 block text-xs font-medium text-stone-600">New password</label>
@@ -53,7 +53,7 @@ export function AccountClient() {
         type="password"
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
-        className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+        className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
       />
 
       <label className="mt-3 block text-xs font-medium text-stone-600">Confirm new password</label>
@@ -61,7 +61,7 @@ export function AccountClient() {
         type="password"
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
-        className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+        className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
       />
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -70,7 +70,7 @@ export function AccountClient() {
       <button
         type="submit"
         disabled={saving || !currentPassword || newPassword.length === 0}
-        className="mt-4 w-full rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 w-full rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {saving ? "Saving..." : "Update password"}
       </button>

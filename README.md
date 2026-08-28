@@ -264,23 +264,29 @@ budget's own page) and is the reference for how to do it again:
    build — it's read off disk at runtime, not imported, so Next's
    bundler wouldn't otherwise know to include it.
 
-## Database & swapping to Postgres later
+## Database
 
-Right now `DATABASE_URL` in `.env` points at a local SQLite file
-(`prisma/dev.db`), which is why local dev needs zero external accounts.
-When it's time to deploy:
+Postgres via `@prisma/adapter-pg` (`lib/prisma.ts`) — a free
+[Supabase](https://supabase.com) project works well and is what this
+repo is set up for. Local dev used to be a zero-setup SQLite file; it
+now needs its own Postgres database too (Supabase's free tier is fine
+for this).
 
-1. Get a Postgres connection string (e.g. from Supabase).
-2. In `prisma/schema.prisma`, change `provider = "sqlite"` to
-   `provider = "postgresql"`.
-3. Swap the driver adapter in `lib/prisma.ts` (currently
-   `@prisma/adapter-better-sqlite3`) for `@prisma/adapter-pg` or
-   Supabase's recommended adapter.
-4. Update `DATABASE_URL` to the Postgres connection string.
-5. Run `npx prisma migrate deploy` against the new database.
+Setup:
 
-The rest of the app (schema shape, API routes, pages) doesn't change —
-Prisma is the layer that's meant to absorb this swap.
+1. Create a Supabase project (or any Postgres host).
+2. In the Supabase dashboard: **Connect** (top of the project page) →
+   **ORMs** tab → **Prisma** — it hands you both connection strings
+   ready-made.
+3. Put them in `.env` as `DATABASE_URL` (pooled, port 6543 — what the
+   running app uses) and `DIRECT_URL` (unpooled, port 5432 — what
+   `prisma migrate` uses; migrations need a real session, which a
+   transaction-mode pooler can't give them). See `.env.example`.
+4. `npx prisma migrate dev` — creates the schema on a fresh database.
+
+Each chapter forking this repo needs their own Postgres database — the
+schema shape and every API route stay the same, only the connection
+strings change.
 
 ## Scripts
 
@@ -291,7 +297,7 @@ Prisma is the layer that's meant to absorb this swap.
 | `npm run start` | Run a production build |
 | `npm run lint` | Lint the codebase |
 | `npm run db:migrate` | `prisma migrate dev` — apply schema changes |
-| `npm run db:studio` | Opens Prisma Studio, a GUI for browsing/editing the SQLite data directly |
+| `npm run db:studio` | Opens Prisma Studio, a GUI for browsing/editing the database directly |
 
 ## What's deliberately not here yet
 

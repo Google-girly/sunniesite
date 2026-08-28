@@ -86,7 +86,7 @@ export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithF
     return (
       <tr>
         <td className="px-4 py-2.5 font-medium text-stone-900">
-          <Link href={`/budgets/${budget.id}/final`} className="hover:text-rose-700 hover:underline">
+          <Link href={`/budgets/${budget.id}/final`} className="hover:text-burgundy-700 hover:underline">
             {budget.eventName}
           </Link>
         </td>
@@ -98,7 +98,7 @@ export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithF
               value={final.status ?? ""}
               onChange={(e) => changeStatus(row, e.target.value)}
               disabled={approvingId === budget.id}
-              className="rounded-md border border-stone-300 px-2 py-1 text-xs focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="rounded-md border border-stone-300 px-2 py-1 text-xs focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               <option value="">— Not Set —</option>
               {BUDGET_LOG_STATUSES.map((s) => (
@@ -121,7 +121,7 @@ export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithF
               Final Budget (line items/tax/status/receipts). */}
           <Link
             href={`/budgets/${budget.id}`}
-            className="text-sm font-medium text-rose-600 hover:text-rose-800"
+            className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
           >
             Edit
           </Link>

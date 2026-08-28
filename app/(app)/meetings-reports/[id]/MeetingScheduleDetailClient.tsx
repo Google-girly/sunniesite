@@ -89,7 +89,7 @@ export function MeetingScheduleDetailClient({
 
   return (
     <div>
-      <Link href="/meetings-reports" className="text-sm font-medium text-rose-600 hover:text-rose-800">
+      <Link href="/meetings-reports" className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800">
         ← All Meeting Series
       </Link>
 
@@ -116,7 +116,7 @@ export function MeetingScheduleDetailClient({
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             disabled={!canManage}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:bg-stone-50 disabled:text-stone-500"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
           />
         </div>
         <div>
@@ -125,7 +125,7 @@ export function MeetingScheduleDetailClient({
             value={dayOfWeek}
             onChange={(e) => setDayOfWeek(e.target.value)}
             disabled={!canManage}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:bg-stone-50 disabled:text-stone-500"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
           >
             {DAY_NAMES.map((name, i) => (
               <option key={name} value={i}>
@@ -140,7 +140,7 @@ export function MeetingScheduleDetailClient({
             value={intervalWeeks}
             onChange={(e) => setIntervalWeeks(e.target.value)}
             disabled={!canManage}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:bg-stone-50 disabled:text-stone-500"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
           >
             {[1, 2, 3, 4].map((n) => (
               <option key={n} value={n}>
@@ -156,7 +156,7 @@ export function MeetingScheduleDetailClient({
             value={anchorDate}
             onChange={(e) => setAnchorDate(e.target.value)}
             disabled={!canManage}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:bg-stone-50 disabled:text-stone-500"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
           />
         </div>
         <div>
@@ -166,7 +166,7 @@ export function MeetingScheduleDetailClient({
             value={time}
             onChange={(e) => setTime(e.target.value)}
             disabled={!canManage}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 disabled:bg-stone-50 disabled:text-stone-500"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
           />
         </div>
         {canManage && (
@@ -176,7 +176,7 @@ export function MeetingScheduleDetailClient({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>
@@ -223,13 +223,13 @@ export function MeetingScheduleDetailClient({
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
                   <Link
                     href={`/meetings-reports/minutes/${m.id}`}
-                    className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     Open Minutes
                   </Link>
                   <Link
                     href={`/meetings-reports/minutes/${m.id}/final`}
-                    className="ml-3 text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     Final Version
                   </Link>

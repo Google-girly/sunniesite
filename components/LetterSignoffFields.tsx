@@ -5,7 +5,7 @@ import type { Member } from "@/app/generated/prisma/client";
 import { SignaturePad } from "@/components/SignaturePad";
 
 const inputClass =
-  "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400";
+  "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400";
 const labelClass = "block text-xs font-medium text-stone-600";
 
 function todayIso(): string {

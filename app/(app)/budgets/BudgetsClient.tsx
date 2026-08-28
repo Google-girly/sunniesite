@@ -121,7 +121,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
             setShowAddForm((prev) => !prev);
             setError(null);
           }}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAddForm ? "Cancel" : "New Budget"}
         </button>
@@ -134,25 +134,25 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
         >
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Event Name <span className="text-rose-500">*</span>
+              Event Name <span className="text-burgundy-500">*</span>
             </label>
             <input
               value={form.eventName}
               onChange={(e) => setForm({ ...form, eventName: e.target.value })}
               autoFocus
               required
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Chair <span className="text-rose-500">*</span>
+              Chair <span className="text-burgundy-500">*</span>
             </label>
             <select
               value={form.chair}
               onChange={(e) => setForm({ ...form, chair: e.target.value })}
               required
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               <option value="">— Select —</option>
               {OFFICER_POSITIONS.map((position) => (
@@ -164,14 +164,14 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Date of Event <span className="text-rose-500">*</span>
+              Date of Event <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="date"
               value={form.eventDate}
               onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
               required
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
 
@@ -180,7 +180,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
             <button
               type="submit"
               disabled={adding}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {adding ? "Creating..." : "Create budget"}
             </button>
@@ -219,7 +219,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
                 <td className="px-4 py-2.5 font-medium text-stone-900">
                   <Link
                     href={`/budgets/${budget.id}`}
-                    className="hover:text-rose-700 hover:underline"
+                    className="hover:text-burgundy-700 hover:underline"
                   >
                     {budget.eventName}
                   </Link>
@@ -235,7 +235,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
                   <Link
                     href={`/budgets/${budget.id}`}
-                    className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     Open
                   </Link>

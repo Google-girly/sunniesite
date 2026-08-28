@@ -45,7 +45,7 @@ export default async function FinalMinutesPage({
       <div className="no-print">
         <Link
           href={`/meetings-reports/minutes/${meeting.id}`}
-          className="text-sm font-medium text-rose-600 hover:text-rose-800"
+          className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
         >
           ← Back to This Meeting
         </Link>

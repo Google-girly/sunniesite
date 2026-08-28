@@ -15,7 +15,7 @@ function sortByName(members: MemberWithEntries[]): MemberWithEntries[] {
 function BalancePill({ balance }: { balance: number }) {
   if (balance > 0) {
     return (
-      <span className="inline-block rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">
+      <span className="inline-block rounded-full bg-burgundy-50 px-2 py-0.5 text-xs font-semibold text-burgundy-700">
         {formatCurrency(balance)} owed
       </span>
     );
@@ -102,7 +102,7 @@ export function FinesClient({ initialMembers }: { initialMembers: MemberWithEntr
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
                   <Link
                     href={`/fines/${member.id}`}
-                    className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     View Account
                   </Link>

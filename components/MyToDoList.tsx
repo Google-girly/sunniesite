@@ -16,7 +16,7 @@ export function MyToDoList({ items }: { items: ToDoItem[] }) {
         {items.map((item) => (
           <li key={item.id} className="text-sm">
             {item.href ? (
-              <Link href={item.href} className="font-medium text-rose-600 hover:text-rose-800">
+              <Link href={item.href} className="font-medium text-burgundy-600 hover:text-burgundy-800">
                 {item.label} →
               </Link>
             ) : (

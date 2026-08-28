@@ -36,7 +36,7 @@ function RoleDropdown({ value, onChange }: { value: string[]; onChange: (roles: 
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full min-w-64 items-center justify-between rounded-md border border-stone-300 bg-white px-2 py-1.5 text-left text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+        className="flex w-full min-w-64 items-center justify-between rounded-md border border-stone-300 bg-white px-2 py-1.5 text-left text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
       >
         <span className={value.length > 0 ? "text-stone-900" : "text-stone-400"}>
           {value.length > 0 ? value.join(", ") : "General member"}
@@ -52,7 +52,7 @@ function RoleDropdown({ value, onChange }: { value: string[]; onChange: (roles: 
                 type="checkbox"
                 checked={value.includes(role)}
                 onChange={() => toggleRole(role)}
-                className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+                className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
               />
               {role}
             </label>
@@ -146,7 +146,7 @@ function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Memb
           <button
             onClick={saveRoles}
             disabled={!dirty || savingRoles}
-            className="rounded-md bg-rose-600 px-3 py-1 text-xs font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-3 py-1 text-xs font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {savingRoles ? "Saving..." : "Save positions"}
           </button>
@@ -160,7 +160,7 @@ function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Memb
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={hasLogin ? "New password" : "Set a password"}
-            className="w-40 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="w-40 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           />
           <button
             onClick={setMemberPassword}

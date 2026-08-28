@@ -50,7 +50,7 @@ function ProgressBar({ value, required }: { value: number; required: number }) {
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-24 overflow-hidden rounded-full bg-stone-100">
         <div
-          className={`h-full ${met ? "bg-green-500" : "bg-rose-400"}`}
+          className={`h-full ${met ? "bg-green-500" : "bg-burgundy-400"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -158,7 +158,7 @@ export function StudyHoursClient({
               setShowLogForm((prev) => !prev);
               setLogError(null);
             }}
-            className="rounded-md bg-rose-600 px-3 py-1.5 text-center text-sm font-medium text-white hover:bg-rose-700"
+            className="rounded-md bg-burgundy-600 px-3 py-1.5 text-center text-sm font-medium text-white hover:bg-burgundy-700"
           >
             {showLogForm ? "Cancel" : "Log Hours"}
           </button>
@@ -188,13 +188,13 @@ export function StudyHoursClient({
         >
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Who <span className="text-rose-500">*</span>
+              Who <span className="text-burgundy-500">*</span>
             </label>
             <select
               value={logForm.memberId}
               onChange={(e) => setLogForm({ ...logForm, memberId: e.target.value })}
               autoFocus
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -205,13 +205,13 @@ export function StudyHoursClient({
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Date <span className="text-rose-500">*</span>
+              Date <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="date"
               value={logForm.date}
               onChange={(e) => setLogForm({ ...logForm, date: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
             {logForm.date && (
               <p className="mt-1 text-xs text-stone-400">Week {weekOfMonth(logForm.date)} of the month</p>
@@ -219,18 +219,18 @@ export function StudyHoursClient({
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Study Location <span className="text-rose-500">*</span>
+              Study Location <span className="text-burgundy-500">*</span>
             </label>
             <input
               value={logForm.location}
               onChange={(e) => setLogForm({ ...logForm, location: e.target.value })}
               placeholder="Library, Home, ..."
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Hours <span className="text-rose-500">*</span>
+              Hours <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="number"
@@ -238,31 +238,31 @@ export function StudyHoursClient({
               min="0.25"
               value={logForm.hours}
               onChange={(e) => setLogForm({ ...logForm, hours: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Time In <span className="text-rose-500">*</span>
+              Time In <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="time"
               required
               value={logForm.timeIn}
               onChange={(e) => setLogForm({ ...logForm, timeIn: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Time Out <span className="text-rose-500">*</span>
+              Time Out <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="time"
               required
               value={logForm.timeOut}
               onChange={(e) => setLogForm({ ...logForm, timeOut: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
 
@@ -271,7 +271,7 @@ export function StudyHoursClient({
             <button
               type="submit"
               disabled={logging}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {logging ? "Saving..." : "Add entry"}
             </button>
@@ -323,7 +323,7 @@ export function StudyHoursClient({
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
                   <Link
                     href={`/study-hours/${member.id}`}
-                    className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     View Log
                   </Link>

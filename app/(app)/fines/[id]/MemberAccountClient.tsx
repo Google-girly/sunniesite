@@ -62,7 +62,7 @@ async function parseError(res: Response): Promise<string> {
 
 const TYPE_BADGE_CLASSES: Record<EntryType, string> = {
   DUES: "bg-amber-50 text-amber-700",
-  FINE: "bg-rose-50 text-rose-700",
+  FINE: "bg-burgundy-50 text-burgundy-700",
   PAYMENT: "bg-green-50 text-green-700",
   CREDIT: "bg-purple-50 text-purple-700",
 };
@@ -105,7 +105,7 @@ function EntryForm({
               amount: type === "FINE" ? "" : form.amount,
             });
           }}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         >
           {ENTRY_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -130,7 +130,7 @@ function EntryForm({
                 amount: fine ? String(fine.amount) : form.amount,
               });
             }}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           >
             <option value="">— Custom (type below) —</option>
             {fineGroups.map((group) => (
@@ -148,18 +148,18 @@ function EntryForm({
 
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Description <span className="text-rose-500">*</span>
+          Description <span className="text-burgundy-500">*</span>
         </label>
         <input
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
 
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Amount <span className="text-rose-500">*</span>
+          Amount <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="number"
@@ -167,19 +167,19 @@ function EntryForm({
           min="0.01"
           value={form.amount}
           onChange={(e) => setForm({ ...form, amount: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
 
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Date <span className="text-rose-500">*</span>
+          Date <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="date"
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
 
@@ -191,7 +191,7 @@ function EntryForm({
           <select
             value={form.method}
             onChange={(e) => setForm({ ...form, method: e.target.value })}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           >
             <option value="">— None —</option>
             {REIMBURSEMENT_METHODS.map((m) => (
@@ -210,7 +210,7 @@ function EntryForm({
         <input
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
 
@@ -220,7 +220,7 @@ function EntryForm({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : submitLabel}
           </button>
@@ -367,7 +367,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
 
   return (
     <div>
-      <Link href="/fines" className="text-sm font-medium text-rose-600 hover:text-rose-800">
+      <Link href="/fines" className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800">
         ← All Members
       </Link>
 
@@ -385,7 +385,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
           </p>
           <p
             className={`mt-1 text-2xl font-semibold ${
-              balance > 0 ? "text-rose-600" : balance < 0 ? "text-purple-600" : "text-green-600"
+              balance > 0 ? "text-burgundy-600" : balance < 0 ? "text-purple-600" : "text-green-600"
             }`}
           >
             {balance === 0
@@ -407,7 +407,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
             setAddForm(emptyForm());
             setAddError(null);
           }}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAddForm ? "Cancel" : "Add Entry"}
         </button>
@@ -454,7 +454,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
               if (isEditing) {
                 return (
                   <tr key={entry.id}>
-                    <td colSpan={6} className="bg-rose-50/40 px-4 py-4">
+                    <td colSpan={6} className="bg-burgundy-50/40 px-4 py-4">
                       <EntryForm
                         form={editForm}
                         setForm={setEditForm}
@@ -488,7 +488,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
                   <td className="px-4 py-2.5 text-stone-500">{entry.notes || "—"}</td>
                   <td
                     className={`px-4 py-2.5 whitespace-nowrap font-medium ${
-                      isChargeType(type) ? "text-rose-600" : "text-green-600"
+                      isChargeType(type) ? "text-burgundy-600" : "text-green-600"
                     }`}
                   >
                     {isChargeType(type) ? "+" : "–"}
@@ -497,7 +497,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
                     <button
                       onClick={() => startEdit(entry)}
-                      className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Edit
                     </button>

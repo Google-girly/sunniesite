@@ -54,30 +54,30 @@ function EntryFields({
     <>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Date <span className="text-rose-500">*</span>
+          Date <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="date"
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
         {form.date && <p className="mt-1 text-xs text-stone-400">Week {weekOfMonth(form.date)} of the month</p>}
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Study Location <span className="text-rose-500">*</span>
+          Study Location <span className="text-burgundy-500">*</span>
         </label>
         <input
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
           placeholder="Library, Home, ..."
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Hours <span className="text-rose-500">*</span>
+          Hours <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="number"
@@ -85,31 +85,31 @@ function EntryFields({
           min="0.25"
           value={form.hours}
           onChange={(e) => setForm({ ...form, hours: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Time In <span className="text-rose-500">*</span>
+          Time In <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="time"
           required
           value={form.timeIn}
           onChange={(e) => setForm({ ...form, timeIn: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Time Out <span className="text-rose-500">*</span>
+          Time Out <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="time"
           required
           value={form.timeOut}
           onChange={(e) => setForm({ ...form, timeOut: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
     </>
@@ -233,7 +233,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
 
   return (
     <div>
-      <Link href="/study-hours" className="text-sm font-medium text-rose-600 hover:text-rose-800">
+      <Link href="/study-hours" className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800">
         ← All Members
       </Link>
 
@@ -277,7 +277,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
             setAddForm(emptyEntryForm());
             setAddError(null);
           }}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAddEntry ? "Cancel" : "Log Hours"}
         </button>
@@ -294,7 +294,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
             <button
               type="submit"
               disabled={adding}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {adding ? "Saving..." : "Add entry"}
             </button>
@@ -329,7 +329,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
               if (isEditing) {
                 return (
                   <tr key={entry.id}>
-                    <td colSpan={7} className="bg-rose-50/40 px-4 py-4">
+                    <td colSpan={7} className="bg-burgundy-50/40 px-4 py-4">
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -344,7 +344,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
                             <button
                               type="submit"
                               disabled={savingEdit}
-                              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
                             >
                               {savingEdit ? "Saving..." : "Save"}
                             </button>
@@ -377,7 +377,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
                     <button
                       onClick={() => startEdit(entry)}
-                      className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Edit
                     </button>

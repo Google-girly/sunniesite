@@ -84,7 +84,7 @@ export function MinutesListClient({
       <div className="flex justify-end">
         <button
           onClick={() => setShowAdd((v) => !v)}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAdd ? "Cancel" : "New Meeting"}
         </button>
@@ -97,13 +97,13 @@ export function MinutesListClient({
         >
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Date <span className="text-rose-500">*</span>
+              Date <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -114,7 +114,7 @@ export function MinutesListClient({
               value={time}
               onChange={(e) => setTime(e.target.value)}
               placeholder="6:00 PM"
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -124,7 +124,7 @@ export function MinutesListClient({
             <select
               value={scheduleId}
               onChange={(e) => setScheduleId(e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               <option value="">— One-off, not part of a series —</option>
               {schedules.map((s) => (
@@ -139,7 +139,7 @@ export function MinutesListClient({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {saving ? "Saving..." : "Create"}
             </button>
@@ -181,13 +181,13 @@ export function MinutesListClient({
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
                   <Link
                     href={`/meetings-reports/minutes/${m.id}`}
-                    className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     Open
                   </Link>
                   <a
                     href={`/api/meeting-minutes/export/${m.id}`}
-                    className="ml-3 text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     Export
                   </a>

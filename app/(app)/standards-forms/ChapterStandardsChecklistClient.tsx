@@ -83,7 +83,7 @@ function ChecklistRow({
       </td>
       <td className="px-3 py-2 text-right">
         {item.href && (
-          <Link href={item.href} className="text-sm font-medium text-rose-600 hover:text-rose-800">
+          <Link href={item.href} className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800">
             {item.kind === "manual" ? "Open →" : "Manage →"}
           </Link>
         )}
@@ -147,7 +147,7 @@ export function ChapterStandardsChecklistClient({
         </p>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-stone-100">
           <div
-            className="h-full rounded-full bg-rose-500"
+            className="h-full rounded-full bg-burgundy-500"
             style={{ width: `${trackableCount ? (doneCount / trackableCount) * 100 : 0}%` }}
           />
         </div>

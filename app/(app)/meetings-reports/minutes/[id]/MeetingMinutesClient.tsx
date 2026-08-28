@@ -85,13 +85,13 @@ function OfficerReportRow({
         }}
         rows={3}
         placeholder="Report for this meeting..."
-        className="mt-2 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+        className="mt-2 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
       />
       <div className="mt-2 flex items-center gap-3">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+          className="rounded-md bg-burgundy-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
         >
           {saving ? "Saving..." : existing ? "Update" : "Submit"}
         </button>
@@ -124,7 +124,7 @@ export function MeetingMinutesClient({
     <div>
       <Link
         href="/meetings-reports/minutes"
-        className="text-sm font-medium text-rose-600 hover:text-rose-800"
+        className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
       >
         ← All Meetings
       </Link>
@@ -145,7 +145,7 @@ export function MeetingMinutesClient({
           </Link>
           <a
             href={`/api/meeting-minutes/export/${meeting.id}`}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
           >
             Export Minutes
           </a>

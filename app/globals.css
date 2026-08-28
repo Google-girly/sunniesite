@@ -4,9 +4,38 @@
  * This admin app is light-only for now (kept simple on purpose — see
  * README.md). Layout/colors are set with Tailwind classes directly in
  * app/layout.tsx and components, not here.
+ *
+ * Brand palette: black, burgundy, gold. `burgundy-*` replaces the old
+ * `rose-*` accent 1:1 (same shade numbers, same usage — buttons, links,
+ * focus rings). `gold-*` is the secondary accent, used sparingly for
+ * chrome (Sidebar, login) rather than every page — see those files.
  */
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@theme {
+  --color-burgundy-50: #fbeef0;
+  --color-burgundy-100: #f5d6da;
+  --color-burgundy-200: #e8aab3;
+  --color-burgundy-300: #d67885;
+  --color-burgundy-400: #bb4a5a;
+  --color-burgundy-500: #962836;
+  --color-burgundy-600: #7a1622;
+  --color-burgundy-700: #5e0f19;
+  --color-burgundy-800: #440a12;
+  --color-burgundy-900: #2c060b;
+
+  --color-gold-50: #fdf8ec;
+  --color-gold-100: #faedc7;
+  --color-gold-200: #f3d78a;
+  --color-gold-300: #e9bd52;
+  --color-gold-400: #d4a72e;
+  --color-gold-500: #b3891f;
+  --color-gold-600: #8f6c18;
+  --color-gold-700: #6d5313;
+  --color-gold-800: #4c3a0e;
+  --color-gold-900: #2f2408;
 }

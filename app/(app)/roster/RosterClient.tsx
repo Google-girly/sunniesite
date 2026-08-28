@@ -180,7 +180,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
             setShowAddForm((prev) => !prev);
             setAddError(null);
           }}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAddForm ? "Cancel" : "Add Member"}
         </button>
@@ -199,7 +199,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               value={addForm.class}
               onChange={(e) => setAddForm({ ...addForm, class: e.target.value })}
               placeholder="e.g. ΑΒ or Founding"
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -209,7 +209,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               value={addForm.crossingNumber}
               onChange={(e) => setAddForm({ ...addForm, crossingNumber: e.target.value })}
               placeholder="e.g. 47"
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -218,7 +218,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
               autoFocus
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -226,7 +226,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
             <input
               value={addForm.nickname}
               onChange={(e) => setAddForm({ ...addForm, nickname: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -236,7 +236,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               onChange={(e) =>
                 setAddForm({ ...addForm, status: e.target.value as MemberStatus })
               }
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               {MEMBER_STATUSES.map((status) => (
                 <option key={status} value={status}>
@@ -253,7 +253,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               value={addForm.crossingTerm}
               onChange={(e) => setAddForm({ ...addForm, crossingTerm: e.target.value })}
               placeholder="e.g. Fall 2024"
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -262,7 +262,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               type="email"
               value={addForm.email}
               onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
 
@@ -271,7 +271,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
             <button
               type="submit"
               disabled={adding}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {adding ? "Adding..." : "Add to roster"}
             </button>
@@ -317,7 +317,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
 
               if (isEditing) {
                 return (
-                  <tr key={member.id} className="bg-rose-50/40">
+                  <tr key={member.id} className="bg-burgundy-50/40">
                     <td className="px-4 py-2">
                       <input
                         value={editForm.class}
@@ -401,7 +401,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
                           <button
                             onClick={() => handleSaveEdit(member.id)}
                             disabled={savingEdit}
-                            className="text-sm font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
+                            className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800 disabled:opacity-50"
                           >
                             {savingEdit ? "Saving..." : "Save"}
                           </button>
@@ -444,13 +444,13 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
                     <Link
                       href={`/fines/${member.id}`}
-                      className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Account
                     </Link>
                     <button
                       onClick={() => startEdit(member)}
-                      className="ml-3 text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Edit
                     </button>

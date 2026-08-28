@@ -471,7 +471,7 @@ export function VersionDetailClient({
 
   return (
     <div>
-      <Link href={`/budgets/${budget.id}`} className="text-sm text-stone-500 hover:text-rose-700">
+      <Link href={`/budgets/${budget.id}`} className="text-sm text-stone-500 hover:text-burgundy-700">
         ← Back to {budget.eventName}
       </Link>
 
@@ -524,7 +524,7 @@ export function VersionDetailClient({
       >
         <div>
           <label className="block text-xs font-medium text-stone-600">
-            Sales Tax % <span className="text-rose-500">*</span>
+            Sales Tax % <span className="text-burgundy-500">*</span>
           </label>
           <input
             type="number"
@@ -536,7 +536,7 @@ export function VersionDetailClient({
               setDetailsError(null);
             }}
             required
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           />
         </div>
         <div className="sm:col-span-2">
@@ -553,7 +553,7 @@ export function VersionDetailClient({
               setDetailsSaved(false);
             }}
             rows={2}
-            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           />
         </div>
 
@@ -561,7 +561,7 @@ export function VersionDetailClient({
           <button
             type="submit"
             disabled={savingDetails}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {savingDetails ? "Saving..." : "Save details"}
           </button>
@@ -590,7 +590,7 @@ export function VersionDetailClient({
               setShowAddItem((prev) => !prev);
               setAddItemError(null);
             }}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
           >
             {showAddItem ? "Cancel" : "Add Item"}
           </button>
@@ -612,7 +612,7 @@ export function VersionDetailClient({
                   type="checkbox"
                   checked={selectedImportIds.has(item.id)}
                   onChange={() => toggleImportSelection(item.id)}
-                  className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+                  className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
                 />
                 <label htmlFor={`import-${item.id}`} className="flex-1 text-sm text-stone-700">
                   <span className="font-medium text-stone-900">{item.item}</span>{" "}
@@ -629,7 +629,7 @@ export function VersionDetailClient({
             <button
               onClick={handleImportSelected}
               disabled={importing || selectedImportIds.size === 0}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {importing
                 ? "Importing..."
@@ -651,7 +651,7 @@ export function VersionDetailClient({
               value={addItemForm.item}
               onChange={(e) => setAddItemForm({ ...addItemForm, item: e.target.value })}
               autoFocus
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -661,7 +661,7 @@ export function VersionDetailClient({
               step="1"
               value={addItemForm.quantity}
               onChange={(e) => setAddItemForm({ ...addItemForm, quantity: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -671,18 +671,18 @@ export function VersionDetailClient({
               step="0.01"
               value={addItemForm.price}
               onChange={(e) => setAddItemForm({ ...addItemForm, price: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Category <span className="text-rose-500">*</span>
+              Category <span className="text-burgundy-500">*</span>
             </label>
             <select
               value={addItemForm.accountCode}
               onChange={(e) => setAddItemForm({ ...addItemForm, accountCode: e.target.value })}
               required
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               <option value="">— Select —</option>
               {EXPENSE_ACCOUNTS.map((a) => (
@@ -698,7 +698,7 @@ export function VersionDetailClient({
               type="checkbox"
               checked={addItemForm.taxable}
               onChange={(e) => setAddItemForm({ ...addItemForm, taxable: e.target.checked })}
-              className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+              className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
             />
             <label htmlFor="taxable" className="text-sm text-stone-600">
               Taxable?
@@ -710,7 +710,7 @@ export function VersionDetailClient({
             <button
               type="submit"
               disabled={addingItem}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {addingItem ? "Adding..." : "Add item"}
             </button>
@@ -758,7 +758,7 @@ export function VersionDetailClient({
 
               if (isEditing) {
                 return (
-                  <tr key={item.id} className="bg-rose-50/40">
+                  <tr key={item.id} className="bg-burgundy-50/40">
                     <td className="px-4 py-2">
                       <input
                         value={editItemForm.item}
@@ -797,7 +797,7 @@ export function VersionDetailClient({
                         onChange={(e) =>
                           setEditItemForm({ ...editItemForm, taxable: e.target.checked })
                         }
-                        className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+                        className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
                       />
                     </td>
                     {stage === "FINAL" && (
@@ -838,7 +838,7 @@ export function VersionDetailClient({
                       <button
                         onClick={() => handleSaveItem(item.id)}
                         disabled={savingItem}
-                        className="text-sm font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
+                        className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800 disabled:opacity-50"
                       >
                         Save
                       </button>
@@ -879,7 +879,7 @@ export function VersionDetailClient({
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
                     <button
                       onClick={() => startEditItem(item)}
-                      className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Edit
                     </button>
@@ -918,7 +918,7 @@ export function VersionDetailClient({
       {/* Receipts */}
       <div className="mt-6 flex items-center justify-between">
         <h2 className="text-lg font-medium text-stone-900">Receipts</h2>
-        <label className="cursor-pointer rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
+        <label className="cursor-pointer rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700">
           {uploadingReceipt ? "Uploading..." : "Upload Receipt"}
           <input
             type="file"
@@ -943,7 +943,7 @@ export function VersionDetailClient({
                   href={`${apiBase}/receipts/${receipt.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-medium text-rose-600 hover:text-rose-800 hover:underline"
+                  className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800 hover:underline"
                 >
                   {receipt.filename}
                 </a>
@@ -996,7 +996,7 @@ export function VersionDetailClient({
             ] as const
           ).map(([key, label]) => {
             const inputClass =
-              "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400";
+              "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400";
             const onChange = (value: string) => {
               setTreasurerForm({ ...treasurerForm, [key]: value });
               setTreasurerSaved(false);

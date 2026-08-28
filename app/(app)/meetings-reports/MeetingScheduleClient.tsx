@@ -147,7 +147,7 @@ export function MeetingScheduleClient({
               setShowAddForm((prev) => !prev);
               setError(null);
             }}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
           >
             {showAddForm ? "Cancel" : "New Meeting Series"}
           </button>
@@ -166,18 +166,18 @@ export function MeetingScheduleClient({
               onChange={(e) => setForm({ ...form, label: e.target.value })}
               placeholder="e.g. General Body"
               autoFocus
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Day of Week <span className="text-rose-500">*</span>
+              Day of Week <span className="text-burgundy-500">*</span>
             </label>
             <select
               value={form.dayOfWeek}
               onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })}
               required
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               <option value="">— Select —</option>
               {DAY_NAMES.map((name, i) => (
@@ -192,7 +192,7 @@ export function MeetingScheduleClient({
             <select
               value={form.intervalWeeks}
               onChange={(e) => setForm({ ...form, intervalWeeks: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             >
               {[1, 2, 3, 4].map((n) => (
                 <option key={n} value={n}>
@@ -203,14 +203,14 @@ export function MeetingScheduleClient({
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              A Date It Meets <span className="text-rose-500">*</span>
+              A Date It Meets <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="date"
               value={form.anchorDate}
               onChange={(e) => setForm({ ...form, anchorDate: e.target.value })}
               required
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -219,7 +219,7 @@ export function MeetingScheduleClient({
               type="time"
               value={form.time}
               onChange={(e) => setForm({ ...form, time: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
 
@@ -228,7 +228,7 @@ export function MeetingScheduleClient({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {saving ? "Creating..." : "Create series"}
             </button>
@@ -296,7 +296,7 @@ export function MeetingScheduleClient({
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
                   <Link
                     href={`/meetings-reports/${schedule.id}`}
-                    className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     Manage
                   </Link>

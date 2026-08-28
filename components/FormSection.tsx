@@ -9,7 +9,7 @@ import type { Member } from "@/app/generated/prisma/client";
 // reorganization into a checklist + dedicated pages — see MODULES.md).
 // Pulled out to components/ once these pages stopped sharing one file.
 export const inputClass =
-  "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400";
+  "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400";
 export const labelClass = "block text-xs font-medium text-stone-600";
 export const th = "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-stone-500";
 export const td = "px-3 py-2 text-sm";

@@ -85,11 +85,11 @@ function ChapterAdvisorSection({ initial }: { initial: ChapterAdvisor[] }) {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>
-          <a href={`/api/standards/chapter-advisor/export`} className="text-sm font-medium text-rose-600 hover:text-rose-800">
+          <a href={`/api/standards/chapter-advisor/export`} className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800">
             Export Letter
           </a>
         </div>
@@ -252,19 +252,19 @@ function StrategicPlanSection({ initial, members }: { initial: StrategicPlanGoal
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add Goal"}
           </button>
           <a
             href={`/api/standards/strategic-plan/export?academicYear=${encodeURIComponent(academicYear)}&period=${period}&variant=PLAN`}
-            className="text-sm font-medium text-rose-600 hover:text-rose-800"
+            className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
           >
             Export Plan
           </a>
           <a
             href={`/api/standards/strategic-plan/export?academicYear=${encodeURIComponent(academicYear)}&period=${period}&variant=PROGRESS`}
-            className="text-sm font-medium text-rose-600 hover:text-rose-800"
+            className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
           >
             Export Progress Report
           </a>
@@ -463,7 +463,7 @@ function LeadershipPositionSection({ initial, members }: { initial: LeadershipPo
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>
@@ -472,13 +472,13 @@ function LeadershipPositionSection({ initial, members }: { initial: LeadershipPo
           {error && <p className="text-sm text-red-600">{error}</p>}
           <a
             href={`/api/standards/leadership-positions/export?academicYear=${encodeURIComponent(academicYear)}&category=GREEK`}
-            className="text-sm font-medium text-rose-600 hover:text-rose-800"
+            className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
           >
             Export Greek Related (F.6)
           </a>
           <a
             href={`/api/standards/leadership-positions/export?academicYear=${encodeURIComponent(academicYear)}&category=NON_GREEK`}
-            className="text-sm font-medium text-rose-600 hover:text-rose-800"
+            className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
           >
             Export Non-Greek Related (F.7)
           </a>

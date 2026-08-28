@@ -128,7 +128,7 @@ function GpaSection({ members, initial, term }: { members: Member[]; initial: Gp
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>
@@ -254,7 +254,7 @@ function MentorshipSection({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>
@@ -415,7 +415,7 @@ function AlphaOrderSection({
             type="checkbox"
             checked={isPlaqueRecipient}
             onChange={(e) => setIsPlaqueRecipient(e.target.checked)}
-            className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+            className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
           />
           Plaque & Scholarship recipient
         </label>
@@ -424,7 +424,7 @@ function AlphaOrderSection({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>
@@ -617,7 +617,7 @@ function ProfessionalDevelopmentSection({
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add event"}
           </button>
@@ -657,7 +657,7 @@ function ProfessionalDevelopmentSection({
                         checked={attending}
                         disabled={togglingAttendee === m.id}
                         onChange={(e) => toggleAttendee(ev, m, e.target.checked)}
-                        className="h-3.5 w-3.5 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+                        className="h-3.5 w-3.5 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
                       />
                       {m.name}
                     </label>
@@ -713,7 +713,7 @@ export function AcademicsClient({
         </div>
         <a
           href={`/api/standards/export?term=${encodeURIComponent(term)}&year=${year}`}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           Export Full Standards Packet
         </a>

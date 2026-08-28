@@ -101,28 +101,28 @@ function EntryFields({
     <>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Date <span className="text-rose-500">*</span>
+          Date <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="date"
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Event <span className="text-rose-500">*</span>
+          Event <span className="text-burgundy-500">*</span>
         </label>
         <input
           value={form.event}
           onChange={(e) => setForm({ ...form, event: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Hours <span className="text-rose-500">*</span>
+          Hours <span className="text-burgundy-500">*</span>
         </label>
         <input
           type="number"
@@ -130,18 +130,18 @@ function EntryFields({
           min="0.25"
           value={form.hours}
           onChange={(e) => setForm({ ...form, hours: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Category <span className="text-rose-500">*</span>
+          Category <span className="text-burgundy-500">*</span>
         </label>
         <select
           required
           value={form.category}
           onChange={(e) => setForm({ ...form, category: e.target.value as ServiceCategory })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         >
           <option value="">— Select —</option>
           {SERVICE_CATEGORIES.map((c) => (
@@ -153,24 +153,24 @@ function EntryFields({
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Description <span className="text-rose-500">*</span>
+          Description <span className="text-burgundy-500">*</span>
         </label>
         <input
           required
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
       <div>
         <label className="block text-xs font-medium text-stone-600">
-          Volunteer Contact <span className="text-rose-500">*</span>
+          Volunteer Contact <span className="text-burgundy-500">*</span>
         </label>
         <input
           required
           value={form.volunteerContact}
           onChange={(e) => setForm({ ...form, volunteerContact: e.target.value })}
-          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+          className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
       </div>
     </>
@@ -398,7 +398,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
     <div>
       <Link
         href="/community-service"
-        className="text-sm font-medium text-rose-600 hover:text-rose-800"
+        className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
       >
         ← All Members
       </Link>
@@ -449,7 +449,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
             setAddForm(emptyEntryForm());
             setAddError(null);
           }}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAddEntry ? "Cancel" : "Log Hours"}
         </button>
@@ -466,7 +466,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
             <button
               type="submit"
               disabled={adding}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {adding ? "Saving..." : "Add entry"}
             </button>
@@ -501,7 +501,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
               if (isEditing) {
                 return (
                   <tr key={entry.id}>
-                    <td colSpan={7} className="bg-rose-50/40 px-4 py-4">
+                    <td colSpan={7} className="bg-burgundy-50/40 px-4 py-4">
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -516,7 +516,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
                             <button
                               type="submit"
                               disabled={savingEdit}
-                              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
                             >
                               {savingEdit ? "Saving..." : "Save"}
                             </button>
@@ -553,7 +553,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
                     <button
                       onClick={() => startEdit(entry)}
-                      className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Edit
                     </button>
@@ -598,17 +598,17 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
         >
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Term <span className="text-rose-500">*</span>
+              Term <span className="text-burgundy-500">*</span>
             </label>
             <input
               value={addMakeUpForm.term}
               onChange={(e) => setAddMakeUpForm({ ...addMakeUpForm, term: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">
-              Hours Uncompleted <span className="text-rose-500">*</span>
+              Hours Uncompleted <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="number"
@@ -618,7 +618,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
               onChange={(e) =>
                 setAddMakeUpForm({ ...addMakeUpForm, hoursUncompleted: e.target.value })
               }
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div>
@@ -627,7 +627,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
               type="date"
               value={addMakeUpForm.dueDate}
               onChange={(e) => setAddMakeUpForm({ ...addMakeUpForm, dueDate: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
@@ -637,7 +637,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
             <input
               value={addMakeUpForm.project}
               onChange={(e) => setAddMakeUpForm({ ...addMakeUpForm, project: e.target.value })}
-              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400"
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
           <label className="flex items-center gap-2 text-sm text-stone-700">
@@ -647,7 +647,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
               onChange={(e) =>
                 setAddMakeUpForm({ ...addMakeUpForm, completed: e.target.checked })
               }
-              className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+              className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
             />
             Completed
           </label>
@@ -661,7 +661,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
                   libraryHoursCompleted: e.target.checked,
                 })
               }
-              className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+              className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
             />
             Library Hours Completed
           </label>
@@ -671,7 +671,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
             <button
               type="submit"
               disabled={addingMakeUp}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {addingMakeUp ? "Saving..." : "Add make-up project"}
             </button>
@@ -713,7 +713,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
               const isEditing = editingMakeUpId === m.id;
               if (isEditing) {
                 return (
-                  <tr key={m.id} className="bg-rose-50/40">
+                  <tr key={m.id} className="bg-burgundy-50/40">
                     <td className="px-4 py-2">
                       <input
                         value={editMakeUpForm.term}
@@ -763,7 +763,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
                         onChange={(e) =>
                           setEditMakeUpForm({ ...editMakeUpForm, completed: e.target.checked })
                         }
-                        className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+                        className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
                       />
                     </td>
                     <td className="px-4 py-2">
@@ -776,14 +776,14 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
                             libraryHoursCompleted: e.target.checked,
                           })
                         }
-                        className="h-4 w-4 rounded border-stone-300 text-rose-600 focus:ring-rose-400"
+                        className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
                       />
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleSaveMakeUpEdit(m.id)}
                         disabled={savingMakeUpEdit}
-                        className="text-sm font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
+                        className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800 disabled:opacity-50"
                       >
                         {savingMakeUpEdit ? "Saving..." : "Save"}
                       </button>
@@ -810,7 +810,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
                     <button
                       onClick={() => startEditMakeUp(m)}
-                      className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Edit
                     </button>

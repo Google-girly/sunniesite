@@ -71,7 +71,7 @@ function StartingBalanceSection({ initial }: { initial: ChapterStartingBalance[]
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Set Starting Balance"}
           </button>
@@ -201,7 +201,7 @@ function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Add"}
           </button>

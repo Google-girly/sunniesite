@@ -67,7 +67,7 @@ export function ChapterAssistantWidget() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-rose-700 text-white shadow-lg transition-colors hover:bg-rose-800"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-burgundy-700 text-white shadow-lg transition-colors hover:bg-burgundy-800"
         aria-label="Open Chapter Assistant"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
@@ -79,8 +79,8 @@ export function ChapterAssistantWidget() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex h-[32rem] w-96 max-w-[calc(100vw-3rem)] flex-col rounded-lg border border-stone-200 bg-white shadow-xl">
-      <div className="flex items-center justify-between rounded-t-lg border-b border-stone-200 bg-rose-50 px-4 py-3">
-        <p className="text-sm font-semibold text-rose-700">Chapter Assistant</p>
+      <div className="flex items-center justify-between rounded-t-lg border-b border-stone-200 bg-burgundy-50 px-4 py-3">
+        <p className="text-sm font-semibold text-burgundy-700">Chapter Assistant</p>
         <button
           onClick={() => setOpen(false)}
           className="text-stone-400 hover:text-stone-600"
@@ -106,7 +106,7 @@ export function ChapterAssistantWidget() {
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
                 m.role === "user"
-                  ? "bg-rose-700 text-white"
+                  ? "bg-burgundy-700 text-white"
                   : m.error
                     ? "bg-red-50 text-red-700"
                     : "bg-stone-100 text-stone-800"
@@ -137,12 +137,12 @@ export function ChapterAssistantWidget() {
             }
           }}
           placeholder="Ask a question…"
-          className="flex-1 rounded-md border border-stone-300 px-3 py-1.5 text-sm focus:border-rose-400 focus:outline-none"
+          className="flex-1 rounded-md border border-stone-300 px-3 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none"
         />
         <button
           onClick={send}
           disabled={loading || !input.trim()}
-          className="rounded-md bg-rose-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-burgundy-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-burgundy-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Send
         </button>

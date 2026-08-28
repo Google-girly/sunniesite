@@ -29,7 +29,7 @@ export function TemplateLibrarySection() {
               <tr key={t.key}>
                 <td className={`${td} font-medium`}>
                   {t.liveHref ? (
-                    <Link href={t.liveHref} className="text-rose-600 hover:text-rose-800">
+                    <Link href={t.liveHref} className="text-burgundy-600 hover:text-burgundy-800">
                       {t.title}
                     </Link>
                   ) : (
@@ -38,7 +38,7 @@ export function TemplateLibrarySection() {
                 </td>
                 <td className={`${td} text-stone-600`}>{t.description}</td>
                 <td className={`${td} whitespace-nowrap text-right`}>
-                  <a href={`/api/templates/${t.key}`} className="font-medium text-rose-600 hover:text-rose-800">
+                  <a href={`/api/templates/${t.key}`} className="font-medium text-burgundy-600 hover:text-burgundy-800">
                     Download blank
                   </a>
                 </td>

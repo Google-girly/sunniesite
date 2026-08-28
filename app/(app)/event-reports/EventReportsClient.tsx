@@ -15,7 +15,7 @@ async function parseError(res: Response): Promise<string> {
 }
 
 const inputClass =
-  "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400";
+  "mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400";
 const labelClass = "block text-xs font-medium text-stone-600";
 const th = "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-stone-500";
 const td = "px-3 py-2 text-sm";
@@ -226,7 +226,7 @@ export function EventReportsClient({
       <div className="flex justify-end">
         <button
           onClick={() => (showAdd ? cancelForm() : startAdd())}
-          className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAdd ? "Cancel" : "New Event Report"}
         </button>
@@ -242,7 +242,7 @@ export function EventReportsClient({
           </p>
           <div className="sm:col-span-2">
             <label className={labelClass}>
-              Standard Being Fulfilled (section and sub-section) <span className="text-rose-500">*</span>
+              Standard Being Fulfilled (section and sub-section) <span className="text-burgundy-500">*</span>
             </label>
             <select
               value={form.standardSection}
@@ -268,7 +268,7 @@ export function EventReportsClient({
 
           <div className="sm:col-span-2">
             <label className={labelClass}>
-              Event Name <span className="text-rose-500">*</span>
+              Event Name <span className="text-burgundy-500">*</span>
             </label>
             <input
               value={form.eventName}
@@ -293,7 +293,7 @@ export function EventReportsClient({
 
           <div>
             <label className={labelClass}>
-              Date <span className="text-rose-500">*</span>
+              Date <span className="text-burgundy-500">*</span>
             </label>
             <input
               type="date"
@@ -326,7 +326,7 @@ export function EventReportsClient({
 
           <div className="sm:col-span-2">
             <label className={labelClass}>
-              Purpose and description of the event <span className="text-rose-500">*</span>
+              Purpose and description of the event <span className="text-burgundy-500">*</span>
             </label>
             <textarea
               value={form.purpose}
@@ -384,7 +384,7 @@ export function EventReportsClient({
 
           <div>
             <label className={labelClass}>
-              Printed Name <span className="text-rose-500">*</span>
+              Printed Name <span className="text-burgundy-500">*</span>
             </label>
             <input
               value={form.signerName}
@@ -447,7 +447,7 @@ export function EventReportsClient({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
               {saving ? "Saving..." : editingId ? "Save Changes" : "Create Event Report"}
             </button>
@@ -483,14 +483,14 @@ export function EventReportsClient({
                 <td className={`${td} whitespace-nowrap text-right`}>
                   <a
                     href={`/api/event-reports/export/${r.id}`}
-                    className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
                     Export
                   </a>
                   {canEdit(r) && (
                     <button
                       onClick={() => startEdit(r)}
-                      className="ml-3 text-sm font-medium text-rose-600 hover:text-rose-800"
+                      className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                     >
                       Edit
                     </button>
