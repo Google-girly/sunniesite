@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import JSZip from "jszip";
-import type { Member, Meeting, OfficerReport } from "@/app/generated/prisma/client";
+import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
 import { currentTerm } from "@/lib/communityService";
 import { OFFICER_REPORT_TEMPLATE_LABELS } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
@@ -19,10 +19,9 @@ const TEMPLATE_PATH = path.join(process.cwd(), "lib/templates/meeting-minutes-te
 
 // The Active Roster table has exactly 4 rows, each Name | Email — a
 // real capacity limit of the physical template, same situation as every
-// other fixed-size table/row-block this app fills in. Only the Name
-// column is filled for now (stride=2 below skips the Email column);
-// Member already has an email field, but the Email column stays blank
-// until asked for.
+// other fixed-size table/row-block this app fills in. Only the first 4
+// Active members (alphabetically) get a row; anyone past that isn't
+// listed here, same as any other fixed-size template block in this app.
 export const ACTIVE_ROSTER_ROW_CAPACITY = 4;
 
 // Every officer heading in "Minutes Template.docx" is its own paragraph
@@ -42,11 +41,23 @@ const HEADING_ANCHORS: Record<OfficerPosition, string> = OFFICER_REPORT_TEMPLATE
 // newlines become <w:br/> so a multi-line report still renders as line
 // breaks within the one list item, not run together.
 function buildReportParagraphXml(text: string): string {
+  return buildListParagraphXml(text, 2);
+}
+
+// Same shape as buildReportParagraphXml, generalized to any list level
+// — used for both officer sub-reports (ilvl=2, under an ilvl=1 position
+// heading) and Meeting Note entries (ilvl=1, under an ilvl=0 heading
+// like "Old Business"; ilvl=2 under "Action Items", which is itself
+// ilvl=1 — see buildMeetingMinutesDocx below). This template's own
+// indent per level, read straight from its XML: ilvl 0 -> 720 twips,
+// 1 -> 1440, 2 -> 2160 (720 * (ilvl+1), always w:hanging="360").
+function buildListParagraphXml(text: string, ilvl: number): string {
+  const indentTwips = 720 * (ilvl + 1);
   const lines = text.split("\n").map((line) => escapeXmlText(line));
   const runInner = lines.map((line) => `<w:t xml:space="preserve">${line}</w:t>`).join("<w:br/>");
   return (
-    `<w:p><w:pPr><w:pageBreakBefore w:val="0"/><w:numPr><w:ilvl w:val="2"/><w:numId w:val="1"/></w:numPr>` +
-    `<w:ind w:left="2160" w:hanging="360"/>` +
+    `<w:p><w:pPr><w:pageBreakBefore w:val="0"/><w:numPr><w:ilvl w:val="${ilvl}"/><w:numId w:val="1"/></w:numPr>` +
+    `<w:ind w:left="${indentTwips}" w:hanging="360"/>` +
     `<w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/></w:rPr></w:pPr>` +
     `<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/></w:rPr>` +
     `${runInner}</w:r></w:p>`
@@ -54,15 +65,19 @@ function buildReportParagraphXml(text: string): string {
 }
 
 // Fills the real Minutes template's Date and Meeting Call to Order
-// fields, plus every officer heading's current holder + submitted
-// report. Everything else (Roll Call, Approval of Minutes/Agenda,
-// Business, Old Business, Announcements, Adjournment) is left as the
-// template's own blank fields, filled in by hand the same way the
-// chapter already does today.
+// fields, every officer heading's current holder + submitted report,
+// and (Aug 2026) whatever's been added under Action Items/Old Business/
+// Reminders/Announcements (see lib/meetingNotes.ts) — each inserted one
+// list level deeper than its own heading, same nesting the template
+// already uses for officer sub-reports (see buildListParagraphXml).
+// Roll Call, Approval of Minutes/Agenda, and Meeting Adjourned are left
+// as the template's own blank fields, filled in by hand — Adjourned
+// deliberately excluded from this on request, unlike the other four.
 export async function buildMeetingMinutesDocx(
   meeting: Meeting,
   reports: OfficerReport[],
-  members: Pick<Member, "name" | "role" | "status">[]
+  members: Pick<Member, "name" | "role" | "status" | "email">[],
+  notes: Pick<MeetingNote, "category" | "text">[] = []
 ): Promise<Uint8Array> {
   const templateBuffer = await fs.readFile(TEMPLATE_PATH);
   const zip = await JSZip.loadAsync(templateBuffer);
@@ -83,16 +98,28 @@ export async function buildMeetingMinutesDocx(
 
   // Active Roster table — "Fall 2023" -> the term this meeting actually
   // falls in, and its (fixed, 4-row) capacity filled with current Active
-  // members' names, alphabetically. Each row is Name | Email; stride=2
-  // fills only the Name column for now and leaves Email blank.
+  // members, alphabetically by name. Each row is Name | Email — first
+  // pass (stride=2) fills only the Name cells, leaving the Email cells
+  // as still-empty runs; second pass (default stride=1) then fills
+  // every *remaining* empty run in that same table, which by then is
+  // exactly the Email column, no offset parameter needed.
   const term = currentTerm(parseIsoDateLocal(meeting.date));
   xml = replaceRunText(xml, "Active Roster Fall 2023", `Active Roster ${term}`);
-  const activeNames = members
+  const activeMembers = members
     .filter((m) => m.status === "ACTIVE")
-    .map((m) => m.name)
-    .sort((a, b) => a.localeCompare(b))
+    .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, ACTIVE_ROSTER_ROW_CAPACITY);
-  xml = fillTableCellsAfterHeader(xml, `Active Roster ${term}`, activeNames, 2);
+  xml = fillTableCellsAfterHeader(
+    xml,
+    `Active Roster ${term}`,
+    activeMembers.map((m) => m.name),
+    2
+  );
+  xml = fillTableCellsAfterHeader(
+    xml,
+    `Active Roster ${term}`,
+    activeMembers.map((m) => m.email ?? "")
+  );
 
   const reportsByPosition = new Map(reports.map((r) => [r.position, r.report]));
 
@@ -113,6 +140,40 @@ export async function buildMeetingMinutesDocx(
     if (holders) {
       xml = fillEmptyParensAfter(xml, anchor, holders);
     }
+  }
+
+  // Action Items / Old Business / Reminders / Announcements — each
+  // inserted as one batch (not one insertParagraphsAfter call per note)
+  // so multiple entries land in the order they were added rather than
+  // reversed: every call re-finds the *same* heading paragraph by its
+  // unchanged text and inserts right after its close tag, so a second
+  // standalone call would land its content ahead of the first call's.
+  const notesByCategory = new Map<string, string[]>();
+  for (const note of notes) {
+    const list = notesByCategory.get(note.category) ?? [];
+    list.push(note.text);
+    notesByCategory.set(note.category, list);
+  }
+  const actionItems = notesByCategory.get("ACTION_ITEM") ?? [];
+  if (actionItems.length > 0) {
+    xml = insertParagraphsAfter(xml, "Action Items", actionItems.map((t) => buildListParagraphXml(t, 2)).join(""));
+  }
+  const oldBusiness = notesByCategory.get("OLD_BUSINESS") ?? [];
+  if (oldBusiness.length > 0) {
+    xml = insertParagraphsAfter(xml, "Old Business", oldBusiness.map((t) => buildListParagraphXml(t, 1)).join(""));
+  }
+  const reminders = notesByCategory.get("REMINDER") ?? [];
+  if (reminders.length > 0) {
+    xml = replaceRunText(xml, "Reminders: N/A", "Reminders:");
+    xml = insertParagraphsAfter(xml, "Reminders:", reminders.map((t) => buildListParagraphXml(t, 1)).join(""));
+  }
+  const announcements = notesByCategory.get("ANNOUNCEMENT") ?? [];
+  if (announcements.length > 0) {
+    xml = insertParagraphsAfter(
+      xml,
+      "Announcements: ",
+      announcements.map((t) => buildListParagraphXml(t, 1)).join("")
+    );
   }
 
   zip.file("word/document.xml", xml);

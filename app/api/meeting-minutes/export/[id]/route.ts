@@ -16,14 +16,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const { id } = await params;
   const meeting = await prisma.meeting.findUnique({
     where: { id },
-    include: { officerReports: true },
+    include: { officerReports: true, notes: true },
   });
   if (!meeting) {
     return NextResponse.json({ error: "Meeting not found." }, { status: 404 });
   }
-  const members = await prisma.member.findMany({ select: { name: true, role: true, status: true } });
+  const members = await prisma.member.findMany({ select: { name: true, role: true, status: true, email: true } });
 
-  const bytes = await buildMeetingMinutesDocx(meeting, meeting.officerReports, members);
+  const bytes = await buildMeetingMinutesDocx(meeting, meeting.officerReports, members, meeting.notes);
   const file = new Uint8Array(bytes.length);
   file.set(bytes);
 

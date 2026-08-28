@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { currentTerm } from "@/lib/communityService";
 import { formatMeetingDate, OFFICER_POSITIONS, OFFICER_REPORT_TEMPLATE_LABELS } from "@/lib/meetingMinutes";
 import { ACTIVE_ROSTER_ROW_CAPACITY, meetingMinutesFilename, parseIsoDateLocal } from "@/lib/meetingMinutesExport";
+import { MEETING_NOTE_CATEGORIES, MEETING_NOTE_CATEGORY_LABELS } from "@/lib/meetingNotes";
 import { findRoleHolderNames } from "@/lib/roster";
 import { CHAPTER_FULL_NAME } from "@/lib/chapterConfig";
 import { PrintButton } from "./PrintButton";
@@ -11,10 +12,11 @@ import { PrintButton } from "./PrintButton";
 // "Open the final version" of a meeting's minutes on its own page (Aug
 // 2026) — mirrors exactly what the real docx export
 // (lib/meetingMinutesExport.ts) fills in: Date, Meeting Call to Order,
-// the Active Roster capped at the template's real 4-row capacity, and
-// every officer position's current holder(s) + submitted report. Roll
-// Call, motions, Business/Old Business etc. stay out of scope here too
-// — same as the docx, those are filled by hand.
+// the Active Roster capped at the template's real 4-row capacity, every
+// officer position's current holder(s) + submitted report, and whatever
+// was added under Action Items/Old Business/Reminders/Announcements.
+// Roll Call, Approval of Minutes/Agenda, and Meeting Adjourned stay out
+// of scope here too — same as the docx, those are filled by hand.
 export default async function FinalMinutesPage({
   params,
 }: {
@@ -24,17 +26,16 @@ export default async function FinalMinutesPage({
 
   const meeting = await prisma.meeting.findUnique({
     where: { id },
-    include: { officerReports: true },
+    include: { officerReports: true, notes: { orderBy: { createdAt: "asc" } } },
   });
   if (!meeting) notFound();
 
-  const members = await prisma.member.findMany({ select: { name: true, role: true, status: true } });
+  const members = await prisma.member.findMany({ select: { name: true, role: true, status: true, email: true } });
 
   const term = currentTerm(parseIsoDateLocal(meeting.date));
-  const activeNames = members
+  const activeMembers = members
     .filter((m) => m.status === "ACTIVE")
-    .map((m) => m.name)
-    .sort((a, b) => a.localeCompare(b))
+    .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, ACTIVE_ROSTER_ROW_CAPACITY);
   const reportsByPosition = new Map(meeting.officerReports.map((r) => [r.position, r.report]));
 
@@ -82,10 +83,15 @@ export default async function FinalMinutesPage({
         <div className="mt-6">
           <h3 className="font-semibold">Active Roster {term}</h3>
           <ul className="mt-1 list-inside list-disc text-sm">
-            {activeNames.length === 0 ? (
+            {activeMembers.length === 0 ? (
               <li className="text-stone-400">No Active members on file.</li>
             ) : (
-              activeNames.map((name) => <li key={name}>{name}</li>)
+              activeMembers.map((m) => (
+                <li key={m.name}>
+                  {m.name}
+                  {m.email && <span className="text-stone-500"> — {m.email}</span>}
+                </li>
+              ))
             )}
           </ul>
         </div>
@@ -103,6 +109,28 @@ export default async function FinalMinutesPage({
                 <p className="ml-4 mt-1 whitespace-pre-line text-sm text-stone-700">
                   {report || "No report submitted."}
                 </p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 space-y-4">
+          {MEETING_NOTE_CATEGORIES.map((category) => {
+            const items = meeting.notes.filter((n) => n.category === category);
+            return (
+              <div key={category}>
+                <h3 className="font-semibold">{MEETING_NOTE_CATEGORY_LABELS[category]}</h3>
+                {items.length === 0 ? (
+                  <p className="ml-4 mt-1 text-sm text-stone-400">Nothing added.</p>
+                ) : (
+                  <ul className="ml-4 mt-1 list-inside list-disc text-sm text-stone-700">
+                    {items.map((n) => (
+                      <li key={n.id}>
+                        {n.text} <span className="text-stone-400">— {n.authorName}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}

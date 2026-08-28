@@ -126,15 +126,15 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
     const lastMeeting = await prisma.meeting.findFirst({
       where: { scheduleId: schedule.id, date: { lt: tomorrow } },
       orderBy: { date: "desc" },
-      include: { officerReports: true },
+      include: { officerReports: true, notes: true },
     });
 
     const { subject, html, text } = buildReminderEmail(schedule, tomorrow, lastMeeting);
 
     let attachments: { filename: string; content: Uint8Array }[] | undefined;
     if (lastMeeting) {
-      const members = await prisma.member.findMany({ select: { name: true, role: true, status: true } });
-      const bytes = await buildMeetingMinutesDocx(lastMeeting, lastMeeting.officerReports, members);
+      const members = await prisma.member.findMany({ select: { name: true, role: true, status: true, email: true } });
+      const bytes = await buildMeetingMinutesDocx(lastMeeting, lastMeeting.officerReports, members, lastMeeting.notes);
       attachments = [{ filename: meetingMinutesFilename(lastMeeting), content: bytes }];
     }
 

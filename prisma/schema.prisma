@@ -80,6 +80,7 @@ model Member {
   signature                MemberSignature?
   leadershipPositions      LeadershipPosition[]
   letterSignoffs           LetterSignoff[]
+  meetingNotes             MeetingNote[]
 }
 
 // --- Fines / Member Accounts module -------------------------------------
@@ -326,6 +327,7 @@ model Meeting {
   schedule   MeetingSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   officerReports OfficerReport[]
+  notes          MeetingNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -348,6 +350,29 @@ model OfficerReport {
   updatedAt DateTime @updatedAt
 
   @@unique([meetingId, position])
+}
+
+// Open to every logged-in member (Aug 2026) — unlike OfficerReport
+// above (one slot per position, gated to whoever holds it), any number
+// of sisters can each add her own Action Item / Old Business / Reminder
+// / Announcement for a meeting, so this is a running list per category
+// rather than an upsert-on-(meeting,position) single slot. See
+// lib/meetingNotes.ts for the category list and
+// app/api/meeting-minutes/notes for the access rules (add: anyone;
+// remove: her own, or whoever owns meetings-reports).
+model MeetingNote {
+  id        String  @id @default(cuid())
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  category String // see lib/meetingNotes.ts MEETING_NOTE_CATEGORIES
+  text     String
+
+  authorMemberId String?
+  author         Member? @relation(fields: [authorMemberId], references: [id], onDelete: SetNull)
+  authorName     String // snapshot at post time, so it still displays sensibly if she's later removed from the Roster
+
+  createdAt DateTime @default(now())
 }
 
 // --- Community Service module -------------------------------------------
