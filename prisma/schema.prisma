@@ -28,6 +28,7 @@ model Member {
   status       String   @default("ACTIVE") // see lib/roster.ts MEMBER_STATUSES
   crossingTerm String? // e.g. "Fall 2024"
   email        String?
+  phone        String? // required on /signup (app/api/auth/signup), optional everywhere else a Member gets created (Roster, Manage Officers & Logins) — nullable here so those other paths aren't forced to backfill one
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

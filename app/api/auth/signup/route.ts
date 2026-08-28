@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Self-service account creation (Aug 2026, reworked from an earlier
 // "claim a Roster row the President already added" design on request —
 // the President doesn't want a fixed roster to sign up against, she
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
   const enteredSignupPassword = typeof body?.signupPassword === "string" ? body.signupPassword : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const email = typeof body?.email === "string" ? body.email.trim() : "";
+  const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
   const password = typeof body?.password === "string" ? body.password : "";
 
   if (enteredSignupPassword !== signupPassword) {
@@ -35,6 +38,14 @@ export async function POST(request: Request) {
   }
   if (!name) {
     return NextResponse.json({ error: "Enter your name." }, { status: 400 });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+  }
+  // Loose on purpose — just enough digits to be a real number, no
+  // opinion on formatting (dashes, parens, country code, etc.).
+  if (phone.replace(/\D/g, "").length < 7) {
+    return NextResponse.json({ error: "Enter a valid phone number." }, { status: 400 });
   }
   if (password.length < 6) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
@@ -58,7 +69,8 @@ export async function POST(request: Request) {
   await prisma.member.create({
     data: {
       name,
-      email: email || null,
+      email,
+      phone,
       passwordHash: hashPassword(password),
       approved: false,
     },
