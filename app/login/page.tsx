@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CHAPTER_ORG_NAME, CHAPTER_LABEL } from "@/lib/chapterConfig";
+import { PasswordInput } from "@/components/PasswordInput";
 
 interface LoginMember {
   id: string;
@@ -94,12 +95,11 @@ function LoginForm() {
       <label htmlFor="password" className="mt-4 block text-sm font-medium text-stone-700">
         Password
       </label>
-      <input
+      <PasswordInput
         id="password"
-        type="password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+        onChange={setPassword}
+        inputClassName="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
       />
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}

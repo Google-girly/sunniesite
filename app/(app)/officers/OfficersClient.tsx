@@ -5,6 +5,7 @@ import type { Member } from "@/app/generated/prisma/client";
 import { OFFICER_POSITIONS } from "@/lib/positions";
 import { parseRoles } from "@/lib/roster";
 import { confirmDelete } from "@/lib/confirmDelete";
+import { PasswordInput } from "@/components/PasswordInput";
 
 async function parseError(res: Response): Promise<string> {
   const data = await res.json().catch(() => null);
@@ -223,12 +224,11 @@ function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Memb
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <input
-            type="password"
+          <PasswordInput
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
             placeholder={hasLogin ? "New password" : "Set a password"}
-            className="w-40 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+            inputClassName="w-48 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           />
           <button
             onClick={setMemberPassword}

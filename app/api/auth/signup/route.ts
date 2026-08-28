@@ -36,8 +36,8 @@ export async function POST(request: Request) {
   if (enteredSignupPassword !== signupPassword) {
     return NextResponse.json({ error: "That's not the chapter password. Ask an officer." }, { status: 401 });
   }
-  if (!name) {
-    return NextResponse.json({ error: "Enter your name." }, { status: 400 });
+  if (name.split(/\s+/).filter(Boolean).length < 2) {
+    return NextResponse.json({ error: "Enter your first and last name." }, { status: 400 });
   }
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });

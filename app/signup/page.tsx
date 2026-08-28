@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CHAPTER_ORG_NAME, CHAPTER_LABEL } from "@/lib/chapterConfig";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -59,25 +60,26 @@ export default function SignupPage() {
             <label htmlFor="chapter-password" className="mt-6 block text-sm font-medium text-stone-700">
               Chapter Password
             </label>
-            <input
+            <PasswordInput
               id="chapter-password"
-              type="password"
               value={signupPassword}
-              onChange={(e) => setSignupPassword(e.target.value)}
+              onChange={setSignupPassword}
               autoFocus
-              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+              inputClassName="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
             <p className="mt-1 text-xs text-stone-400">Ask an officer if you don&apos;t know it.</p>
 
             <label htmlFor="name" className="mt-4 block text-sm font-medium text-stone-700">
-              Your Name
+              Full Name
             </label>
             <input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="First Last"
               className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
+            <p className="mt-1 text-xs text-stone-400">First and last name — matches how you&apos;ll show up on the Roster.</p>
 
             <label htmlFor="email" className="mt-4 block text-sm font-medium text-stone-700">
               Email
@@ -104,30 +106,34 @@ export default function SignupPage() {
             <label htmlFor="password" className="mt-4 block text-sm font-medium text-stone-700">
               Set a Password
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+              onChange={setPassword}
+              inputClassName="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
 
             <label htmlFor="confirm-password" className="mt-4 block text-sm font-medium text-stone-700">
               Confirm Password
             </label>
-            <input
+            <PasswordInput
               id="confirm-password"
-              type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+              onChange={setConfirmPassword}
+              inputClassName="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
 
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
-              disabled={submitting || !name || !email || !phone || password.length === 0}
+              disabled={
+                submitting ||
+                name.trim().split(/\s+/).filter(Boolean).length < 2 ||
+                !email ||
+                !phone ||
+                password.length === 0
+              }
               className="mt-6 w-full rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Submitting..." : "Request Account"}
