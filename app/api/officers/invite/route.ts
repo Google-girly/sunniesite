@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requirePresidentApi } from "@/lib/session";
 import { isEmailConfigured, sendEmail } from "@/lib/email";
 import { CHAPTER_ORG_NAME, CHAPTER_LABEL } from "@/lib/chapterConfig";
 
-// President-only "invite a sister to sign up" (Aug 2026) — sends an
-// email with a link to /signup plus the shared SIGNUP_PASSWORD, from
-// the same chapter Gmail account already configured for meeting-minutes
-// reminders (see lib/email.ts — nothing new to set up here, this just
-// reuses it). Only ever emails members who (a) don't have a login yet
-// and (b) have an email on file — never re-invites someone who's
-// already claimed her account, and never guesses at an address.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// President-only "invite a sister to sign up" (Aug 2026, reworked when
+// signup itself moved from "claim a Roster row" to open self-registration
+// — see app/api/auth/signup). This no longer touches the Roster or
+// Member table at all: it's just an email with the /signup link and the
+// shared SIGNUP_PASSWORD, sent to whatever address(es) the President
+// types in. From the same chapter Gmail account already configured for
+// meeting-minutes reminders (lib/email.ts) — nothing new to set up here.
 export async function POST(request: Request) {
   const access = await requirePresidentApi();
   if ("error" in access) return access.error;
@@ -29,62 +30,53 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
-  // Explicit list of member ids to invite, or omitted/empty to mean
-  // "everyone who doesn't have a login yet."
-  const requestedIds = Array.isArray(body?.memberIds)
-    ? body.memberIds.filter((id: unknown): id is string => typeof id === "string")
-    : null;
+  const rawEmails: unknown[] = Array.isArray(body?.emails) ? body.emails : [];
+  const strings = rawEmails.filter((e): e is string => typeof e === "string").map((e) => e.trim());
+  const emails: string[] = [...new Set(strings.filter((e) => EMAIL_RE.test(e)))];
+  const invalid: string[] = strings.filter((e) => e && !EMAIL_RE.test(e));
 
-  const candidates = await prisma.member.findMany({
-    where: {
-      passwordHash: null,
-      ...(requestedIds ? { id: { in: requestedIds } } : {}),
-    },
-  });
-
-  const invitable = candidates.filter((m) => m.email);
-  const skippedNoEmail = candidates.filter((m) => !m.email).map((m) => m.name);
+  if (emails.length === 0) {
+    return NextResponse.json({ error: "Enter at least one valid email address." }, { status: 400 });
+  }
 
   const base = (process.env.APP_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
   const signupUrl = `${base}/signup`;
   const signupPassword = process.env.SIGNUP_PASSWORD;
 
+  const text = [
+    `You're invited to join the ${CHAPTER_ORG_NAME}, ${CHAPTER_LABEL} admin site.`,
+    "",
+    `1. Go to: ${signupUrl}`,
+    `2. Chapter password: ${signupPassword}`,
+    `3. Fill out the form and request an account — an officer approves each new request, so it may take a bit before you can log in.`,
+    "",
+    `— ${CHAPTER_LABEL}`,
+  ].join("\n");
+  const html = `
+    <p>You're invited to join the ${CHAPTER_ORG_NAME}, ${CHAPTER_LABEL} admin site.</p>
+    <ol>
+      <li>Go to: <a href="${signupUrl}">${signupUrl}</a></li>
+      <li>Chapter password: <strong>${signupPassword}</strong></li>
+      <li>Fill out the form and request an account — an officer approves each new request, so it may take a bit before you can log in.</li>
+    </ol>
+    <p>— ${CHAPTER_LABEL}</p>
+  `;
+
   let sent = 0;
   const failed: string[] = [];
-  for (const member of invitable) {
-    const text = [
-      `Hi ${member.name},`,
-      "",
-      `You're invited to create your account on the ${CHAPTER_ORG_NAME}, ${CHAPTER_LABEL} admin site.`,
-      "",
-      `1. Go to: ${signupUrl}`,
-      `2. Chapter password: ${signupPassword}`,
-      `3. Pick your name from the list and set your own password.`,
-      "",
-      `— ${CHAPTER_LABEL}`,
-    ].join("\n");
-    const html = `
-      <p>Hi ${member.name},</p>
-      <p>You're invited to create your account on the ${CHAPTER_ORG_NAME}, ${CHAPTER_LABEL} admin site.</p>
-      <ol>
-        <li>Go to: <a href="${signupUrl}">${signupUrl}</a></li>
-        <li>Chapter password: <strong>${signupPassword}</strong></li>
-        <li>Pick your name from the list and set your own password.</li>
-      </ol>
-      <p>— ${CHAPTER_LABEL}</p>
-    `;
+  for (const email of emails) {
     try {
       await sendEmail({
-        to: [member.email as string],
+        to: [email],
         subject: `You're invited — ${CHAPTER_ORG_NAME} ${CHAPTER_LABEL} sign up`,
         text,
         html,
       });
       sent++;
     } catch {
-      failed.push(member.name);
+      failed.push(email);
     }
   }
 
-  return NextResponse.json({ ok: true, sent, skippedNoEmail, failed });
+  return NextResponse.json({ ok: true, sent, failed, invalid });
 }
