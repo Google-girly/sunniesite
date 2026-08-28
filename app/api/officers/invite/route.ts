@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter at least one valid email address." }, { status: 400 });
   }
 
-  const base = (process.env.APP_BASE_URL || "https://montereysunnies-git-main-monterey-sunnies.vercel.app/signup").replace(/\/$/, "");
+  const base = (process.env.APP_BASE_URL || "https://montereysunnies.vercel.app/signup").replace(/\/$/, "");
   const signupUrl = `${base}/signup`;
   const signupPassword = process.env.SIGNUP_PASSWORD;
 
