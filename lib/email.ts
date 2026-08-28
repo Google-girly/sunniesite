@@ -32,6 +32,11 @@ function getTransporter() {
   return transporter;
 }
 
+/** So callers (e.g. the President's "invite to sign up" route) can give one clear error up front instead of every individual send failing the same way. */
+export function isEmailConfigured(): boolean {
+  return Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+}
+
 export interface SendEmailInput {
   to: string[];
   subject: string;

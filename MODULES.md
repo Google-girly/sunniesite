@@ -1106,6 +1106,50 @@ full reasoning.
   env and someone to click-test it with the Step 8 question set from the
   original spec.
 
+**Self-service signup + President-sent invites** (Aug 2026) — a sister no
+longer needs the President to set her initial password from Manage
+Officers & Logins; she can create her own account.
+
+- `/signup` (`app/signup/page.tsx`) — mirrors `/login`'s look, but the
+  picker (`GET /api/auth/unclaimed-members`) only lists Members who
+  **don't** have a password yet, the inverse of `/api/auth/members`'s
+  login picker. Gated by a single shared `SIGNUP_PASSWORD` (a chapter-wide
+  "you're actually one of us" secret, not anyone's real login password —
+  checked server-side in `POST /api/auth/signup`) rather than open to the
+  world. Deliberately can't create a brand-new `Member` row — only claims
+  one the President already added to the Roster, and only if it doesn't
+  already have a password (same "already set up" error either way, so it
+  can't be used to probe who's signed up yet). Successful signup logs her
+  straight in, same as `/api/auth/login`.
+- **President-sent email invites** (`app/(app)/officers/OfficersClient.tsx`,
+  `POST /api/officers/invite`) — a button per unclaimed member (and one
+  "invite everyone unclaimed at once") on Manage Officers & Logins,
+  emailing her the `/signup` link plus the `SIGNUP_PASSWORD` directly, so
+  she doesn't have to go ask an officer for it. Sent from the same chapter
+  Gmail account already configured for meeting-minutes reminders
+  (`lib/email.ts`'s `GMAIL_USER`/`GMAIL_APP_PASSWORD` — the VP of
+  Communications' account per the President, already set as a Vercel env
+  var; nothing new to configure) — added `isEmailConfigured()` to that
+  file so this route can give one clear "not configured" error up front
+  instead of every individual send failing separately. Only ever emails
+  members with no login yet AND an email on file; skips (and reports,
+  doesn't silently drop) anyone missing an email.
+- `proxy.ts`'s matcher gained `signup` alongside `login` — same reasoning,
+  needs to be reachable with no session cookie.
+- **Live-tested**: every validation branch on `/api/auth/signup` (wrong
+  chapter password, bogus/missing member id, short password) via direct
+  `curl`, and that an unauthenticated `POST /api/officers/invite` gets
+  bounced by `proxy.ts` same as every other protected route. **Not
+  tested**: an actual successful signup or invite send — the dev DB (now
+  shared Supabase Postgres, not a disposable local SQLite file since the
+  Aug 28 migration) had no unclaimed test member on hand to safely use,
+  and fabricating one felt riskier on a database other active sessions
+  might be looking at than it was worth. Both routes closely mirror
+  already-proven code (`/api/auth/login`, `/api/officers/[id]/password`,
+  the meeting-reminder cron's email send), so this is a reasonable bet,
+  not a blind one — but worth an officer's own click-through once
+  `GMAIL_USER`/`GMAIL_APP_PASSWORD`/`SIGNUP_PASSWORD` are actually set.
+
 ## Not modules, just reference
 
 A few things in the source drive aren't chapter-data modules, just

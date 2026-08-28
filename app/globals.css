@@ -5,10 +5,11 @@
  * README.md). Layout/colors are set with Tailwind classes directly in
  * app/layout.tsx and components, not here.
  *
- * Brand palette: black, burgundy, gold. `burgundy-*` replaces the old
- * `rose-*` accent 1:1 (same shade numbers, same usage — buttons, links,
- * focus rings). `gold-*` is the secondary accent, used sparingly for
- * chrome (Sidebar, login) rather than every page — see those files.
+ * Brand palette: burgundy, gold. `burgundy-*` replaces the old `rose-*`
+ * accent 1:1 (same shade numbers, same usage — buttons, links, focus
+ * rings). `gold-*` is defined but currently unused (an earlier pass had
+ * a dark gold/burgundy Sidebar + login; reverted back to the light
+ * design — see git history if that look is wanted again).
  */
 
 @theme inline {

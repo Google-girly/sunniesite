@@ -73,6 +73,28 @@ function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Memb
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSet, setPasswordSet] = useState(false);
 
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [invited, setInvited] = useState(false);
+
+  async function sendInvite() {
+    setInviting(true);
+    setInviteError(null);
+    const res = await fetch("/api/officers/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberIds: [member.id] }),
+    });
+    setInviting(false);
+    if (!res.ok) {
+      setInviteError(await parseError(res));
+      return;
+    }
+    const data = await res.json();
+    if (data.sent > 0) setInvited(true);
+    else setInviteError(data.failed?.length ? "Send failed — try again." : "No email on file.");
+  }
+
   const dirty = roles.join("|") !== parseRoles(member.role).join("|");
 
   async function saveRoles() {
@@ -176,6 +198,23 @@ function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Memb
           )}
         </div>
         {passwordError && <p className="mt-1 text-xs text-red-600">{passwordError}</p>}
+
+        {!hasLogin && (
+          <div className="mt-2">
+            {member.email ? (
+              <button
+                onClick={sendInvite}
+                disabled={inviting || invited}
+                className="rounded-md border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {invited ? "Invite sent ✓" : inviting ? "Sending..." : "Email sign-up invite"}
+              </button>
+            ) : (
+              <p className="text-xs text-stone-400">No email on file — can&apos;t invite her yet.</p>
+            )}
+            {inviteError && <p className="mt-1 text-xs text-red-600">{inviteError}</p>}
+          </div>
+        )}
       </td>
     </tr>
   );
@@ -183,29 +222,68 @@ function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Memb
 
 export function OfficersClient({ initialMembers }: { initialMembers: Member[] }) {
   const [members, setMembers] = useState(initialMembers);
+  const [inviteAllStatus, setInviteAllStatus] = useState<string | null>(null);
+  const [invitingAll, setInvitingAll] = useState(false);
+
+  const unclaimedCount = members.filter((m) => !m.passwordHash).length;
 
   function handleUpdated(updated: Member) {
     setMembers((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
   }
 
+  async function inviteAllUnclaimed() {
+    setInvitingAll(true);
+    setInviteAllStatus(null);
+    const res = await fetch("/api/officers/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    setInvitingAll(false);
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      setInviteAllStatus(data?.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+    const parts = [`${data.sent} invite${data.sent === 1 ? "" : "s"} sent.`];
+    if (data.skippedNoEmail?.length) parts.push(`No email on file for: ${data.skippedNoEmail.join(", ")}.`);
+    if (data.failed?.length) parts.push(`Failed to send to: ${data.failed.join(", ")}.`);
+    setInviteAllStatus(parts.join(" "));
+  }
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
-      <table className="min-w-full divide-y divide-stone-200 text-sm">
-        <thead className="bg-stone-50">
-          <tr>
-            {["Member", "Position(s)", "Password"].map((h) => (
-              <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
-                {h}
-              </th>
+    <div>
+      {unclaimedCount > 0 && (
+        <div className="mb-4 flex items-center gap-3">
+          <button
+            onClick={inviteAllUnclaimed}
+            disabled={invitingAll}
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {invitingAll ? "Sending..." : `Email Sign-Up Invites to Everyone Without a Login (${unclaimedCount})`}
+          </button>
+        </div>
+      )}
+      {inviteAllStatus && <p className="mb-4 text-sm text-stone-600">{inviteAllStatus}</p>}
+
+      <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
+        <table className="min-w-full divide-y divide-stone-200 text-sm">
+          <thead className="bg-stone-50">
+            <tr>
+              {["Member", "Position(s)", "Password"].map((h) => (
+                <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-100">
+            {members.map((m) => (
+              <OfficerRow key={m.id} member={m} onUpdated={handleUpdated} />
             ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-stone-100">
-          {members.map((m) => (
-            <OfficerRow key={m.id} member={m} onUpdated={handleUpdated} />
-          ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

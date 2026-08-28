@@ -21,13 +21,14 @@ export async function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Every route runs through the check except the login page itself, the
-// auth API routes (login needs to be reachable while logged out), the
-// cron route (Vercel Cron has no session cookie — it authenticates
-// itself with CRON_SECRET instead, checked inside the route itself; see
-// app/api/cron/meeting-reminders), and Next's own static assets.
+// Every route runs through the check except the login and signup pages
+// themselves, the auth API routes (login/signup need to be reachable
+// while logged out), the cron route (Vercel Cron has no session cookie
+// — it authenticates itself with CRON_SECRET instead, checked inside
+// the route itself; see app/api/cron/meeting-reminders), and Next's own
+// static assets.
 export const config = {
   matcher: [
-    "/((?!login|api/auth|api/cron|_next/static|_next/image|favicon.ico).*)",
+    "/((?!login|signup|api/auth|api/cron|_next/static|_next/image|favicon.ico).*)",
   ],
 };
