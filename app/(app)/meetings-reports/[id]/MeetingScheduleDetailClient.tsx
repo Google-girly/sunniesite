@@ -29,10 +29,12 @@ export function MeetingScheduleDetailClient({
   const [dayOfWeek, setDayOfWeek] = useState(String(schedule.dayOfWeek));
   const [intervalWeeks, setIntervalWeeks] = useState(String(schedule.intervalWeeks));
   const [anchorDate, setAnchorDate] = useState(schedule.anchorDate);
+  const [endDate, setEndDate] = useState(schedule.endDate ?? "");
   const [time, setTime] = useState(schedule.time ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [generatedStatus, setGeneratedStatus] = useState<string | null>(null);
   const [loggingMeeting, setLoggingMeeting] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
@@ -40,6 +42,7 @@ export function MeetingScheduleDetailClient({
     setSaving(true);
     setError(null);
     setSaved(false);
+    setGeneratedStatus(null);
     const res = await fetch(`/api/meetings/${schedule.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -48,6 +51,7 @@ export function MeetingScheduleDetailClient({
         dayOfWeek: parseInt(dayOfWeek, 10),
         intervalWeeks: parseInt(intervalWeeks, 10) || 1,
         anchorDate,
+        endDate,
         time,
       }),
     });
@@ -56,7 +60,18 @@ export function MeetingScheduleDetailClient({
       setError(await parseError(res));
       return;
     }
+    const updated: MeetingSchedule & { meetingsGenerated: number } = await res.json();
     setSaved(true);
+    if (updated.meetingsGenerated > 0) {
+      setGeneratedStatus(
+        `${updated.meetingsGenerated} meeting${updated.meetingsGenerated === 1 ? "" : "s"} auto-generated through the end date.`
+      );
+      // Newly auto-generated rows live server-side only until re-fetched
+      // — router.refresh() alone wouldn't reach this component's own
+      // `meetings` state (useState only reads its initial value once).
+      const meetingsRes = await fetch(`/api/meeting-minutes/meetings?scheduleId=${schedule.id}`);
+      if (meetingsRes.ok) setMeetings(await meetingsRes.json());
+    }
     router.refresh();
   }
 
@@ -108,7 +123,7 @@ export function MeetingScheduleDetailClient({
 
       <form
         onSubmit={handleSave}
-        className="mt-6 grid grid-cols-1 gap-4 rounded-lg border border-stone-200 bg-white p-5 sm:grid-cols-2 lg:grid-cols-5"
+        className="mt-6 grid grid-cols-1 gap-4 rounded-lg border border-stone-200 bg-white p-5 sm:grid-cols-2 lg:grid-cols-6"
       >
         <div>
           <label className="block text-xs font-medium text-stone-600">Label</label>
@@ -160,6 +175,19 @@ export function MeetingScheduleDetailClient({
           />
         </div>
         <div>
+          <label className="block text-xs font-medium text-stone-600">
+            End Date <span className="font-normal text-stone-400">(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            disabled={!canManage}
+            min={anchorDate || undefined}
+            className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
+          />
+        </div>
+        <div>
           <label className="block text-xs font-medium text-stone-600">Time</label>
           <input
             type="time"
@@ -170,9 +198,10 @@ export function MeetingScheduleDetailClient({
           />
         </div>
         {canManage && (
-          <div className="sm:col-span-2 lg:col-span-5 flex items-center gap-3">
+          <div className="sm:col-span-2 lg:col-span-6 flex items-center gap-3">
             {error && <p className="text-sm text-red-600">{error}</p>}
             {saved && !error && <p className="text-sm text-green-700">Saved.</p>}
+            {generatedStatus && <p className="text-sm text-green-700">{generatedStatus}</p>}
             <button
               type="submit"
               disabled={saving}

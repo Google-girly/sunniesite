@@ -278,6 +278,7 @@ model MeetingSchedule {
   dayOfWeek     Int // 0=Sunday..6=Saturday (matches JS Date#getDay())
   intervalWeeks Int     @default(1) // 1=weekly, 2=every other week, 4=~monthly, ...
   anchorDate    String // ISO "YYYY-MM-DD" — a real date this series meets on; which weeks the interval pattern lands on is computed relative to this, so it matters even for intervalWeeks=1
+  endDate       String? // ISO "YYYY-MM-DD" — when set, a Meeting (minutes) row is auto-created for every occurrence from anchorDate through this date (see lib/meetingGeneration.ts), instead of clicking "+ Log a Meeting" each time. Null means indefinite — no auto-generation.
   time          String? // e.g. "18:00" — display only, doesn't affect date math
 
   active Boolean @default(true) // lets a series be paused without deleting its history

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireModuleOwnerApi } from "@/lib/session";
+import { fillMissingMeetings } from "@/lib/meetingGeneration";
 
 export async function GET() {
   // Read-only, open — Budgets reads this for its Date Due suggestion,
@@ -40,8 +41,25 @@ export async function POST(request: Request) {
   const label = typeof body?.label === "string" && body.label.trim() ? body.label.trim() : null;
   const time = typeof body?.time === "string" && body.time.trim() ? body.time.trim() : null;
 
+  let endDate: string | null = null;
+  if (typeof body?.endDate === "string" && body.endDate.trim()) {
+    const endDateInput: string = body.endDate.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(endDateInput)) {
+      return NextResponse.json({ error: "End date isn't a real date." }, { status: 400 });
+    }
+    if (endDateInput < anchorDate) {
+      return NextResponse.json({ error: "End date can't be before the date this series meets on." }, { status: 400 });
+    }
+    endDate = endDateInput;
+  }
+
   const schedule = await prisma.meetingSchedule.create({
-    data: { dayOfWeek, intervalWeeks, anchorDate, label, time },
+    data: { dayOfWeek, intervalWeeks, anchorDate, endDate, label, time },
   });
-  return NextResponse.json(schedule, { status: 201 });
+
+  // Meeting minutes auto-generate for every occurrence through endDate,
+  // if one was given — see lib/meetingGeneration.ts.
+  const meetingsGenerated = await fillMissingMeetings(schedule);
+
+  return NextResponse.json({ ...schedule, meetingsGenerated }, { status: 201 });
 }

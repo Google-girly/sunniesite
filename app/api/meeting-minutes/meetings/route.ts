@@ -2,6 +2,23 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireModuleOwnerApi } from "@/lib/session";
 
+// Every Meeting under one series — read-only, open (same reasoning as
+// GET /api/meetings). Used by the series detail page to re-fetch its
+// own list after an edit auto-generates new ones (see
+// lib/meetingGeneration.ts), without needing a full page reload.
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const scheduleId = searchParams.get("scheduleId");
+  if (!scheduleId) {
+    return NextResponse.json({ error: "scheduleId is required." }, { status: 400 });
+  }
+  const meetings = await prisma.meeting.findMany({
+    where: { scheduleId },
+    orderBy: { date: "desc" },
+  });
+  return NextResponse.json(meetings);
+}
+
 // Logging a new meeting (date/time it happened) is the same "anything
 // with the meetings" bucket as editing the recurring schedule — Vice
 // President of Communications, Historian, or President. Submitting an

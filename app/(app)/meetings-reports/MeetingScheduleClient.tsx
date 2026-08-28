@@ -11,6 +11,7 @@ interface FormValues {
   dayOfWeek: string; // "" or "0".."6"
   intervalWeeks: string;
   anchorDate: string;
+  endDate: string;
   time: string;
 }
 
@@ -19,6 +20,7 @@ const EMPTY_FORM: FormValues = {
   dayOfWeek: "",
   intervalWeeks: "1",
   anchorDate: "",
+  endDate: "",
   time: "",
 };
 
@@ -57,6 +59,7 @@ export function MeetingScheduleClient({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [createdStatus, setCreatedStatus] = useState<string | null>(null);
 
   const activeSchedules = schedules.filter((s) => s.active);
   const upcoming = nextMeetingDate(activeSchedules, todayIso());
@@ -82,6 +85,7 @@ export function MeetingScheduleClient({
         dayOfWeek: parseInt(form.dayOfWeek, 10),
         intervalWeeks: parseInt(form.intervalWeeks, 10) || 1,
         anchorDate: form.anchorDate,
+        endDate: form.endDate || undefined,
         time: form.time,
       }),
     });
@@ -93,10 +97,15 @@ export function MeetingScheduleClient({
       return;
     }
 
-    const created: MeetingSchedule = await res.json();
+    const created: MeetingSchedule & { meetingsGenerated: number } = await res.json();
     setSchedules((prev) => [...prev, created]);
     setForm(EMPTY_FORM);
     setShowAddForm(false);
+    setCreatedStatus(
+      created.meetingsGenerated > 0
+        ? `Series created — ${created.meetingsGenerated} meeting${created.meetingsGenerated === 1 ? "" : "s"} auto-generated through the end date.`
+        : null
+    );
   }
 
   async function toggleActive(schedule: MeetingSchedule) {
@@ -154,10 +163,12 @@ export function MeetingScheduleClient({
         )}
       </div>
 
+      {createdStatus && <p className="mt-4 text-sm text-green-700">{createdStatus}</p>}
+
       {canManage && showAddForm && (
         <form
           onSubmit={handleAdd}
-          className="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-stone-200 bg-white p-5 sm:grid-cols-2 lg:grid-cols-5"
+          className="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-stone-200 bg-white p-5 sm:grid-cols-2 lg:grid-cols-6"
         >
           <div>
             <label className="block text-xs font-medium text-stone-600">Label</label>
@@ -214,6 +225,18 @@ export function MeetingScheduleClient({
             />
           </div>
           <div>
+            <label className="block text-xs font-medium text-stone-600">
+              End Date <span className="font-normal text-stone-400">(optional)</span>
+            </label>
+            <input
+              type="date"
+              value={form.endDate}
+              onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+              min={form.anchorDate || undefined}
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+            />
+          </div>
+          <div>
             <label className="block text-xs font-medium text-stone-600">Time</label>
             <input
               type="time"
@@ -223,7 +246,12 @@ export function MeetingScheduleClient({
             />
           </div>
 
-          <div className="sm:col-span-2 lg:col-span-5">
+          <div className="sm:col-span-2 lg:col-span-6">
+            <p className="mb-2 text-xs text-stone-400">
+              Setting an end date auto-creates a Meeting Minutes record for every occurrence
+              through that date, so you don&apos;t have to click &quot;+ Log a Meeting&quot; each
+              time.
+            </p>
             {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
             <button
               type="submit"
@@ -240,7 +268,7 @@ export function MeetingScheduleClient({
         <table className="min-w-full divide-y divide-stone-200 text-sm">
           <thead className="bg-stone-50">
             <tr>
-              {["Label", "Schedule", "Time", "Next Occurrence", "Active", ""].map((h) => (
+              {["Label", "Schedule", "Time", "Next Occurrence", "End Date", "Active", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500"
@@ -253,7 +281,7 @@ export function MeetingScheduleClient({
           <tbody className="divide-y divide-stone-100">
             {schedules.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-stone-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
                   No meeting series yet. Create the first one above.
                 </td>
               </tr>
@@ -270,6 +298,9 @@ export function MeetingScheduleClient({
                 <td className="px-4 py-2.5 text-stone-600">{schedule.time || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-600">
                   {formatDate(nextOccurrence(schedule, todayIso()))}
+                </td>
+                <td className="px-4 py-2.5 text-stone-600">
+                  {schedule.endDate ? formatDate(schedule.endDate) : "—"}
                 </td>
                 <td className="px-4 py-2.5">
                   {canManage ? (

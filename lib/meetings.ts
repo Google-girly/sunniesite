@@ -25,6 +25,12 @@ export interface MeetingScheduleLike {
   anchorDate: string; // ISO "YYYY-MM-DD"
 }
 
+// Safety cap on how many Meeting rows one endDate can auto-generate
+// (see lib/meetingGeneration.ts) — guards against a mistyped
+// far-future end date trying to create hundreds of rows. 200 weekly
+// meetings is ~4 years, well past any real use of this.
+export const MAX_AUTO_GENERATED_MEETINGS = 200;
+
 function parseIsoDateUTC(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d));
@@ -54,6 +60,28 @@ export function nextOccurrence(schedule: MeetingScheduleLike, fromIso: string): 
     candidate.setUTCDate(candidate.getUTCDate() + 7);
   }
   return toIsoDateUTC(candidate);
+}
+
+// Every real date this one schedule meets on, from its first actual
+// occurrence on/after anchorDate through endDate (inclusive) — the full
+// list, not just "the next one." Powers auto-creating a Meeting row per
+// occurrence once an end date is set (lib/meetingGeneration.ts).
+// anchorDate itself isn't required to fall on `dayOfWeek` (nothing
+// validates that when a schedule's created), so this starts from
+// nextOccurrence() rather than assuming anchorDate is already a real
+// meeting date, then steps forward in exact intervalWeeks jumps from
+// there — once the first date is correctly on-cycle, every multiple of
+// the interval after it is too.
+export function allOccurrences(schedule: MeetingScheduleLike, endDateIso: string): string[] {
+  const dates: string[] = [];
+  let cursor = nextOccurrence(schedule, schedule.anchorDate);
+  while (cursor <= endDateIso && dates.length < MAX_AUTO_GENERATED_MEETINGS) {
+    dates.push(cursor);
+    const next = parseIsoDateUTC(cursor);
+    next.setUTCDate(next.getUTCDate() + Math.max(1, schedule.intervalWeeks) * 7);
+    cursor = toIsoDateUTC(next);
+  }
+  return dates;
 }
 
 // The soonest upcoming meeting across every active schedule — e.g. if
