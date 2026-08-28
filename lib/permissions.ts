@@ -101,6 +101,19 @@ export function isPresident(member: Pick<Member, "role"> | null | undefined): bo
   return holdsPosition(member, "President");
 }
 
+// Who can approve/deny a self-signup (Aug 2026 — see
+// app/(app)/pending-signups and app/api/officers/pending). Not tied to
+// a Chapter Standards module the way MODULE_ACCESS above is, so it's
+// its own check rather than living in that table — President's request
+// verbatim: "prez, coms, or vp."
+export function canApproveSignups(member: Pick<Member, "role"> | null | undefined): boolean {
+  return (
+    isPresident(member) ||
+    holdsPosition(member, "Vice President") ||
+    holdsPosition(member, "Vice President of Communications")
+  );
+}
+
 /** Does this member own/manage the module — i.e. bypass self-service row scoping, gate open-submit's sensitive actions, or unlock a locked module? */
 export function ownsModule(member: Pick<Member, "role"> | null | undefined, moduleKey: ModuleKey): boolean {
   if (isPresident(member)) return true;

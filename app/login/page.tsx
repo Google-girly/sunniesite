@@ -71,10 +71,9 @@ function LoginForm() {
         <p className="mt-1 text-sm text-stone-400">
           No accounts have been set up yet —{" "}
           <Link href="/signup" className="font-medium text-burgundy-600 hover:text-burgundy-800">
-            create yours
-          </Link>{" "}
-          if you&apos;re on the Roster, or ask the President to set your password from Manage Officers
-          &amp; Logins.
+            request one
+          </Link>
+          .
         </p>
       ) : (
         <select

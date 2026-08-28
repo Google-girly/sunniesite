@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 import type { Member } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { readSessionCookieValue, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { canAccessModule, isPresident, ownsModule, type ModuleKey } from "@/lib/permissions";
+import { canAccessModule, canApproveSignups, isPresident, ownsModule, type ModuleKey } from "@/lib/permissions";
 
 /** The logged-in Member, or null if not logged in (or her account was since deleted). */
 export async function getCurrentMember(): Promise<Member | null> {
@@ -106,6 +106,38 @@ export async function requirePresidentApi(): Promise<{ member: Member } | { erro
   if (!isPresident(member)) {
     return {
       error: NextResponse.json({ error: "Only the President can do this." }, { status: 403 }),
+    };
+  }
+  return { member };
+}
+
+// Pending Sign-Ups (approving/denying a self-registered Member) —
+// President, Vice President, or Vice President of Communications, per
+// lib/permissions.ts canApproveSignups(). Not President-only like the
+// rest of Manage Officers & Logins, so it's its own page/gate rather
+// than folded into requirePresidentPage above.
+export interface ApproverPageAccess {
+  member: Member;
+  allowed: boolean;
+}
+
+export async function requireApproverPage(): Promise<ApproverPageAccess> {
+  const member = await getCurrentMember();
+  if (!member) redirect("/login");
+  return { member, allowed: canApproveSignups(member) };
+}
+
+export async function requireApproverApi(): Promise<{ member: Member } | { error: NextResponse }> {
+  const member = await getCurrentMember();
+  if (!member) {
+    return { error: NextResponse.json({ error: "Not logged in." }, { status: 401 }) };
+  }
+  if (!canApproveSignups(member)) {
+    return {
+      error: NextResponse.json(
+        { error: "Only the President, Vice President, or VP of Communications can do this." },
+        { status: 403 }
+      ),
     };
   }
   return { member };

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Member } from "@/app/generated/prisma/client";
 import { MODULES } from "@/lib/modules";
-import { canAccessModule, isPresident, type ModuleKey } from "@/lib/permissions";
+import { canAccessModule, canApproveSignups, isPresident, type ModuleKey } from "@/lib/permissions";
 import { parseRoles } from "@/lib/roster";
 import { LogoutButton } from "@/components/LogoutButton";
 import { CHAPTER_ORG_NAME, CHAPTER_LABEL } from "@/lib/chapterConfig";
@@ -71,12 +71,17 @@ export function Sidebar({ member }: { member: Member }) {
           />
         ))}
 
-        {isPresident(member) && (
+        {/* "Pending Sign-Ups" also goes to Vice President/VP of
+            Communications, not just the President — see
+            lib/permissions.ts canApproveSignups(). "Manage Officers &
+            Logins" itself stays President-only. */}
+        {canApproveSignups(member) && (
           <>
             <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">
-              President
+              Officer Tools
             </p>
-            <NavLink href="/officers" label="Manage Officers & Logins" />
+            {isPresident(member) && <NavLink href="/officers" label="Manage Officers & Logins" />}
+            <NavLink href="/pending-signups" label="Pending Sign-Ups" />
           </>
         )}
       </nav>

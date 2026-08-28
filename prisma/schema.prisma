@@ -40,6 +40,16 @@ model Member {
   // OFFICER_POSITIONS values.
   passwordHash String?
 
+  // Self-signup approval (Aug 2026) — a sister registering herself from
+  // /signup starts unapproved and can't log in yet (see
+  // app/api/auth/login) until the President, Vice President, or Vice
+  // President of Communications approves her from /pending-signups
+  // (lib/permissions.ts's canApproveSignups()). Defaults true so a
+  // Member added directly by an officer (Roster, Manage Officers &
+  // Logins) — already vetted by that officer's own action — never gets
+  // stuck behind a redundant second approval step.
+  approved Boolean @default(true)
+
   // Pledge class (Greek letter(s), e.g. "ΑΒ" — or "Founding" for the
   // chapter's first class) and crossing/line number, mirroring the real
   // Chapter Roster Template's "Class & Crossing Date" and "#" columns.

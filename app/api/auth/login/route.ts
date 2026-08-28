@@ -17,6 +17,16 @@ export async function POST(request: Request) {
   if (!member || !verifyPassword(password, member.passwordHash)) {
     return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
+  // Correct password, but a self-signup (app/api/auth/signup) nobody's
+  // approved yet — checked after the password so this can't be used to
+  // fish for whether a given name has signed up without knowing her
+  // password first.
+  if (!member.approved) {
+    return NextResponse.json(
+      { error: "Your account is still waiting on approval from an officer." },
+      { status: 403 }
+    );
+  }
 
   const response = NextResponse.json({ ok: true });
   response.cookies.set(SESSION_COOKIE_NAME, buildSessionCookieValue(member.id), {
