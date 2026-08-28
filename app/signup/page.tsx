@@ -7,6 +7,7 @@ import { CHAPTER_ORG_NAME, CHAPTER_LABEL } from "@/lib/chapterConfig";
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,7 +28,7 @@ export default function SignupPage() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email: email || undefined, signupPassword, password }),
+      body: JSON.stringify({ name, email, phone, signupPassword, password }),
     });
     setSubmitting(false);
 
@@ -79,13 +80,24 @@ export default function SignupPage() {
             />
 
             <label htmlFor="email" className="mt-4 block text-sm font-medium text-stone-700">
-              Email <span className="font-normal text-stone-400">(optional)</span>
+              Email
             </label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+            />
+
+            <label htmlFor="phone" className="mt-4 block text-sm font-medium text-stone-700">
+              Phone Number
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
 
@@ -115,7 +127,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={submitting || !name || password.length === 0}
+              disabled={submitting || !name || !email || !phone || password.length === 0}
               className="mt-6 w-full rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Submitting..." : "Request Account"}

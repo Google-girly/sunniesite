@@ -51,7 +51,7 @@ export function PendingSignupsClient({ initialPending }: { initialPending: Membe
         <table className="min-w-full divide-y divide-stone-200 text-sm">
           <thead className="bg-stone-50">
             <tr>
-              {["Name", "Email", "Requested", ""].map((h) => (
+              {["Name", "Email", "Phone", "Requested", ""].map((h) => (
                 <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">
                   {h}
                 </th>
@@ -63,6 +63,7 @@ export function PendingSignupsClient({ initialPending }: { initialPending: Membe
               <tr key={m.id}>
                 <td className="px-4 py-2.5 font-medium text-stone-900">{m.name}</td>
                 <td className="px-4 py-2.5 text-stone-600">{m.email || "—"}</td>
+                <td className="px-4 py-2.5 text-stone-600">{m.phone || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-600">
                   {new Date(m.createdAt).toLocaleDateString(undefined, {
                     month: "short",
