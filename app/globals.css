@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/*
+ * This admin app is light-only for now (kept simple on purpose — see
+ * README.md). Layout/colors are set with Tailwind classes directly in
+ * app/layout.tsx and components, not here.
+ */
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}

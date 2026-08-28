@@ -1,0 +1,85 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getCurrentMember } from "@/lib/session";
+import { currentVotingPeriod } from "@/lib/sisterOfMonthVoting";
+
+// The "general consensus" ballot — every Active member gets one vote,
+// for any Active sister, tallied live. Self-service by design (not
+// gated to whoever owns Sisterhood): the whole point is the general
+// membership deciding, not one officer. See lib/sisterOfMonthVoting.ts
+// for how the voting period is derived and MODULES.md for the fuller
+// design writeup.
+export async function GET() {
+  const viewer = await getCurrentMember();
+  if (!viewer) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+
+  const period = currentVotingPeriod();
+  if (!period) {
+    return NextResponse.json({ open: false, period: null });
+  }
+
+  const [votes, alreadyDecided] = await Promise.all([
+    prisma.sisterOfMonthVote.findMany({
+      where: { year: period.year, month: period.month },
+      include: { nominee: true },
+    }),
+    prisma.sisterOfTheMonth.findUnique({
+      where: { year_month: { year: period.year, month: period.month } },
+    }),
+  ]);
+
+  const tally = new Map<string, { member: { id: string; name: string }; count: number }>();
+  for (const v of votes) {
+    const existing = tally.get(v.nomineeId);
+    if (existing) existing.count++;
+    else tally.set(v.nomineeId, { member: { id: v.nominee.id, name: v.nominee.name }, count: 1 });
+  }
+  const results = [...tally.values()].sort((a, b) => b.count - a.count);
+
+  const myVote = votes.find((v) => v.voterId === viewer.id);
+
+  return NextResponse.json({
+    open: !alreadyDecided,
+    period,
+    results,
+    totalVotes: votes.length,
+    myVote: myVote ? myVote.nomineeId : null,
+  });
+}
+
+export async function POST(request: Request) {
+  const viewer = await getCurrentMember();
+  if (!viewer) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  if (viewer.status !== "ACTIVE") {
+    return NextResponse.json({ error: "Only Active members can vote." }, { status: 403 });
+  }
+
+  const period = currentVotingPeriod();
+  if (!period) {
+    return NextResponse.json({ error: "There's no ballot open right now." }, { status: 400 });
+  }
+
+  const alreadyDecided = await prisma.sisterOfTheMonth.findUnique({
+    where: { year_month: { year: period.year, month: period.month } },
+  });
+  if (alreadyDecided) {
+    return NextResponse.json({ error: "This month's Sister of the Month has already been confirmed." }, { status: 400 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const nomineeId = typeof body?.nomineeId === "string" ? body.nomineeId : "";
+  if (!nomineeId) {
+    return NextResponse.json({ error: "Pick who you're voting for." }, { status: 400 });
+  }
+  const nominee = await prisma.member.findUnique({ where: { id: nomineeId } });
+  if (!nominee || nominee.status !== "ACTIVE") {
+    return NextResponse.json({ error: "You can only vote for an Active member." }, { status: 400 });
+  }
+
+  const vote = await prisma.sisterOfMonthVote.upsert({
+    where: { year_month_voterId: { year: period.year, month: period.month, voterId: viewer.id } },
+    create: { year: period.year, month: period.month, voterId: viewer.id, nomineeId },
+    update: { nomineeId },
+  });
+  return NextResponse.json(vote);
+}

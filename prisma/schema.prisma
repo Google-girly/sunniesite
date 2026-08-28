@@ -1,0 +1,760 @@
+// Prisma schema for the SON Theta Chapter admin app.
+//
+// Pattern for future modules: add a new model below (e.g. `Budget`,
+// `Fine`, `Pledge`), then run `npx prisma migrate dev --name add_<module>`.
+// See README.md for the full walkthrough.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// --- Roster module -----------------------------------------------------
+
+// A single roster entry — either a named officer (role set) or a
+// general active/inactive member (role left blank).
+//
+// `status` and `role` are plain strings rather than Prisma enums because
+// SQLite has no native enum type; the allowed values are enforced in
+// app code (see lib/roster.ts) instead of the database.
+model Member {
+  id           String   @id @default(cuid())
+  name         String
+  role         String? // officer title, e.g. "President"; blank for general members
+  status       String   @default("ACTIVE") // see lib/roster.ts MEMBER_STATUSES
+  crossingTerm String? // e.g. "Fall 2024"
+  email        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Individual login (Aug 2026 — replaced the old single shared
+  // APP_PASSWORD). `scrypt$<salt-hex>$<hash-hex>` via lib/auth.ts, null
+  // until the President sets an initial password for her from Manage
+  // Officers & Logins. `role` above doubles as this member's position(s)
+  // for lib/permissions.ts's access checks — no separate "assigned
+  // position" model needed, just a comma-separated string of
+  // OFFICER_POSITIONS values.
+  passwordHash String?
+
+  // Pledge class (Greek letter(s), e.g. "ΑΒ" — or "Founding" for the
+  // chapter's first class) and crossing/line number, mirroring the real
+  // Chapter Roster Template's "Class & Crossing Date" and "#" columns.
+  // Both free-entry: class names aren't a fixed set the app knows about,
+  // and older members may use non-numeric line numbers.
+  class          String?
+  crossingNumber Int?
+  nickname       String?
+
+  accountEntries AccountEntry[]
+  serviceHours   ServiceHourEntry[]
+  makeUpProjects MakeUpProject[]
+  studyHours     StudyHourEntry[]
+
+  gpaRecords               GpaRecord[]
+  mentorshipsAsMentee      Mentorship[]                      @relation("MentorshipMentee")
+  mentorshipsAsMentor      Mentorship[]                      @relation("MentorshipMentor")
+  alphaOrderRecords        AlphaOrderRecord[]
+  professionalDevelopment  ProfessionalDevelopmentAttendee[]
+  probationRecords         ProbationRecord[]
+  sisterOfTheMonths        SisterOfTheMonth[]
+  sisterOfMonthVotesCast   SisterOfMonthVote[]               @relation("SisterOfMonthVoter")
+  sisterOfMonthNominations SisterOfMonthVote[]               @relation("SisterOfMonthNominee")
+  certifications           CertificationRecord[]
+  eventReportsSigned       EventReport[]
+  eventReportsCreated      EventReport[]                     @relation("EventReportCreatedBy")
+  signature                MemberSignature?
+  leadershipPositions      LeadershipPosition[]
+  letterSignoffs           LetterSignoff[]
+}
+
+// --- Fines / Member Accounts module -------------------------------------
+
+// One member's running balance is just the sum of these — charges (Dues,
+// Fine) add to what she owes, credits (Payment, Credit) subtract from it
+// (see lib/fines.ts calculateBalance). This is the ledger Chapter
+// Standards §G.3 requires the Treasurer to keep ("Dues, fines and
+// payments are clearly noted"), and it doubles as the source for the
+// monthly Member Account Balance Statement required by Chapter Bylaws
+// Article XIII §C.
+model AccountEntry {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  type        String // see lib/fines.ts ENTRY_TYPES — DUES | FINE | PAYMENT | CREDIT
+  amount      Float // always stored positive; `type` determines charge vs. credit
+  description String
+  date        String // ISO "YYYY-MM-DD" — when this happened, not when it was entered
+
+  // Set only when `type` is "FINE" and the amount came from the standard
+  // schedule (see lib/fines.ts FINE_SCHEDULE) rather than a manual entry.
+  fineCode String?
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Chapter Finances: starting balance + fund log ----------------------
+// (Aug 2026) The real Financial Books workbook's own "Checkbook" sheet
+// already has a designated home for both of these — row 9 is literally
+// labeled "Starting Balance" (a hand-entered anchor every row's running-
+// Balance formula chains off, see lib/financialBooksExport.ts), and
+// every other row is one transaction, debit (Withdraw) or credit
+// (Deposit) — so these two models exist purely to hold the values that
+// get written into that same real sheet on export, not a second,
+// disconnected ledger.
+
+// One row per year — the Treasurer sets this once when the year's books
+// open. `year` is the plain calendar year the fiscal/academic year
+// starts in (matches Member.crossingTerm-style "Fall 2026" informally,
+// but stored as a bare year since that's all Checkbook!H9 needs).
+model ChapterStartingBalance {
+  id       String  @id @default(cuid())
+  year     Int     @unique
+  amount   Float
+  asOfDate String? // ISO "YYYY-MM-DD"
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One deposit into the chapter account — the credit-side counterpart to
+// a Budget's expense line items, categorized the same way (a code from
+// the real Financial Books "Accounts" sheet, see
+// lib/financialBooksAccounts.ts INCOME_ACCOUNTS) so it lands in
+// Checkbook next to every other transaction with a real, auditable
+// category instead of a bare dollar figure.
+model ChapterFundEntry {
+  id          String @id @default(cuid())
+  date        String // ISO "YYYY-MM-DD"
+  description String
+  amount      Float
+  accountCode Int // required — see lib/financialBooksAccounts.ts INCOME_ACCOUNTS. Every fund entry must be categorized.
+  notes       String // every field on this form is required, notes included, on request
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Budgets & Reimbursements module ------------------------------------
+
+// One event, top-level. Just the info that's shared between its
+// Tentative and Final budgets, entered once (the chapter's actual
+// spreadsheet has you re-type Event/Chair/Date on both sheets — this
+// stores it once and reuses it for both exports).
+model Budget {
+  id           String  @id @default(cuid())
+  eventName    String
+  chair        String?
+  eventDate    String? // ISO "YYYY-MM-DD" from the UI's date picker — single day only, no ranges (multi-day events need a workaround, e.g. picking the start date)
+  budgetNumber String? // auto-assigned at creation, see nextBudgetNumber() in app/api/budgets/route.ts
+
+  versions BudgetVersion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A Tentative or Final budget *under* an event (see Templates/Copy of
+// SON Expense Budget.xlsx — literally "Tentative Budget" and "Final
+// Budget", two sheets in one workbook per event): a chair submits a
+// tentative budget before the event, then a final expenditure report
+// after it, and the Treasurer/Auditor fills in the approval section once
+// it's reviewed. A `Budget` has at most one of each — see the `@@unique`
+// below.
+//
+// `stage` is a plain string (see lib/budgets.ts BUDGET_STAGES) rather
+// than a Prisma enum for the same reason as Member.status: SQLite has
+// no native enum type.
+model BudgetVersion {
+  id       String @id @default(cuid())
+  budgetId String
+  budget   Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  stage    String // see lib/budgets.ts BUDGET_STAGES
+
+  salesTaxRate Float   @default(0) // e.g. 0.0825 for 8.25%; applied to taxable line items
+  notes        String?
+
+  // "NVP Finance / Comptroller Use Only" section of the template.
+  dateDue      String?
+  motion       String?
+  second       String?
+  vote         String?
+  checkNumber  String?
+  checkAmount  Float?
+  dateReceived String?
+
+  // These five have no home on the chapter's own budget template — they
+  // only exist for the "Chapter Budget Log" sheet of the separate
+  // Financial Books workbook (see lib/financialBooksExport.ts), which
+  // tracks a couple of things per submission the template itself doesn't:
+  // who actually turned it in, when NVP Finance got it vs. presented it
+  // to the chapter, whether it passed, and how the reimbursement went out.
+  submittedBy         String?
+  dateSubmitted       String?
+  datePresented       String?
+  status              String? // see lib/budgets.ts BUDGET_LOG_STATUSES
+  reimbursementMethod String? // see lib/budgets.ts REIMBURSEMENT_METHODS
+
+  lineItems BudgetLineItem[]
+  receipts  Receipt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([budgetId, stage])
+}
+
+// A receipt (photo or PDF) attached to a Tentative or Final Budget as
+// proof of purchase for reimbursement — one per store trip, not one per
+// line item, since a single receipt usually covers several items bought
+// together. The file itself lives in the database (`data`, a BLOB) —
+// see lib/receipts.ts for the size/type limits — rather than on disk, so
+// there's nothing extra to back up or configure beyond dev.db itself,
+// matching how the rest of this app avoids external storage.
+model Receipt {
+  id        String        @id @default(cuid())
+  versionId String
+  version   BudgetVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  filename String
+  mimeType String
+  size     Int // bytes, cached alongside `data` so listing receipts doesn't require loading every file's bytes
+  data     Bytes
+
+  uploadedAt DateTime @default(now())
+}
+
+// One row of a Tentative/Final budget's Item / Quantity / Price /
+// Taxable? table.
+model BudgetLineItem {
+  id        String        @id @default(cuid())
+  versionId String
+  version   BudgetVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  item      String
+  quantity  Float         @default(1)
+  price     Float         @default(0)
+  taxable   Boolean       @default(false)
+  sortOrder Int           @default(0)
+
+  // Which Financial Books expense account this line item belongs to
+  // (see lib/financialBooksAccounts.ts, read off the real workbook's
+  // "Accounts" sheet) — e.g. "Decorations" might be 204 Socials/Retreats.
+  // Optional: not every chair will know/care to categorize as they go.
+  accountCode Int?
+
+  createdAt DateTime @default(now())
+}
+
+// --- Meetings module ------------------------------------------------------
+
+// A recurring meeting series — "every other Sunday," "the 1st Tuesday
+// of the month," etc. — not individual meeting instances; the actual
+// dates are computed from this rule (see lib/meetings.ts) rather than
+// stored one row per occurrence. Used by Budgets to suggest "Date Due"
+// and "Date Presented" as the next upcoming meeting, since chapter
+// policy is that a Final Budget is due before the next one.
+model MeetingSchedule {
+  id    String  @id @default(cuid())
+  label String? // e.g. "General Body Meeting" — free text, just for display
+
+  dayOfWeek     Int // 0=Sunday..6=Saturday (matches JS Date#getDay())
+  intervalWeeks Int     @default(1) // 1=weekly, 2=every other week, 4=~monthly, ...
+  anchorDate    String // ISO "YYYY-MM-DD" — a real date this series meets on; which weeks the interval pattern lands on is computed relative to this, so it matters even for intervalWeeks=1
+  time          String? // e.g. "18:00" — display only, doesn't affect date math
+
+  active Boolean @default(true) // lets a series be paused without deleting its history
+
+  meetings      Meeting[]
+  reminderLogs  MeetingReminderLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One row per reminder email actually sent for a given schedule's
+// occurrence on a given date — see lib/meetingReminders.ts. Exists
+// purely so the daily cron job (app/api/cron/meeting-reminders) can't
+// double-send if it runs more than once for the same day (a retry, a
+// manual re-trigger, etc.): the (scheduleId, meetingDate) unique
+// constraint is the actual guard, this row is otherwise just a log.
+model MeetingReminderLog {
+  id             String          @id @default(cuid())
+  scheduleId     String
+  schedule       MeetingSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  meetingDate    String // ISO "YYYY-MM-DD" — the occurrence this reminder was for, not when it was sent
+  recipientCount Int
+  sentAt         DateTime        @default(now())
+
+  @@unique([scheduleId, meetingDate])
+}
+
+// One actual meeting occurrence (a specific date), as opposed to
+// MeetingSchedule's recurring rule — this is what officer reports and,
+// eventually, the rest of the minutes get attached to. Deliberately
+// minimal for now (date/time only): see lib/meetingMinutesExport.ts —
+// this first pass only auto-fills the header date/time and each
+// officer's report onto the real Minutes template; roll call, motions,
+// Business/Old Business, etc. are still filled in by hand afterward.
+// `scheduleId` (Aug 2026) is optional — a Meeting can exist standalone
+// (a one-off, or logged before this link existed) or be tied back to
+// the recurring series it came from, so a schedule's own page can list
+// every real minutes record generated from it.
+model Meeting {
+  id         String           @id @default(cuid())
+  date       String // ISO "YYYY-MM-DD"
+  time       String? // e.g. "6:00 PM" — display only, matches the template's own header format
+  scheduleId String?
+  schedule   MeetingSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  officerReports OfficerReport[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One officer's written report for one Meeting. Upserts on
+// (meetingId, position) — submitting again for the same meeting/position
+// replaces the prior draft rather than accumulating duplicates, since
+// there's no per-user auth to distinguish "editing my own report" from
+// "someone else submitted for this position."
+model OfficerReport {
+  id        String  @id @default(cuid())
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  position String // see lib/positions.ts OFFICER_POSITIONS
+  report   String // free-text report body
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([meetingId, position])
+}
+
+// --- Community Service module -------------------------------------------
+
+// One logged volunteer event for a member — mirrors the real "Community
+// Service Hours" template's Date/Event/Description/Hours/Volunteer
+// Contact Information columns (see lib/communityServiceExport.ts).
+// `category` isn't on that sheet, but is on the actual requirement it's
+// tracking: Chapter Standing Rules Article IX splits the annual 30-hour
+// requirement into philanthropy-specific and survivor-support-specific
+// minimums (10 each) plus general hours — see lib/communityService.ts.
+model ServiceHourEntry {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  date             String // ISO "YYYY-MM-DD"
+  event            String
+  description      String?
+  hours            Float
+  category         String  @default("GENERAL") // see lib/communityService.ts SERVICE_CATEGORIES
+  volunteerContact String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A member placed on Community Service Make-Up status (Chapter Standing
+// Rules Article VIII §B) for falling short of the term's hour
+// requirement — mirrors the real "Community Service Chapter Standard
+// Forms," Section C6.
+model MakeUpProject {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  term                  String // e.g. "Fall 2026" — which term fell short
+  hoursUncompleted      Float
+  project               String?
+  dueDate               String? // ISO "YYYY-MM-DD"
+  completed             Boolean @default(false)
+  libraryHoursCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Study Hours module --------------------------------------------------
+
+// One logged study session for a member — mirrors the real "Library
+// Study Hours" template's Study Location/Date/Time In/Time Out/Total
+// Time columns (see lib/studyHoursExport.ts). Chapter Standards §B.4/B.6
+// requires 6 documented hours *per week*, tracked separately for Active
+// and Inactive members (see lib/studyHours.ts) — that's why `hours` is
+// stored per session rather than as a weekly total: the weekly rollup is
+// computed, not entered.
+model StudyHourEntry {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  date     String // ISO "YYYY-MM-DD"
+  location String
+  timeIn   String? // "HH:MM", 24h
+  timeOut  String? // "HH:MM", 24h
+  hours    Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Official Standards Forms module (remaining sections) ----------------
+//
+// Sections C3/C4 and C6 live in the Community Service module; B4 and B6
+// live in the Study Hours module. This covers the rest of the packet —
+// see lib/standardsForms.ts and lib/standardsFormsExport.ts. All of it
+// is grounded in Chapter Standards Approved 08-2026, Section B (Academics)
+// and Section D (Sisterhood).
+
+// Section B1 — one row per member per term: her GPA snapshot as reported
+// to the National Board. `status` is a free-text snapshot of her roster
+// status *at the start of the term* (the real form's own instruction —
+// this can legitimately differ from her current Member.status later).
+model GpaRecord {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  term    String // e.g. "Fall 2026"
+  status  String?
+  termGpa Float?
+  cumGpa  Float?
+  major   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Section B2 — a mentee/mentor pairing for one term. Chapter Standards
+// §B.2: mandatory for any member below a 2.3 term or 2.5 cumulative GPA,
+// for the term immediately following the deficiency.
+model Mentorship {
+  id   String @id @default(cuid())
+  term String
+
+  menteeId String
+  mentee   Member @relation("MentorshipMentee", fields: [menteeId], references: [id], onDelete: Cascade)
+  mentorId String
+  mentor   Member @relation("MentorshipMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Section B3 — members who hit a 3.0+ cumulative GPA in a given term.
+// One member per term may be flagged as the Alpha Order Plaque & SON
+// Scholarship recipient (highest cumulative GPA of the year).
+model AlphaOrderRecord {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  term              String
+  cumGpa            Float
+  major             String?
+  isPlaqueRecipient Boolean @default(false)
+  scholarshipAmount Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Section B5 — one professional development event/presentation, plus
+// which members attended it. Chapter Standards §B.5 requires 80% Active
+// attendance per term, possibly spread across more than one event.
+model ProfessionalDevelopmentEvent {
+  id String @id @default(cuid())
+
+  term        String
+  title       String
+  presentedBy String?
+  date        String? // ISO "YYYY-MM-DD"
+  time        String?
+  location    String?
+
+  attendees ProfessionalDevelopmentAttendee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProfessionalDevelopmentAttendee {
+  id       String                       @id @default(cuid())
+  eventId  String
+  event    ProfessionalDevelopmentEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member                       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, memberId])
+}
+
+// Section D4 — members placed on Probation or Suspension via a formal
+// Chapter judicial review (informal warnings don't count, per Chapter
+// Standards §D.4).
+model ProbationRecord {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  status              String // "Probation" | "Suspension"
+  dateInEffectStart   String? // ISO "YYYY-MM-DD"
+  dateInEffectEnd     String? // ISO "YYYY-MM-DD"
+  offense             String?
+  additionalSanctions String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Section D9 (General Meeting Attendance) — one row per General Meeting,
+// not per member: the real form tracks headcounts (# actives attended,
+// quorum met?, # officers attended), not a per-member roll call.
+model MeetingAttendanceRecord {
+  id String @id @default(cuid())
+
+  term             String
+  meetingNumber    Int
+  date             String? // ISO "YYYY-MM-DD"
+  activesAttended  Int?
+  quorumMet        Boolean?
+  officersAttended Int?
+  otherAttendees   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([term, meetingNumber])
+}
+
+// Section D10 — one Sister of the Month per (year, month). `notApplicable`
+// covers the real form's "N/A" convention for months the Chapter isn't in
+// session (Dec/Jan/June/breaks) — those must be explicitly marked N/A
+// rather than left blank, per Chapter Standards §D.10.
+model SisterOfTheMonth {
+  id String @id @default(cuid())
+
+  year          Int
+  month         String // "September".."June"
+  notApplicable Boolean @default(false)
+  memberId      String?
+  member        Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([year, month])
+}
+
+// One Active member's vote for a given month's Sister of the Month
+// ballot (Aug 2026) — the "general consensus" mechanism, separate from
+// SisterOfTheMonth itself (the confirmed *result*, still entered by
+// whoever manages Sisterhood once she closes the month out). A month
+// counts as "closed" once its SisterOfTheMonth row exists — see
+// lib/sisterOfMonthVoting.ts — so there's no separate open/closed flag
+// here to keep in sync. One vote per member per month, upserted (she
+// can change her mind before the month closes) via the unique
+// constraint below, same pattern as every other natural-key upsert in
+// this app.
+model SisterOfMonthVote {
+  id String @id @default(cuid())
+
+  year  Int
+  month String // "September".."June", same vocabulary as SisterOfTheMonth
+
+  voterId   String
+  voter     Member @relation("SisterOfMonthVoter", fields: [voterId], references: [id], onDelete: Cascade)
+  nomineeId String
+  nominee   Member @relation("SisterOfMonthNominee", fields: [nomineeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([year, month, voterId])
+}
+
+// Section D11 — CPR/First Aid certification on file for a member.
+// Chapter Standards §D.11 requires a minimum of 4 certified members.
+model CertificationRecord {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  type           String // see lib/standardsForms.ts CERTIFICATION_TYPES
+  issuedDate     String? // ISO "YYYY-MM-DD"
+  expirationDate String? // ISO "YYYY-MM-DD"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Event Reports module ------------------------------------------------
+
+// The real national "Event Report" form (see
+// lib/templates/event-report-template.docx, sourced from "SON Event
+// Report.pdf") — used across the ~18 different Chapter Standards credits
+// listed in lib/eventReports.ts EVENT_REPORT_STANDARDS, each one just a
+// different "Standard Being Fulfilled" value on the same physical form.
+model EventReport {
+  id                  String  @id @default(cuid())
+  standardSection     String // e.g. "C.1" — see lib/eventReports.ts EVENT_REPORT_STANDARDS
+  eventName           String
+  hostingOrganization String?
+  date                String // ISO "YYYY-MM-DD"
+  lengthOfTime        String?
+  location            String?
+  membersInAttendance Int?
+  purpose             String
+  resourcesUtilized   String?
+
+  // The real form's signer often isn't a Chapter officer at all (a
+  // presenter, a Greek Life advisor, a NALFO officer — see
+  // lib/eventReports.ts signerHint per section), so the name is free
+  // text; signerMember is only set when the signer happens to be a
+  // roster Member, which is what lets their saved MemberSignature
+  // auto-fill the signature pad.
+  signerName     String
+  signerTitle    String?
+  signerMemberId String?
+  signerMember   Member? @relation(fields: [signerMemberId], references: [id])
+  signedDate     String? // ISO "YYYY-MM-DD"
+  signatureImage String? // data URL (PNG) captured from the in-browser signature pad
+
+  // Whoever was logged in and filled out the form through the app —
+  // distinct from signerMember above, which is who the real form is
+  // signed by (often not a Chapter officer at all). Only she (or the
+  // President) may edit this report afterward — see
+  // app/api/event-reports/[id]/route.ts. Null for reports that predate
+  // this field; those are President-only to edit until re-saved.
+  createdByMemberId String?
+  createdByMember   Member? @relation("EventReportCreatedBy", fields: [createdByMemberId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A reusable drawn signature for a Chapter member — saved once from the
+// signature pad on Event Reports, then auto-loaded onto every future
+// report they sign so they don't have to redraw it every time.
+model MemberSignature {
+  id        String   @id @default(cuid())
+  memberId  String   @unique
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  imageData String // data URL (PNG)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Additional Chapter Standards sections (A.4, F.4-F.7) ------
+//
+// Every credit here has no dedicated national spreadsheet/form (unlike
+// B1-B6/C3-C6/D4/D9-D11's `standards-forms-template.xlsx` sheets) — per
+// Chapter Standards §I.2, "All credits that do not have a designated
+// spreadsheet, form or format are submitted on Official Letterhead," so
+// all of these export as letters via lib/standardsFormsLetters.ts,
+// reusing the real crest/header lib/eventReportExport.ts already
+// extracted (see lib/docxLetterhead.ts).
+
+// §A.4 — advisor contact info, required on file.
+model ChapterAdvisor {
+  id            String   @id @default(cuid())
+  name          String
+  title         String?
+  email         String?
+  phone         String?
+  officeAddress String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// §F.4 (Officer Transition Meetings) — removed Aug 2026. The chapter
+// uses an Event Report for this credit instead of a dedicated model
+// (see lib/eventReports.ts EVENT_REPORT_STANDARDS "F.4"), same as most
+// of Section C/D/H already did — no reason this credit needed to be
+// the odd one out with its own table.
+
+// §F.5 — one row per strategic goal; the same rows back both the Annual
+// Strategic Plan (due 9/15, `status`/`progressNotes` still blank) and
+// the Progress Report (due 1/31, updated in place) rather than being two
+// separate models, since the real requirement is literally "update the
+// same plan's progress," not a second document. `period` (Aug 2026)
+// splits a Plan into Year-round/Spring/Fall — the real requirement is
+// one annual plan, but the chapter wanted the option to run separate
+// per-term plans instead, so this is just another filter dimension
+// alongside academicYear, not a second kind of record.
+model StrategicPlanGoal {
+  id                 String   @id @default(cuid())
+  academicYear       String // e.g. "2026-2027"
+  period             String   @default("YEAR") // see lib/standardsForms.ts PLAN_PERIODS — YEAR | SPRING | FALL
+  priorityArea       String // see lib/standardsForms.ts STRATEGIC_PRIORITY_AREAS
+  goalDescription    String
+  responsibleOfficer String?
+  targetTimeline     String?
+  status             String   @default("Not Started") // see lib/standardsForms.ts STRATEGIC_GOAL_STATUSES
+  progressNotes      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// §F.6/§F.7 — one row per member holding an outside leadership position;
+// `category` splits Greek-related from non-Greek since they're separate
+// credits (each capped at 20 points, 5 per position) even though the
+// documentation format is identical.
+model LeadershipPosition {
+  id           String   @id @default(cuid())
+  memberId     String?
+  member       Member?  @relation(fields: [memberId], references: [id])
+  memberName   String
+  organization String
+  position     String
+  category     String // "GREEK" | "NON_GREEK" — see lib/standardsForms.ts LEADERSHIP_CATEGORIES
+  academicYear String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// One shared signoff model for every letter-style export above that
+// needs a signature (F.4, F.5 ×2 variants) — rather than a
+// bespoke signoff model per section, `section`+`key` group which letter
+// a signature belongs to (`key` is the natural grouping within that
+// section: a term or an academic year. Re-signing (adding a new
+// OfficerTransition row, say) just overwrites the same row via the
+// unique constraint, same upsert-on-natural-key pattern as
+// OfficerReport/MeetingAttendanceRecord/SisterOfTheMonth.
+model LetterSignoff {
+  id             String   @id @default(cuid())
+  section        String // see lib/standardsFormsLetters.ts LETTER_SECTIONS
+  key            String
+  signerName     String
+  signerTitle    String?
+  signerMemberId String?
+  signerMember   Member?  @relation(fields: [signerMemberId], references: [id])
+  signedDate     String? // ISO "YYYY-MM-DD"
+  signatureImage String? // data URL (PNG)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([section, key])
+}
+
+// Manual self-attestation for checklist items with no backing data at
+// all — a screenshot, an external letter, or a National-verified credit
+// the chapter has nothing to submit for. `code` is the Chapter
+// Standards section+number (e.g. "H.4") — see
+// lib/chapterStandardsChecklist.ts for the full item list and which
+// ones actually use this vs. get auto-computed from real data.
+model ChecklistOverride {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  done      Boolean  @default(false)
+  note      String?
+  updatedAt DateTime @updatedAt
+}
