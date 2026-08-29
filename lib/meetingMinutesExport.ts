@@ -14,6 +14,7 @@ import {
   insertRunAfterLabel,
   replaceRunText,
 } from "@/lib/docxPatch";
+import { nextRelationshipId } from "@/lib/docxLetterhead";
 
 const TEMPLATE_PATH = path.join(process.cwd(), "lib/templates/meeting-minutes-template.docx");
 
@@ -34,6 +35,55 @@ export const ACTIVE_ROSTER_ROW_CAPACITY = 4;
 // Sisterhood," no "Commissioner of" prefix on several positions).
 const HEADING_ANCHORS: Record<OfficerPosition, string> = OFFICER_REPORT_TEMPLATE_LABELS;
 
+const GEORGIA_RPR = `<w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/>`;
+const HYPERLINK_RPR = `<w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/><w:color w:val="0563C1"/><w:u w:val="single"/>`;
+
+// Aug 2026 — "the link is still not clickable in the docx." Same URL
+// pattern as the on-screen linkify() in MeetingMinutesClient.tsx, so a
+// URL typed into a report/note becomes a real clickable link both on
+// the page and in the exported Word doc, not just one or the other.
+const URL_SPLIT_REGEX = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+const IS_URL = /^(https?:\/\/|www\.)/i;
+
+// Threaded through every paragraph builder below so a URL anywhere in a
+// report or note gets its own real OOXML hyperlink relationship — Word
+// hyperlinks need one <Relationship Type=".../hyperlink" TargetMode="External"/>
+// per link in word/_rels/document.xml.rels (see nextRelationshipId,
+// reused from lib/docxLetterhead.ts's identical need for signature
+// image relationships), referenced from the run via <w:hyperlink r:id>.
+interface RelsState {
+  relsXml: string;
+}
+
+// One run for a plain-text segment, or one <w:hyperlink> for a URL
+// segment — the run-level building block every paragraph is assembled
+// from below.
+function buildTextOrLinkRunXml(segment: string, rels: RelsState): string {
+  if (!IS_URL.test(segment)) {
+    return `<w:r><w:rPr>${GEORGIA_RPR}</w:rPr><w:t xml:space="preserve">${escapeXmlText(segment)}</w:t></w:r>`;
+  }
+  const target = segment.startsWith("www.") ? `https://${segment}` : segment;
+  const rId = nextRelationshipId(rels.relsXml);
+  rels.relsXml = rels.relsXml.replace(
+    "</Relationships>",
+    `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXmlText(target)}" TargetMode="External"/></Relationships>`
+  );
+  return (
+    `<w:hyperlink r:id="${rId}"><w:r><w:rPr>${HYPERLINK_RPR}</w:rPr>` +
+    `<w:t xml:space="preserve">${escapeXmlText(segment)}</w:t></w:r></w:hyperlink>`
+  );
+}
+
+// One line's worth of runs/hyperlinks — splits on URLs first, keeping
+// every plain-text piece (including surrounding whitespace) intact.
+function buildLineRunsXml(line: string, rels: RelsState): string {
+  return line
+    .split(URL_SPLIT_REGEX)
+    .filter((segment) => segment !== "")
+    .map((segment) => buildTextOrLinkRunXml(segment, rels))
+    .join("");
+}
+
 // Builds the <w:p>(s) for a submitted report — same list (numId=1) as
 // the officer headings, one level deeper (ilvl=2, which this template's
 // own numbering.xml defines as a plain decimal sub-list: "1.", "2.",
@@ -44,13 +94,13 @@ const HEADING_ANCHORS: Record<OfficerPosition, string> = OFFICER_REPORT_TEMPLATE
 // auto-numbering counts up "1., 2., 3., ..." per line, rather than one
 // numbered item containing every line glued together with manual line
 // breaks (blank lines are dropped rather than each eating a number).
-function buildReportParagraphXml(text: string): string {
+function buildReportParagraphXml(text: string, rels: RelsState): string {
   const lines = text
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  if (lines.length === 0) return buildListParagraphXml(text, 2);
-  return lines.map((line) => buildListParagraphXml(line, 2)).join("");
+  if (lines.length === 0) return buildListParagraphXml(text, 2, rels);
+  return lines.map((line) => buildListParagraphXml(line, 2, rels)).join("");
 }
 
 // Same shape as buildReportParagraphXml, generalized to any list level
@@ -60,16 +110,17 @@ function buildReportParagraphXml(text: string): string {
 // ilvl=1 — see buildMeetingMinutesDocx below). This template's own
 // indent per level, read straight from its XML: ilvl 0 -> 720 twips,
 // 1 -> 1440, 2 -> 2160 (720 * (ilvl+1), always w:hanging="360").
-function buildListParagraphXml(text: string, ilvl: number): string {
+function buildListParagraphXml(text: string, ilvl: number, rels: RelsState): string {
   const indentTwips = 720 * (ilvl + 1);
-  const lines = text.split("\n").map((line) => escapeXmlText(line));
-  const runInner = lines.map((line) => `<w:t xml:space="preserve">${line}</w:t>`).join("<w:br/>");
+  const lines = text.split("\n");
+  const runInner = lines
+    .map((line, i) => (i > 0 ? `<w:r><w:rPr>${GEORGIA_RPR}</w:rPr><w:br/></w:r>` : "") + buildLineRunsXml(line, rels))
+    .join("");
   return (
     `<w:p><w:pPr><w:pageBreakBefore w:val="0"/><w:numPr><w:ilvl w:val="${ilvl}"/><w:numId w:val="1"/></w:numPr>` +
     `<w:ind w:left="${indentTwips}" w:hanging="360"/>` +
-    `<w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/></w:rPr></w:pPr>` +
-    `<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/></w:rPr>` +
-    `${runInner}</w:r></w:p>`
+    `<w:rPr>${GEORGIA_RPR}</w:rPr></w:pPr>` +
+    `${runInner}</w:p>`
   );
 }
 
@@ -91,6 +142,7 @@ export async function buildMeetingMinutesDocx(
   const templateBuffer = await fs.readFile(TEMPLATE_PATH);
   const zip = await JSZip.loadAsync(templateBuffer);
   let xml = await readEntry(zip, "word/document.xml");
+  const rels: RelsState = { relsXml: await readEntry(zip, "word/_rels/document.xml.rels") };
 
   if (meeting.date) {
     const dateRun = `<w:r><w:rPr><w:rtl w:val="0"/></w:rPr><w:t xml:space="preserve">${escapeXmlText(
@@ -142,7 +194,7 @@ export async function buildMeetingMinutesDocx(
     // load-bearing as it was for the other template, but keeping insert
     // before fill avoids re-deriving that guarantee here too.
     const report = reportsByPosition.get(position)?.trim();
-    const paragraphXml = buildReportParagraphXml(report || "No report submitted.");
+    const paragraphXml = buildReportParagraphXml(report || "No report submitted.", rels);
     xml = insertParagraphsAfter(xml, anchor, paragraphXml);
 
     const holders = findRoleHolderNames(members, position);
@@ -165,27 +217,28 @@ export async function buildMeetingMinutesDocx(
   }
   const actionItems = notesByCategory.get("ACTION_ITEM") ?? [];
   if (actionItems.length > 0) {
-    xml = insertParagraphsAfter(xml, "Action Items", actionItems.map((t) => buildListParagraphXml(t, 2)).join(""));
+    xml = insertParagraphsAfter(xml, "Action Items", actionItems.map((t) => buildListParagraphXml(t, 2, rels)).join(""));
   }
   const oldBusiness = notesByCategory.get("OLD_BUSINESS") ?? [];
   if (oldBusiness.length > 0) {
-    xml = insertParagraphsAfter(xml, "Old Business", oldBusiness.map((t) => buildListParagraphXml(t, 1)).join(""));
+    xml = insertParagraphsAfter(xml, "Old Business", oldBusiness.map((t) => buildListParagraphXml(t, 1, rels)).join(""));
   }
   const reminders = notesByCategory.get("REMINDER") ?? [];
   if (reminders.length > 0) {
     xml = replaceRunText(xml, "Reminders: N/A", "Reminders:");
-    xml = insertParagraphsAfter(xml, "Reminders:", reminders.map((t) => buildListParagraphXml(t, 1)).join(""));
+    xml = insertParagraphsAfter(xml, "Reminders:", reminders.map((t) => buildListParagraphXml(t, 1, rels)).join(""));
   }
   const announcements = notesByCategory.get("ANNOUNCEMENT") ?? [];
   if (announcements.length > 0) {
     xml = insertParagraphsAfter(
       xml,
       "Announcements: ",
-      announcements.map((t) => buildListParagraphXml(t, 1)).join("")
+      announcements.map((t) => buildListParagraphXml(t, 1, rels)).join("")
     );
   }
 
   zip.file("word/document.xml", xml);
+  zip.file("word/_rels/document.xml.rels", rels.relsXml);
 
   return zip.generateAsync({
     type: "uint8array",
