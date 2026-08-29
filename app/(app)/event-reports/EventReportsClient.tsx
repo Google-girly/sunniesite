@@ -79,6 +79,28 @@ export function EventReportsClient({
 
   const selectedStandard = form.standardSection ? findStandardOption(form.standardSection) : undefined;
 
+  // Aug 2026 — "import answers from past event reports... in the
+  // hosting organization and location." Most events repeat (same venue,
+  // same hosting org) from one report to the next, so rather than
+  // building a whole separate "copy from a past report" picker, every
+  // distinct value already on file suggests itself as you type — native
+  // <datalist> autocomplete, not a fixed dropdown, so a first-time value
+  // still works exactly like free text.
+  const pastHostingOrganizations = useMemo(() => {
+    const values = reports.map((r) => r.hostingOrganization).filter((v): v is string => Boolean(v?.trim()));
+    return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+  }, [reports]);
+  const pastLocations = useMemo(() => {
+    const values = reports.map((r) => r.location).filter((v): v is string => Boolean(v?.trim()));
+    return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+  }, [reports]);
+
+  // Aug 2026 — "save event forms as drafts for everyone to see." Only
+  // these two are required to save a draft (mirrors
+  // lib/eventReports.ts parseEventReportInput's isDraft branch) —
+  // everything else can come later.
+  const draftFilled = Boolean(form.standardSection) && Boolean(form.eventName.trim());
+
   // Aug 2026: "Make everything in the event report required" — mirrors
   // lib/eventReports.ts parseEventReportInput's required set exactly.
   const requiredFilled =
@@ -185,7 +207,7 @@ export function EventReportsClient({
     setSaveSignature(false);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: { preventDefault: () => void }, isDraft: boolean = false) {
     e.preventDefault();
     setSaving(true);
     setError(null);
@@ -197,14 +219,20 @@ export function EventReportsClient({
       body: JSON.stringify({
         standardSection: form.standardSection,
         eventName: form.eventName,
+        // Aug 2026 — Save as Draft skips every other field's validation
+        // (see lib/eventReports.ts) and just stores whatever's filled in
+        // so far; the normal Create/Save button always finalizes
+        // (isDraft: false), even when editing a report that started as
+        // a draft.
+        isDraft,
         hostingOrganization: form.hostingOrganization || undefined,
-        date: form.date,
+        date: form.date || undefined,
         lengthOfTime: form.lengthOfTime || undefined,
         location: form.location || undefined,
         membersInAttendance: form.membersInAttendance ? Number(form.membersInAttendance) : undefined,
-        purpose: form.purpose,
+        purpose: form.purpose || undefined,
         resourcesUtilized: form.resourcesUtilized || undefined,
-        signerName: form.signerName,
+        signerName: form.signerName || undefined,
         signerTitle: form.signerTitle || undefined,
         signerMemberId: form.signerMemberId || undefined,
         signedDate: form.signedDate || undefined,
@@ -303,8 +331,15 @@ export function EventReportsClient({
               value={form.hostingOrganization}
               onChange={(e) => update("hostingOrganization", e.target.value)}
               className={inputClass}
+              list="hosting-organization-options"
+              autoComplete="off"
               required
             />
+            <datalist id="hosting-organization-options">
+              {pastHostingOrganizations.map((v) => (
+                <option key={v} value={v} />
+              ))}
+            </datalist>
           </div>
           <div>
             <label className={labelClass}>
@@ -314,8 +349,15 @@ export function EventReportsClient({
               value={form.location}
               onChange={(e) => update("location", e.target.value)}
               className={inputClass}
+              list="location-options"
+              autoComplete="off"
               required
             />
+            <datalist id="location-options">
+              {pastLocations.map((v) => (
+                <option key={v} value={v} />
+              ))}
+            </datalist>
           </div>
 
           <div>
@@ -491,14 +533,23 @@ export function EventReportsClient({
             )}
           </div>
 
-          <div className="sm:col-span-2">
-            {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+          <div className="sm:col-span-2 flex items-center gap-3">
+            {error && <p className="mb-2 w-full text-sm text-red-600">{error}</p>}
             <button
               type="submit"
               disabled={saving || !requiredFilled}
               className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? "Saving..." : editingId ? "Save Changes" : "Create Event Report"}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              disabled={saving || !draftFilled}
+              className="rounded-md border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Save with just the Standard and Event Name filled in — finish the rest later. Visible to everyone, same as a finished report."
+            >
+              {saving ? "Saving..." : "Save as Draft"}
             </button>
           </div>
         </form>
@@ -525,17 +576,30 @@ export function EventReportsClient({
             )}
             {reports.map((r) => (
               <tr key={r.id}>
-                <td className={`${td} font-medium text-stone-900`}>{r.date}</td>
-                <td className={td}>{r.eventName}</td>
+                <td className={`${td} font-medium text-stone-900`}>{r.date || "—"}</td>
+                <td className={td}>
+                  {r.eventName}
+                  {r.isDraft && (
+                    <span className="ml-1.5 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                      Draft
+                    </span>
+                  )}
+                </td>
                 <td className={`${td} text-stone-600`}>{standardLabel(r.standardSection)}</td>
-                <td className={`${td} text-stone-600`}>{r.signerName}</td>
+                <td className={`${td} text-stone-600`}>{r.signerName || "—"}</td>
                 <td className={`${td} whitespace-nowrap text-right`}>
-                  <a
-                    href={`/api/event-reports/export/${r.id}`}
-                    className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
-                  >
-                    Export
-                  </a>
+                  {r.isDraft ? (
+                    <span className="text-sm text-stone-400" title="Finish and save before exporting.">
+                      Export
+                    </span>
+                  ) : (
+                    <a
+                      href={`/api/event-reports/export/${r.id}`}
+                      className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
+                    >
+                      Export
+                    </a>
+                  )}
                   {canEdit(r) && (
                     <button
                       onClick={() => startEdit(r)}

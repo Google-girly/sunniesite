@@ -244,6 +244,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
             {member.nickname ? `"${member.nickname}" · ` : ""}
             {member.class ? `${member.class} Class` : "No class on file"}
             {member.crossingNumber != null ? `, #${member.crossingNumber}` : ""}
+            {member.phone ? ` · ${member.phone}` : ""}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4 rounded-lg border border-stone-200 bg-white px-5 py-3 text-center">

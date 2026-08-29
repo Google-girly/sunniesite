@@ -660,6 +660,12 @@ model EventReport {
   id                  String  @id @default(cuid())
   standardSection     String // e.g. "C.1" — see lib/eventReports.ts EVENT_REPORT_STANDARDS
   eventName           String
+  // Aug 2026 — "save event forms as drafts for everyone to see." A draft
+  // only needs standardSection + eventName; every other field below can
+  // sit blank until it's finished (see lib/eventReports.ts
+  // parseEventReportInput's isDraft branch) — same open visibility as a
+  // finished report, just a lighter completeness bar.
+  isDraft             Boolean @default(false)
   hostingOrganization String?
   date                String // ISO "YYYY-MM-DD"
   lengthOfTime        String?

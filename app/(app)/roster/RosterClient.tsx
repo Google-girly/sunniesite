@@ -14,6 +14,7 @@ interface FormValues {
   class: string;
   crossingNumber: string;
   nickname: string;
+  phone: string;
 }
 
 const EMPTY_FORM: FormValues = {
@@ -24,6 +25,7 @@ const EMPTY_FORM: FormValues = {
   class: "",
   crossingNumber: "",
   nickname: "",
+  phone: "",
 };
 
 function memberToForm(member: Member): FormValues {
@@ -37,6 +39,7 @@ function memberToForm(member: Member): FormValues {
     class: member.class ?? "",
     crossingNumber: member.crossingNumber != null ? String(member.crossingNumber) : "",
     nickname: member.nickname ?? "",
+    phone: member.phone ?? "",
   };
 }
 
@@ -266,6 +269,15 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
             />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-stone-600">Phone</label>
+            <input
+              type="tel"
+              value={addForm.phone}
+              onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+            />
+          </div>
 
           <div className="sm:col-span-2 lg:col-span-5">
             {addError && <p className="mb-2 text-sm text-red-600">{addError}</p>}
@@ -293,6 +305,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
                 "Status",
                 "Crossing Term",
                 "Email",
+                "Phone",
                 "",
               ].map((h) => (
                 <th
@@ -307,7 +320,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           <tbody className="divide-y divide-stone-100">
             {members.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-stone-400">
+                <td colSpan={10} className="px-4 py-8 text-center text-stone-400">
                   No members yet. Add the first one above.
                 </td>
               </tr>
@@ -396,6 +409,16 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
                         className="w-full rounded-md border border-stone-300 px-2 py-1 text-sm"
                       />
                     </td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="tel"
+                        value={editForm.phone}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, phone: e.target.value })
+                        }
+                        className="w-full rounded-md border border-stone-300 px-2 py-1 text-sm"
+                      />
+                    </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       <div className="flex flex-col items-end gap-1">
                         <div className="flex gap-2">
@@ -441,6 +464,9 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
                   </td>
                   <td className="px-4 py-2.5 text-stone-600">
                     {member.email || "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-stone-600">
+                    {member.phone || "—"}
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
                     <Link

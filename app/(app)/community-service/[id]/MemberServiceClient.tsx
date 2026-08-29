@@ -429,7 +429,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-              Survivor Support
+              Sexual Assault Awareness
             </p>
             <p className="mt-1 text-lg font-semibold text-stone-900">
               {totals.survivorSupport}/{SURVIVOR_SUPPORT_HOURS_REQUIRED}

@@ -11,6 +11,16 @@
 export const WEEKLY_HOURS_REQUIRED = 6;
 export const WEEKLY_COMPLETION_THRESHOLD = 0.8; // 80% of members must complete every week
 
+// Study Hours tracking itself only started this week (Aug 2026 — "the
+// study hours start this week with the 24th being the first day").
+// Chapter Standards' requirement predates that, but nobody was logging
+// sessions before now, so counting the term's earlier weeks (Fall
+// starts Aug 1 — see currentTermRange below) as "not completed" against
+// every member from day one would be penalizing weeks that were never
+// actually being tracked. calculateWeeklyCompletion clamps to this date
+// even if the term's own range starts earlier.
+export const STUDY_HOURS_TRACKING_START = "2026-08-24";
+
 export interface StudyHourEntryLike {
   date: string; // ISO "YYYY-MM-DD"
   hours: number;
@@ -64,10 +74,13 @@ export function calculateWeeklyCompletion(
   termStart: string,
   termEnd: string
 ): WeeklyCompletion {
-  const weeks = weeksInRange(termStart, termEnd);
+  // Clamp to when tracking actually started — see
+  // STUDY_HOURS_TRACKING_START above.
+  const effectiveStart = termStart < STUDY_HOURS_TRACKING_START ? STUDY_HOURS_TRACKING_START : termStart;
+  const weeks = weeksInRange(effectiveStart, termEnd);
   const totalsByWeek = new Map<string, number>();
   for (const entry of entries) {
-    if (entry.date < termStart || entry.date > termEnd) continue;
+    if (entry.date < effectiveStart || entry.date > termEnd) continue;
     const key = weekStart(entry.date);
     totalsByWeek.set(key, (totalsByWeek.get(key) ?? 0) + entry.hours);
   }

@@ -13,7 +13,10 @@ export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
 
 export const SERVICE_CATEGORY_LABELS: Record<ServiceCategory, string> = {
   PHILANTHROPY: "Philanthropy",
-  SURVIVOR_SUPPORT: "Survivor Support",
+  // Aug 2026 — displayed label only; the stored category value stays
+  // SURVIVOR_SUPPORT (renaming that would mean backfilling every
+  // existing ServiceHourEntry row for no functional reason).
+  SURVIVOR_SUPPORT: "Sexual Assault Awareness",
   GENERAL: "General",
 };
 

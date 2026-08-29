@@ -283,7 +283,7 @@ export function StudyHoursClient({
         <table className="min-w-full divide-y divide-stone-200 text-sm">
           <thead className="bg-stone-50">
             <tr>
-              {["Name", "Status", "Weekly Completion", "Total Hours", ""].map((h) => (
+              {["Name", "Phone", "Status", "Weekly Completion", "Total Hours", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500"
@@ -296,7 +296,7 @@ export function StudyHoursClient({
           <tbody className="divide-y divide-stone-100">
             {withCompletion.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-stone-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-stone-400">
                   No Active/Inactive members on the roster yet.
                 </td>
               </tr>
@@ -305,6 +305,7 @@ export function StudyHoursClient({
             {withCompletion.map(({ member, completion, total }) => (
               <tr key={member.id}>
                 <td className="px-4 py-2.5 font-medium text-stone-900">{member.name}</td>
+                <td className="px-4 py-2.5 text-stone-600">{member.phone || "—"}</td>
                 <td className="px-4 py-2.5">
                   {completion.percentage >= WEEKLY_COMPLETION_THRESHOLD * 100 ? (
                     <span className="inline-block rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">

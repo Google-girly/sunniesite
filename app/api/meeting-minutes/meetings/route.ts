@@ -14,7 +14,9 @@ export async function GET(request: Request) {
   }
   const meetings = await prisma.meeting.findMany({
     where: { scheduleId },
-    orderBy: { date: "desc" },
+    // Most recent/soonest first, farthest-out last (Aug 2026) — matches
+    // the series detail page's own initial ordering.
+    orderBy: { date: "asc" },
   });
   return NextResponse.json(meetings);
 }

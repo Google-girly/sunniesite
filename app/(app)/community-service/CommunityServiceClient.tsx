@@ -306,7 +306,7 @@ export function CommunityServiceClient({
         <table className="min-w-full divide-y divide-stone-200 text-sm">
           <thead className="bg-stone-50">
             <tr>
-              {["Name", "Status", "Total", "Philanthropy", "Survivor Support", ""].map((h) => (
+              {["Name", "Status", "Total", "Philanthropy", "Sexual Assault Awareness", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500"

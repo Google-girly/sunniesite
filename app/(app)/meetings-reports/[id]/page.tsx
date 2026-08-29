@@ -24,7 +24,11 @@ export default async function MeetingScheduleDetailPage({
 
   const meetings = await prisma.meeting.findMany({
     where: { scheduleId: id },
-    orderBy: { date: "desc" },
+    // Most recent/soonest first, farthest-out last (Aug 2026 — "the
+    // chapter meetings are supposed to go from most recent to farthest
+    // out"), same as the Meeting Minutes list — see
+    // app/(app)/meetings-reports/minutes/page.tsx.
+    orderBy: { date: "asc" },
   });
 
   return <MeetingScheduleDetailClient schedule={schedule} initialMeetings={meetings} canManage={canManage} />;

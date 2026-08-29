@@ -28,6 +28,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     class?: string | null;
     crossingNumber?: number | null;
     nickname?: string | null;
+    phone?: string | null;
   } = {};
 
   if (typeof body.name === "string") {
@@ -48,6 +49,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
   if (typeof body.class === "string") data.class = body.class.trim() || null;
   if (typeof body.nickname === "string") data.nickname = body.nickname.trim() || null;
+  if (typeof body.phone === "string") data.phone = body.phone.trim() || null;
   if ("crossingNumber" in body) {
     if (body.crossingNumber === null || body.crossingNumber === "") {
       data.crossingNumber = null;

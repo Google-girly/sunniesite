@@ -44,9 +44,15 @@ export function ChecklistDocumentsSection({ initialDocuments }: { initialDocumen
   const [documents, setDocuments] = useState(initialDocuments);
   const [code, setCode] = useState("General");
   const [label, setLabel] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  // Aug 2026 — "upload multiple pdfs for one chapter standard." A code
+  // already supported more than one document (no unique constraint —
+  // see prisma/schema.prisma ChecklistDocument), the file picker just
+  // only ever took one at a time; this lets one selection cover several,
+  // uploaded one request at a time under the same Credit + Label.
+  const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const grouped = useMemo(() => {
@@ -61,34 +67,47 @@ export function ChecklistDocumentsSection({ initialDocuments }: { initialDocumen
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!file) {
-      setError("Choose a file.");
+    if (files.length === 0) {
+      setError("Choose at least one file.");
       return;
     }
-    if (file.size > MAX_DOCUMENT_BYTES) {
-      setError(`That file is too large — max ${MAX_DOCUMENT_BYTES / 1024 / 1024}MB.`);
+    const tooBig = files.find((f) => f.size > MAX_DOCUMENT_BYTES);
+    if (tooBig) {
+      setError(`"${tooBig.name}" is too large — max ${MAX_DOCUMENT_BYTES / 1024 / 1024}MB.`);
       return;
     }
     setSaving(true);
     setError(null);
+    setUploadProgress({ done: 0, total: files.length });
+    // One request at a time, not Promise.all — same reasoning as the
+    // Budgets "Import from Tentative Budget" flow: keeps failures
+    // attributable to a specific file, and this is a handful of files at
+    // chapter scale, not a bulk operation worth parallelizing.
+    const uploaded: DocumentRow[] = [];
     try {
-      const fileData = await readFileAsDataUrl(file);
-      const res = await fetch("/api/standards/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, label: label.trim(), fileName: file.name, fileData }),
-      });
-      if (!res.ok) {
-        setError(await parseError(res));
-        return;
+      for (const f of files) {
+        const fileData = await readFileAsDataUrl(f);
+        const res = await fetch("/api/standards/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, label: label.trim(), fileName: f.name, fileData }),
+        });
+        if (!res.ok) {
+          setError(`"${f.name}": ${await parseError(res)}`);
+          return;
+        }
+        uploaded.push(await res.json());
+        setUploadProgress({ done: uploaded.length, total: files.length });
       }
-      const created: DocumentRow = await res.json();
-      setDocuments((prev) => [created, ...prev]);
       setLabel("");
-      setFile(null);
+      setFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } finally {
+      if (uploaded.length > 0) {
+        setDocuments((prev) => [...uploaded.reverse(), ...prev]);
+      }
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -133,22 +152,35 @@ export function ChecklistDocumentsSection({ initialDocuments }: { initialDocumen
         </div>
         <div>
           <label className={labelClass}>
-            File <span className="text-burgundy-500">*</span>
+            File{files.length > 1 ? "s" : ""} <span className="text-burgundy-500">*</span>{" "}
+            <span className="text-stone-400">(one credit can have several)</span>
           </label>
           <input
             ref={fileInputRef}
             type="file"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            multiple
+            onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
             className={`${inputClass} py-1`}
           />
+          {files.length > 1 && (
+            <p className="mt-1 text-xs text-stone-500">
+              {files.length} files selected — all get the same Credit and Label above.
+            </p>
+          )}
         </div>
         <div className="flex items-end">
           <button
             type="submit"
-            disabled={saving || !label.trim() || !file}
+            disabled={saving || !label.trim() || files.length === 0}
             className="w-full rounded-md bg-burgundy-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? "Uploading..." : "Upload"}
+            {saving
+              ? uploadProgress
+                ? `Uploading ${uploadProgress.done}/${uploadProgress.total}...`
+                : "Uploading..."
+              : files.length > 1
+                ? `Upload (${files.length})`
+                : "Upload"}
           </button>
         </div>
         {error && <p className="sm:col-span-4 text-sm text-red-600">{error}</p>}

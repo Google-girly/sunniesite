@@ -74,10 +74,18 @@ export async function buildStudyHoursWorkbook(
 
     for (let c = 0; c < chunks.length; c++) {
       let sheetXml = baseXml;
+      // Aug 2026 — "for the study hours ... can you add [phone numbers]
+      // to the sheet." The real template has no dedicated Phone cell, so
+      // it rides along on the same "Name: ..." line rather than
+      // fabricating a new cell the template's own layout doesn't have
+      // room/styling for.
       sheetXml = patchCells(sheetXml, [
         { ref: "A6", value: "Chapter: Theta" },
         { ref: "B6", value: `Term: ${term}` },
-        { ref: "A7", value: `Name: ${member.name}` },
+        {
+          ref: "A7",
+          value: `Name: ${member.name}${member.phone ? `   Phone: ${member.phone}` : ""}`,
+        },
       ]);
 
       chunks[c].forEach((entry, i) => {

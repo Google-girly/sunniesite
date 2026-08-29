@@ -108,7 +108,13 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
   { code: "G.1", section: "Finances", title: "Chapter Dues", level: "Obligatory", kind: "verified", note: "Verified by the National VP of Finance." },
   { code: "G.2", section: "Finances", title: "Financial Audit", level: "Obligatory", kind: "manual", href: "/finances", note: "Print out the Financial Books \"Summary\" tab (Export Financial Books on Chapter Finances) once submitted." },
   { code: "G.3", section: "Finances", title: "Member Accounts", level: "Required", kind: "linked", href: "/fines", statusKey: "memberAccounts" },
+  // Aug 2026 — "review all of the requirements": G.4 and G.6 were both
+  // missing entirely (the real PDF's Section G actually runs G.1-G.6,
+  // not G.1-G.3 + G.5 — confirmed against "Chapter Standards Approved
+  // 08-2026.pdf").
+  { code: "G.4", section: "Finances", title: "Chapter Account", level: "Required", kind: "linked", href: "/finances", statusKey: "chapterAccount", note: "The Chapter's own functioning account (campus or off-campus) — Chapter Finances' fund entries, balance as of June." },
   { code: "G.5", section: "Finances", title: "Budgeting", level: "Required", kind: "linked", href: "/budgets", statusKey: "budgeting" },
+  { code: "G.6", section: "Finances", title: "Expense Reports", level: "Required", kind: "manual", href: "/finances", note: "Projected vs. actual expense reports each quarter/semester and for the year, signed by the Treasurer — no dedicated page generates this yet; compile it from Chapter Finances." },
 
   // --- H. External Relations ---
   { code: "H.1", section: "External Relations", title: "Inter-Chapter Support", level: "Required", kind: "linked", href: "/event-reports", statusKey: "eventReport:H.1" },

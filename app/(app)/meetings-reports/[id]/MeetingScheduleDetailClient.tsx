@@ -92,7 +92,9 @@ export function MeetingScheduleDetailClient({
       return;
     }
     const created = await res.json();
-    setMeetings((prev) => [created, ...prev]);
+    // Keep ascending-by-date order (see page.tsx) rather than always
+    // jumping the new row to the top.
+    setMeetings((prev) => [...prev, created].sort((a, b) => a.date.localeCompare(b.date)));
   }
 
   async function handleDeleteMeeting(id: string) {

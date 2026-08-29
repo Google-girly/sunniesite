@@ -44,6 +44,8 @@ export async function POST(request: Request) {
     typeof body?.nickname === "string" && body.nickname.trim()
       ? body.nickname.trim()
       : null;
+  const phone =
+    typeof body?.phone === "string" && body.phone.trim() ? body.phone.trim() : null;
   let crossingNumber: number | null = null;
   if (body?.crossingNumber !== undefined && body?.crossingNumber !== null && body?.crossingNumber !== "") {
     const n = Number(body.crossingNumber);
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
       class: memberClass,
       crossingNumber,
       nickname,
+      phone,
     },
   });
 

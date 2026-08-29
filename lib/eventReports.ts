@@ -172,15 +172,19 @@ export function standardLabel(value: string): string {
 
 // Every field is required (Aug 2026) except signerMemberId — the signer
 // isn't always someone on Roster (see EVENT_REPORT_STANDARDS
-// signerHints, e.g. a Greek Life advisor or presenter).
+// signerHints, e.g. a Greek Life advisor or presenter) — UNLESS isDraft
+// is set (Aug 2026 — "save event forms as drafts for everyone to see"),
+// in which case only standardSection/eventName are required and
+// everything else is whatever's been filled in so far.
 export interface EventReportInput {
   standardSection: string;
   eventName: string;
+  isDraft: boolean;
   hostingOrganization: string;
   date: string;
   lengthOfTime: string;
   location: string;
-  membersInAttendance: number;
+  membersInAttendance: number | null;
   purpose: string;
   resourcesUtilized: string;
   signerName: string;
@@ -195,15 +199,21 @@ export interface EventReportInput {
 // than two copies drifting apart.
 //
 // Aug 2026: "Make everything in the event report required" — every
-// field on the real form is now required, not just the original five
-// (standardSection/eventName/date/purpose/signerName). See
+// field on the real form is required, not just the original five
+// (standardSection/eventName/date/purpose/signerName) — UNLESS this is
+// a draft (`body.isDraft === true`), which only enforces those original
+// two identifying fields (standardSection/eventName) and stores
+// whatever else was actually filled in, blank otherwise. See
 // app/(app)/event-reports/EventReportsClient.tsx for the matching UI
-// (required markers + a disabled submit until every field is filled).
+// (required markers + a disabled Create button until every field is
+// filled, alongside an always-available Save as Draft button gated only
+// on those two).
 export function parseEventReportInput(body: unknown): { data: EventReportInput } | { error: string } {
   if (!body || typeof body !== "object") {
     return { error: "Invalid request body." };
   }
   const b = body as Record<string, unknown>;
+  const isDraft = b.isDraft === true;
 
   const standardSection = typeof b.standardSection === "string" ? b.standardSection.trim() : "";
   if (!isEventReportStandard(standardSection)) {
@@ -214,51 +224,51 @@ export function parseEventReportInput(body: unknown): { data: EventReportInput }
     return { error: "Event name is required." };
   }
   const hostingOrganization = typeof b.hostingOrganization === "string" ? b.hostingOrganization.trim() : "";
-  if (!hostingOrganization) {
+  if (!isDraft && !hostingOrganization) {
     return { error: "Hosting Organization is required." };
   }
   const date = typeof b.date === "string" ? b.date.trim() : "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (!isDraft && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return { error: "A valid event date is required." };
   }
   const lengthOfTime = typeof b.lengthOfTime === "string" ? b.lengthOfTime.trim() : "";
-  if (!lengthOfTime) {
+  if (!isDraft && !lengthOfTime) {
     return { error: "Length of Time is required." };
   }
   const location = typeof b.location === "string" ? b.location.trim() : "";
-  if (!location) {
+  if (!isDraft && !location) {
     return { error: "Location is required." };
   }
   const membersInAttendance =
     typeof b.membersInAttendance === "number" && Number.isFinite(b.membersInAttendance)
       ? Math.max(0, Math.trunc(b.membersInAttendance))
       : null;
-  if (membersInAttendance === null) {
+  if (!isDraft && membersInAttendance === null) {
     return { error: "Number of Members in Attendance is required." };
   }
   const purpose = typeof b.purpose === "string" ? b.purpose.trim() : "";
-  if (!purpose) {
+  if (!isDraft && !purpose) {
     return { error: "Purpose and description of the event is required." };
   }
   const resourcesUtilized = typeof b.resourcesUtilized === "string" ? b.resourcesUtilized.trim() : "";
-  if (!resourcesUtilized) {
+  if (!isDraft && !resourcesUtilized) {
     return { error: "Resources utilized in event is required." };
   }
   const signerName = typeof b.signerName === "string" ? b.signerName.trim() : "";
-  if (!signerName) {
+  if (!isDraft && !signerName) {
     return { error: "A signer name is required." };
   }
   const signerTitle = typeof b.signerTitle === "string" ? b.signerTitle.trim() : "";
-  if (!signerTitle) {
+  if (!isDraft && !signerTitle) {
     return { error: "Title/Office is required." };
   }
   const signedDate = typeof b.signedDate === "string" ? b.signedDate.trim() : "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(signedDate)) {
+  if (!isDraft && !/^\d{4}-\d{2}-\d{2}$/.test(signedDate)) {
     return { error: "A valid Signed Date is required." };
   }
   const signatureImage =
     typeof b.signatureImage === "string" && b.signatureImage.startsWith("data:image/") ? b.signatureImage : "";
-  if (!signatureImage) {
+  if (!isDraft && !signatureImage) {
     return { error: "A signature is required — per Chapter Standards §I.3, a typed name alone isn't acceptable." };
   }
 
@@ -266,6 +276,7 @@ export function parseEventReportInput(body: unknown): { data: EventReportInput }
     data: {
       standardSection,
       eventName,
+      isDraft,
       hostingOrganization,
       date,
       lengthOfTime,
