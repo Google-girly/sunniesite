@@ -45,16 +45,29 @@ function ChecklistRow({
   item,
   hasData,
   confirmed,
+  documentCount,
   onToggle,
 }: {
   item: ChecklistItem;
   hasData: boolean;
   confirmed: boolean;
+  /** How many files are attached via the Documents section above — see app/(app)/standards-forms/ChecklistDocumentsSection.tsx. */
+  documentCount: number;
   onToggle?: (code: string, checked: boolean) => void;
 }) {
   return (
     <tr>
-      <td className="px-3 py-2 text-sm font-medium text-stone-900">{item.code}</td>
+      <td className="px-3 py-2 text-sm font-medium text-stone-900">
+        {item.code}
+        {documentCount > 0 && (
+          <span
+            className="ml-1.5 inline-flex items-center rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-semibold text-stone-500"
+            title={`${documentCount} document${documentCount === 1 ? "" : "s"} uploaded`}
+          >
+            📎{documentCount}
+          </span>
+        )}
+      </td>
       <td className="px-3 py-2 text-sm text-stone-900">
         {item.title}
         {item.note && <p className="mt-0.5 text-xs text-stone-400">{item.note}</p>}
@@ -95,9 +108,12 @@ function ChecklistRow({
 export function ChapterStandardsChecklistClient({
   statuses,
   initialOverrides,
+  documentCounts,
 }: {
   statuses: Record<string, boolean>;
   initialOverrides: ChecklistOverride[];
+  /** code -> how many files are attached, from the Documents section above. */
+  documentCounts: Record<string, number>;
 }) {
   const [overrides, setOverrides] = useState(
     new Map(initialOverrides.map((o) => [o.code, o]))
@@ -185,6 +201,7 @@ export function ChapterStandardsChecklistClient({
                       item={item}
                       hasData={hasData(item)}
                       confirmed={isDone(item)}
+                      documentCount={documentCounts[item.code] ?? 0}
                       onToggle={handleToggle}
                     />
                   ))}

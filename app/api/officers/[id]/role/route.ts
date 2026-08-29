@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requirePresidentApi } from "@/lib/session";
+import { requireEditPositionsApi } from "@/lib/session";
 import { OFFICER_POSITIONS } from "@/lib/positions";
 import { serializeRoles } from "@/lib/roster";
 
@@ -9,10 +9,11 @@ interface RouteParams {
 }
 
 // The ONLY route that can change a member's position(s) — see
-// lib/permissions.ts. Roster's own PATCH deliberately never touches
+// lib/permissions.ts. President, VP, or VP of Communications (Aug 2026
+// — was President-only). Roster's own PATCH deliberately never touches
 // `role`, even for whoever owns Roster.
 export async function PATCH(request: Request, { params }: RouteParams) {
-  const access = await requirePresidentApi();
+  const access = await requireEditPositionsApi();
   if ("error" in access) return access.error;
 
   const { id } = await params;

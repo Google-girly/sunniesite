@@ -80,7 +80,16 @@ function InviteSection() {
   );
 }
 
-function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Member) => void }) {
+function OfficerRow({
+  member,
+  onUpdated,
+  canManageLogins,
+}: {
+  member: Member;
+  onUpdated: (m: Member) => void;
+  /** Setting/revoking a password is President-only, even now that positions are editable by VP/VP Comms too. */
+  canManageLogins: boolean;
+}) {
   const [roles, setRoles] = useState<string[]>(parseRoles(member.role));
   const [savingRoles, setSavingRoles] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
@@ -171,33 +180,46 @@ function OfficerRow({ member, onUpdated }: { member: Member; onUpdated: (m: Memb
         </div>
       </td>
       <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <PasswordInput
-            value={password}
-            onChange={setPassword}
-            placeholder={hasLogin ? "New password" : "Set a password"}
-            inputClassName="w-48 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
-          />
-          <button
-            onClick={setMemberPassword}
-            disabled={savingPassword || password.length === 0}
-            className="rounded-md border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {savingPassword ? "Saving..." : "Set"}
-          </button>
-          {hasLogin && (
-            <button onClick={revokeLogin} className="text-xs font-medium text-stone-400 hover:text-red-600">
-              Revoke
-            </button>
-          )}
-        </div>
-        {passwordError && <p className="mt-1 text-xs text-red-600">{passwordError}</p>}
+        {!canManageLogins ? (
+          <p className="text-xs text-stone-400">Only the President can set/revoke logins.</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <PasswordInput
+                value={password}
+                onChange={setPassword}
+                placeholder={hasLogin ? "New password" : "Set a password"}
+                inputClassName="w-48 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+              />
+              <button
+                onClick={setMemberPassword}
+                disabled={savingPassword || password.length === 0}
+                className="rounded-md border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingPassword ? "Saving..." : "Set"}
+              </button>
+              {hasLogin && (
+                <button onClick={revokeLogin} className="text-xs font-medium text-stone-400 hover:text-red-600">
+                  Revoke
+                </button>
+              )}
+            </div>
+            {passwordError && <p className="mt-1 text-xs text-red-600">{passwordError}</p>}
+          </>
+        )}
       </td>
     </tr>
   );
 }
 
-export function OfficersClient({ initialMembers }: { initialMembers: Member[] }) {
+export function OfficersClient({
+  initialMembers,
+  canManageLogins,
+}: {
+  initialMembers: Member[];
+  /** President-only, even though position editing itself is now open to VP/VP Comms too — see app/(app)/officers/page.tsx. */
+  canManageLogins: boolean;
+}) {
   const [members, setMembers] = useState(initialMembers);
 
   function handleUpdated(updated: Member) {
@@ -206,7 +228,7 @@ export function OfficersClient({ initialMembers }: { initialMembers: Member[] })
 
   return (
     <div>
-      <InviteSection />
+      {canManageLogins && <InviteSection />}
 
       <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
         <table className="min-w-full divide-y divide-stone-200 text-sm">
@@ -221,7 +243,7 @@ export function OfficersClient({ initialMembers }: { initialMembers: Member[] })
           </thead>
           <tbody className="divide-y divide-stone-100">
             {members.map((m) => (
-              <OfficerRow key={m.id} member={m} onUpdated={handleUpdated} />
+              <OfficerRow key={m.id} member={m} onUpdated={handleUpdated} canManageLogins={canManageLogins} />
             ))}
           </tbody>
         </table>

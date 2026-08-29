@@ -89,6 +89,7 @@ model Member {
   meetingNotes             MeetingNote[]
   letters                  Letter[]
   chapterAssistantAsks     ChapterAssistantInteraction[]
+  checklistDocuments       ChecklistDocument[]
 }
 
 // --- Fines / Member Accounts module -------------------------------------
@@ -863,4 +864,29 @@ model ChecklistOverride {
   done      Boolean  @default(false)
   note      String?
   updatedAt DateTime @updatedAt
+}
+
+// Actual document uploads for a Chapter Standards credit (Aug 2026 —
+// "add somewhere to upload documents like for a1 and a2 and whatever
+// else") — distinct from ChecklistOverride above, which is just a
+// self-attestation checkbox/note with nothing attached. `code` is
+// usually a real CHECKLIST_ITEMS code (see
+// lib/chapterStandardsChecklist.ts) but isn't a foreign key to
+// anything — "whatever else" means any code, or none at all ("General"),
+// works. No blob storage is configured for this app (see
+// lib/checklistDocuments.ts for the size cap this implies), so the file
+// itself is stored the same way every other "file" in this app already
+// is — MemberSignature.imageData, EventReport.signatureImage — as a
+// base64 data URL directly in the row.
+model ChecklistDocument {
+  id               String   @id @default(cuid())
+  code             String // a CHECKLIST_ITEMS code (e.g. "A.1"), or "General" for anything else
+  label            String // what this document actually is, e.g. "Club charter copy"
+  fileName         String
+  mimeType         String
+  fileData         String // base64 data URL
+  uploadedByMemberId String?
+  uploadedByMember Member?  @relation(fields: [uploadedByMemberId], references: [id], onDelete: SetNull)
+  uploadedByName   String
+  createdAt        DateTime @default(now())
 }

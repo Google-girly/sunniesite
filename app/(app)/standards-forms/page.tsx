@@ -8,6 +8,7 @@ import { getCurrentMember } from "@/lib/session";
 import { canAccessModule } from "@/lib/permissions";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { ChapterStandardsChecklistClient } from "./ChapterStandardsChecklistClient";
+import { ChecklistDocumentsSection } from "./ChecklistDocumentsSection";
 
 // Official Standards Forms — as of Aug 2026, a pure checklist over
 // every Chapter Standards credit (Sections A-I), not a data-entry page.
@@ -113,13 +114,21 @@ export default async function StandardsFormsPage() {
     "eventReport:H.9": hasEventReport("H.9"),
   };
 
+  const documents = await prisma.checklistDocument.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { id: true, code: true, label: true, fileName: true, mimeType: true, uploadedByName: true, createdAt: true },
+  });
+  const documentCounts: Record<string, number> = {};
+  for (const d of documents) documentCounts[d.code] = (documentCounts[d.code] ?? 0) + 1;
+
   return (
     <div>
       <h1 className="text-2xl font-semibold text-stone-900">Official Standards Forms</h1>
 
       <div className="mt-6 space-y-4">
         <TemplateLibrarySection />
-        <ChapterStandardsChecklistClient statuses={statuses} initialOverrides={overrides} />
+        <ChecklistDocumentsSection initialDocuments={documents.map((d) => ({ ...d, createdAt: d.createdAt.toISOString() }))} />
+        <ChapterStandardsChecklistClient statuses={statuses} initialOverrides={overrides} documentCounts={documentCounts} />
       </div>
     </div>
   );

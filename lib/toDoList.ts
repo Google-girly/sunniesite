@@ -28,24 +28,40 @@ export async function getMyToDoItems(member: Member): Promise<ToDoItem[]> {
   const items: ToDoItem[] = [];
 
   // 1. Officer report(s) — for each position she holds, is there a
-  // report on file for the most recently logged meeting? (Submission is
-  // still honor-system/not tied to who's logged in — see
-  // MeetingMinutesClient — this just flags that her position's slot is
-  // still empty.)
+  // report on file for the next meeting? (Submission is still honor-
+  // system/not tied to who's logged in — see MeetingMinutesClient —
+  // this just flags that her position's slot is still empty.)
+  //
+  // Aug 2026 fix: this used to be `orderBy: { date: "desc" }` with no
+  // date filter, meant to mean "the most recently logged meeting" —
+  // but meeting minutes now auto-generate for a whole MeetingSchedule
+  // series up to its end date (see lib/meetingGeneration.ts), so
+  // "latest by date" had started picking the *farthest-future*
+  // auto-generated meeting (e.g. the last one in November) instead of
+  // the next one actually coming up. Explicitly the soonest meeting
+  // >= today now; falls back to the most recent past one only if
+  // nothing's upcoming at all (nothing left to auto-generate for).
   const positions = parseRoles(member.role);
   if (positions.length > 0) {
-    const latestMeeting = await prisma.meeting.findFirst({
-      orderBy: { date: "desc" },
-      include: { officerReports: true },
-    });
-    if (latestMeeting) {
-      const reported = new Set(latestMeeting.officerReports.map((r) => r.position));
+    const today = todayIso();
+    const nextMeeting =
+      (await prisma.meeting.findFirst({
+        where: { date: { gte: today } },
+        orderBy: { date: "asc" },
+        include: { officerReports: true },
+      })) ??
+      (await prisma.meeting.findFirst({
+        orderBy: { date: "desc" },
+        include: { officerReports: true },
+      }));
+    if (nextMeeting) {
+      const reported = new Set(nextMeeting.officerReports.map((r) => r.position));
       for (const position of positions) {
         if (!reported.has(position)) {
           items.push({
             id: `officer-report-${position}`,
-            label: `Submit the ${position} report for ${formatMeetingDate(latestMeeting.date)}`,
-            href: `/meetings-reports/minutes/${latestMeeting.id}`,
+            label: `Submit the ${position} report for ${formatMeetingDate(nextMeeting.date)}`,
+            href: `/meetings-reports/minutes/${nextMeeting.id}`,
           });
         }
       }

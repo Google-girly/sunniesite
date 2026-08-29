@@ -260,13 +260,7 @@ export function MeetingScheduleDetailClient({
                     href={`/api/meeting-minutes/export/${m.id}`}
                     className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
-                    Export .docx
-                  </a>
-                  <a
-                    href={`/api/meeting-minutes/export-pdf/${m.id}`}
-                    className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
-                  >
-                    Export PDF
+                    Export Minutes
                   </a>
                   {canManage && (
                     <button

@@ -129,6 +129,25 @@ export function canApproveSignups(member: Pick<Member, "role"> | null | undefine
   );
 }
 
+// Who can assign/edit a member's position(s) from Manage Officers &
+// Logins (Aug 2026 — "President coms and vp should be able to edit
+// positions"). Same three roles as canApproveSignups above (and not
+// coincidentally — it's one shared page now, see
+// app/(app)/officers/page.tsx), but kept as its own named check since
+// the two are conceptually different capabilities that just happen to
+// currently share a role list; not a Chapter Standards module either.
+// Setting/revoking another member's *password*, and sending sign-up
+// invites, both stay President-only within that same page — narrower
+// on purpose, since those touch account security rather than Roster
+// data — see app/api/officers/[id]/password and app/api/officers/invite.
+export function canEditPositions(member: Pick<Member, "role"> | null | undefined): boolean {
+  return (
+    isPresident(member) ||
+    holdsPosition(member, "Vice President") ||
+    holdsPosition(member, "Vice President of Communications")
+  );
+}
+
 /** Does this member own/manage the module — i.e. bypass self-service row scoping, gate open-submit's sensitive actions, or unlock a locked module? */
 export function ownsModule(member: Pick<Member, "role"> | null | undefined, moduleKey: ModuleKey): boolean {
   if (isPresident(member)) return true;
