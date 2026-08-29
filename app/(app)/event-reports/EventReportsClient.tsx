@@ -49,12 +49,14 @@ export function EventReportsClient({
 }: {
   members: Member[];
   initialReports: EventReportWithSigner[];
-  /** Who's logged in — only she (as the report's creator) or the President can edit a given report. */
+  /** Who's logged in — only she (as the report's creator) or the President can edit a *finished* report; any draft is fair game for anyone. */
   viewerId: string;
   viewerIsPresident: boolean;
 }) {
+  // Aug 2026 — "I want other people to be able to edit the drafts of
+  // event reports" — matches app/api/event-reports/[id]/route.ts PATCH.
   function canEdit(report: EventReportWithSigner): boolean {
-    return viewerIsPresident || report.createdByMemberId === viewerId;
+    return report.isDraft || viewerIsPresident || report.createdByMemberId === viewerId;
   }
 
   const [reports, setReports] = useState(initialReports);

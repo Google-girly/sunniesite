@@ -20,11 +20,17 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Event report not found." }, { status: 404 });
   }
   // Only whoever originally filled this out, or the President, may edit
-  // it — everyone else can still view/submit her own new ones (the
-  // module itself stays open-submit). Reports from before this field
-  // existed have no recorded creator, so they're President-only until
-  // re-saved.
-  if (existing.createdByMemberId !== member.id && !isPresident(member)) {
+  // a *finished* report — everyone else can still view/submit her own
+  // new ones (the module itself stays open-submit). Reports from before
+  // this field existed have no recorded creator, so they're
+  // President-only until re-saved.
+  //
+  // Aug 2026 — "I want other people to be able to edit the drafts of
+  // event reports": a draft is explicitly unfinished/shared work, so any
+  // logged-in member can jump in and fill in the rest — that restriction
+  // only kicks in once it's no longer a draft (see lib/eventReports.ts
+  // isDraft).
+  if (!existing.isDraft && existing.createdByMemberId !== member.id && !isPresident(member)) {
     return NextResponse.json(
       { error: "Only whoever submitted this report, or the President, can edit it." },
       { status: 403 }
