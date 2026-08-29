@@ -1280,6 +1280,26 @@ way (see below) — worth internalizing the lesson, not just the fix.
   extracted text as suspect in its own output — the same failure mode that
   caught `Crafting Your Resume.pdf` last pass, now checked automatically
   instead of by a manual audit script.
+- **Production-only failure, found after deploy**: worked locally, then
+  failed on Vercel with `Error: Failed to load external module
+  @huggingface/transformers-...: Error: libonnxruntime.so.1: cannot open
+  shared object file`. `onnxruntime-node`'s native addon
+  (`onnxruntime_binding.node`) gets `require()`'d, so Next's file tracer
+  finds and ships that on its own — but the addon then dynamically links
+  against `libonnxruntime.so.1` sitting next to it in the same folder via
+  its own compiled-in dlopen call, which is invisible to any JS-level
+  static analysis. Local dev never hits this because it just reads
+  straight from `node_modules` on disk; only a traced/standalone
+  production build is missing the file. Fixed by adding
+  `./node_modules/onnxruntime-node/bin/napi-v6/linux/**/*` to
+  `next.config.ts`'s `outputFileTracingIncludes` for this route —
+  deliberately **linux only** (both x64 and arm64, since Vercel's actual
+  build architecture isn't worth hard-coding a bet on): the same folder
+  also ships darwin/win32 binaries Vercel never runs, which would've
+  added ~155MB of dead weight to the function for nothing. Verified by
+  inspecting the build's own `.next/server/app/api/chapter-assistant/
+  route.js.nft.json` file list directly rather than just trusting the
+  config looked right.
 - **Unrelated build break, found and fixed in passing**: `npm run build`
   failed on an unrelated pre-existing TypeScript error in
   `RosterClient.tsx` (`STATUS_BADGE_CLASSES` missing the `GENERAL` status
