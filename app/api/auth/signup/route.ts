@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
-import { isMemberStatus } from "@/lib/roster";
+import { isMemberStatus, serializeRoles } from "@/lib/roster";
 import { OFFICER_POSITIONS } from "@/lib/positions";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const GENERAL_MEMBER_ROLE = "__none__"; // signup form's dropdown value for "no position"
 
 // Self-service account creation (Aug 2026, reworked from an earlier
 // "claim a Roster row the President already added" design on request —
@@ -22,9 +21,11 @@ const GENERAL_MEMBER_ROLE = "__none__"; // signup form's dropdown value for "no 
 // approved signup already IS a complete Roster row rather than needing
 // an officer to backfill it afterward — same fields/validation Roster's
 // own "Add Member" form uses (app/(app)/roster/RosterClient.tsx), just
-// self-reported. Notes stays optional — a free-text catch-all, mainly
-// meant for "I hold position(s) X/Y" if Role's single-select isn't
-// enough, for the approving officer to reconcile onto Roster.
+// self-reported. Role is multi-select (Aug 2026, same
+// components/RoleDropdown.tsx Manage Officers & Logins uses) — required
+// in the sense that the field must be actively answered, satisfied by
+// picking zero positions ("General member"), same as everywhere else
+// role gets edited. Notes stays optional, a free-text catch-all.
 //
 // No session cookie is set here — unlike the old design, signing up
 // doesn't log her in, since there's nothing to log her into yet.
@@ -46,7 +47,9 @@ export async function POST(request: Request) {
   const memberClass = typeof body?.class === "string" ? body.class.trim() : "";
   const crossingNumberRaw = typeof body?.crossingNumber === "string" ? body.crossingNumber.trim() : "";
   const nickname = typeof body?.nickname === "string" ? body.nickname.trim() : "";
-  const role = typeof body?.role === "string" ? body.role.trim() : "";
+  const roles: string[] = Array.isArray(body?.roles)
+    ? body.roles.filter((r: unknown): r is string => typeof r === "string")
+    : [];
   const status = typeof body?.status === "string" ? body.status.trim() : "";
   const crossingTerm = typeof body?.crossingTerm === "string" ? body.crossingTerm.trim() : "";
   const notes = typeof body?.notes === "string" ? body.notes.trim() : "";
@@ -67,10 +70,7 @@ export async function POST(request: Request) {
   if (!nickname) {
     return NextResponse.json({ error: "Nickname is required." }, { status: 400 });
   }
-  if (!role) {
-    return NextResponse.json({ error: "Select a Role — pick \"General Member\" if you don't hold a position." }, { status: 400 });
-  }
-  if (role !== GENERAL_MEMBER_ROLE && !(OFFICER_POSITIONS as readonly string[]).includes(role)) {
+  if (roles.some((r) => !(OFFICER_POSITIONS as readonly string[]).includes(r))) {
     return NextResponse.json({ error: "Invalid Role selected." }, { status: 400 });
   }
   if (!isMemberStatus(status)) {
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       class: memberClass,
       crossingNumber,
       nickname,
-      role: role === GENERAL_MEMBER_ROLE ? null : role,
+      role: serializeRoles(roles),
       status,
       crossingTerm,
       notes: notes || null,

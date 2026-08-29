@@ -5,9 +5,7 @@ import { useState } from "react";
 import { CHAPTER_ORG_NAME, CHAPTER_LABEL } from "@/lib/chapterConfig";
 import { PasswordInput } from "@/components/PasswordInput";
 import { MEMBER_STATUSES, MEMBER_STATUS_LABELS } from "@/lib/roster";
-import { OFFICER_POSITIONS } from "@/lib/positions";
-
-const GENERAL_MEMBER_ROLE = "__none__";
+import { RoleDropdown } from "@/components/RoleDropdown";
 
 const fieldLabel = "mt-4 block text-sm font-medium text-stone-700";
 const fieldInput =
@@ -20,7 +18,7 @@ export default function SignupPage() {
   const [memberClass, setMemberClass] = useState("");
   const [crossingNumber, setCrossingNumber] = useState("");
   const [nickname, setNickname] = useState("");
-  const [role, setRole] = useState(GENERAL_MEMBER_ROLE);
+  const [roles, setRoles] = useState<string[]>([]);
   const [status, setStatus] = useState<(typeof MEMBER_STATUSES)[number]>("ACTIVE");
   const [crossingTerm, setCrossingTerm] = useState("");
   const [notes, setNotes] = useState("");
@@ -51,7 +49,7 @@ export default function SignupPage() {
         class: memberClass,
         crossingNumber,
         nickname,
-        role,
+        roles,
         status,
         crossingTerm,
         notes,
@@ -75,7 +73,6 @@ export default function SignupPage() {
     memberClass.trim() &&
     crossingNumber.trim() &&
     nickname.trim() &&
-    role &&
     status &&
     crossingTerm.trim() &&
     email &&
@@ -158,17 +155,9 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <label htmlFor="role" className={fieldLabel}>
-              Role
-            </label>
-            <select id="role" value={role} onChange={(e) => setRole(e.target.value)} className={fieldInput}>
-              <option value={GENERAL_MEMBER_ROLE}>General Member (no position)</option>
-              {OFFICER_POSITIONS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+            <label className={fieldLabel}>Role</label>
+            <RoleDropdown value={roles} onChange={setRoles} emptyLabel="General member (no position)" />
+            <p className="mt-1 text-xs text-stone-400">Check every position you hold, if any.</p>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div>
@@ -220,13 +209,10 @@ export default function SignupPage() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              placeholder="Anything else — e.g. if you hold more than one position"
+              placeholder="Anything else the approving officer should know"
               className={fieldInput}
             />
-            <p className="mt-1 text-xs text-stone-400">
-              Not required — mention here if you hold more than one position, so the approving
-              officer can add them all to Roster.
-            </p>
+            <p className="mt-1 text-xs text-stone-400">Not required.</p>
 
             <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-stone-400">Login</p>
 

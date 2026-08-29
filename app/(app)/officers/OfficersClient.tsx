@@ -1,67 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { Member } from "@/app/generated/prisma/client";
-import { OFFICER_POSITIONS } from "@/lib/positions";
 import { parseRoles } from "@/lib/roster";
 import { confirmDelete } from "@/lib/confirmDelete";
 import { PasswordInput } from "@/components/PasswordInput";
+import { RoleDropdown } from "@/components/RoleDropdown";
 
 async function parseError(res: Response): Promise<string> {
   const data = await res.json().catch(() => null);
   return data?.error ?? "Something went wrong. Please try again.";
-}
-
-// Same multi-select-checkboxes-in-a-dropdown pattern Roster used to
-// have inline — moved here since position assignment is now
-// President-only and lives only on this page.
-function RoleDropdown({ value, onChange }: { value: string[]; onChange: (roles: string[]) => void }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
-  function toggleRole(role: string) {
-    onChange(value.includes(role) ? value.filter((r) => r !== role) : [...value, role]);
-  }
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full min-w-64 items-center justify-between rounded-md border border-stone-300 bg-white px-2 py-1.5 text-left text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
-      >
-        <span className={value.length > 0 ? "text-stone-900" : "text-stone-400"}>
-          {value.length > 0 ? value.join(", ") : "General member"}
-        </span>
-        <span className="ml-2 shrink-0 text-stone-400">▾</span>
-      </button>
-
-      {open && (
-        <div className="absolute z-20 mt-1 max-h-60 w-full min-w-64 overflow-y-auto rounded-md border border-stone-200 bg-white py-1 shadow-lg">
-          {OFFICER_POSITIONS.map((role) => (
-            <label key={role} className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm hover:bg-stone-50">
-              <input
-                type="checkbox"
-                checked={value.includes(role)}
-                onChange={() => toggleRole(role)}
-                className="h-4 w-4 rounded border-stone-300 text-burgundy-600 focus:ring-burgundy-400"
-              />
-              {role}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // Email an invite (the /signup link + chapter password) to whoever's

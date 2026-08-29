@@ -304,6 +304,27 @@ strings change.
 | `npm run lint` | Lint the codebase |
 | `npm run db:migrate` | `prisma migrate dev` — apply schema changes |
 | `npm run db:studio` | Opens Prisma Studio, a GUI for browsing/editing the database directly |
+| `npm run rag:ingest` | Rebuilds `rag/index.json` from `public/rag-source-docs/` — run after adding/replacing a Chapter Assistant source document |
+
+## Deployment gotcha: onnxruntime-node on Vercel
+
+The Chapter Assistant's local embedding model (`@huggingface/transformers`,
+see MODULES.md) depends on `onnxruntime-node`, whose native addon
+dynamically links a `libonnxruntime.so.1` shared library sitting next to
+it — that link happens from *inside* the compiled addon, invisible to
+Next's file tracer, so a plain deploy ships the addon but not the `.so`
+it needs. Works fine locally (reads straight off `node_modules` on disk);
+fails only in a traced/standalone production build, with:
+
+```
+Error: libonnxruntime.so.1: cannot open shared object file: No such file or directory
+```
+
+Already fixed via `next.config.ts`'s `outputFileTracingIncludes` (linux
+binaries only — the same folder ships ~155MB of Mac/Windows binaries
+Vercel never runs) — nothing to do unless this route's dependencies
+change again. If it ever comes back, check the actual shipped file list
+first: `.next/server/app/api/chapter-assistant/route.js.nft.json`.
 
 ## What's deliberately not here yet
 
