@@ -13,8 +13,11 @@ export default async function LettersPage() {
   if (!member) redirect("/login");
 
   const canSeeAll = ownsModule(member, "letters");
+  // Aug 2026 — drafts stay isolated to whoever created them, even from
+  // the President, until finalized or added to a meeting's minutes —
+  // matches app/api/letters/route.ts GET exactly.
   const letters = await prisma.letter.findMany({
-    where: canSeeAll ? {} : { createdByMemberId: member.id },
+    where: canSeeAll ? { OR: [{ isDraft: false }, { createdByMemberId: member.id }] } : { createdByMemberId: member.id },
     orderBy: { createdAt: "desc" },
   });
 

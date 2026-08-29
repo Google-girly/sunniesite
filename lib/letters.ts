@@ -22,6 +22,7 @@ export function isLetterType(value: string): value is LetterType {
 export interface LetterInput {
   type: LetterType;
   typeOther: string | null;
+  isDraft: boolean;
   purpose: string;
   recipientName: string | null;
   date: string;
@@ -33,11 +34,16 @@ export function letterTitle(letter: { type: string; typeOther: string | null }):
   return (letter.type === "Other" ? letter.typeOther : letter.type) || letter.type;
 }
 
+// Aug 2026 — "make the letterhead be able to have drafts as well." A
+// draft only needs a type picked (plus typeOther, if "Other") —
+// purpose/date/recipient can come later. Everything's required again
+// once it's not a draft, same as before.
 export function parseLetterInput(body: unknown): { data: LetterInput } | { error: string } {
   if (!body || typeof body !== "object") {
     return { error: "Invalid request body." };
   }
   const b = body as Record<string, unknown>;
+  const isDraft = b.isDraft === true;
 
   const type = typeof b.type === "string" ? b.type.trim() : "";
   if (!isLetterType(type)) {
@@ -48,11 +54,11 @@ export function parseLetterInput(body: unknown): { data: LetterInput } | { error
     return { error: "Enter what kind of letter this is." };
   }
   const purpose = typeof b.purpose === "string" ? b.purpose.trim() : "";
-  if (!purpose) {
+  if (!isDraft && !purpose) {
     return { error: "Purpose / letter body is required." };
   }
   const date = typeof b.date === "string" ? b.date.trim() : "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (!isDraft && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return { error: "A valid date is required." };
   }
   const recipientName = typeof b.recipientName === "string" ? b.recipientName.trim() : "";
@@ -61,6 +67,7 @@ export function parseLetterInput(body: unknown): { data: LetterInput } | { error
     data: {
       type,
       typeOther: type === "Other" ? typeOther : null,
+      isDraft,
       purpose,
       recipientName: recipientName || null,
       date,

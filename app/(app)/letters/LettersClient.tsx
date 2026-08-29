@@ -38,11 +38,20 @@ export function LettersClient({
 }) {
   const [letters, setLetters] = useState(initialLetters);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [addingToMinutesId, setAddingToMinutesId] = useState<string | null>(null);
   const [minutesError, setMinutesError] = useState<string | null>(null);
+
+  // Matches app/api/letters/[id]/route.ts canManage — a draft is
+  // isolated to its creator even from the President.
+  function canManage(l: Letter): boolean {
+    if (l.createdByMemberId === viewerId) return true;
+    if (l.isDraft) return false;
+    return canSeeAll;
+  }
 
   async function handleAddToMinutes(id: string) {
     setAddingToMinutesId(id);
@@ -54,16 +63,51 @@ export function LettersClient({
       return;
     }
     const { meetingId } = await res.json();
-    setLetters((prev) => prev.map((l) => (l.id === id ? { ...l, addedToMeetingId: meetingId } : l)));
+    // Aug 2026 — this is also how a draft publishes (isDraft flips to
+    // false server-side too — see the route), so this row now shows up
+    // for everyone under the normal own/President rules.
+    setLetters((prev) => prev.map((l) => (l.id === id ? { ...l, addedToMeetingId: meetingId, isDraft: false } : l)));
   }
 
   function update<K extends keyof typeof EMPTY_FORM>(key: K, value: (typeof EMPTY_FORM)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Aug 2026 — "make the letterhead be able to have drafts as well." A
+  // draft only needs a type picked (see lib/letters.ts parseLetterInput);
+  // the normal Create/Save button still requires everything.
+  const draftFilled = Boolean(form.type) && (form.type !== "Other" || form.typeOther.trim() !== "");
+
+  function startAdd() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+    setShowAdd(true);
+  }
+
+  function startEdit(l: Letter) {
+    setEditingId(l.id);
+    setForm({
+      type: (LETTER_TYPES as readonly string[]).includes(l.type) ? (l.type as LetterType) : "Other",
+      typeOther: l.type === "Other" ? l.typeOther ?? "" : "",
+      recipientName: l.recipientName ?? "",
+      date: l.date || todayIso(),
+      purpose: l.purpose,
+    });
+    setError(null);
+    setShowAdd(true);
+  }
+
+  function cancelForm() {
+    setShowAdd(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+  }
+
+  async function handleSubmit(e: { preventDefault: () => void }, isDraft: boolean = false) {
     e.preventDefault();
-    if (!form.purpose.trim()) {
+    if (!isDraft && !form.purpose.trim()) {
       setError("Purpose / letter body is required.");
       return;
     }
@@ -73,15 +117,18 @@ export function LettersClient({
     }
     setSaving(true);
     setError(null);
-    const res = await fetch("/api/letters", {
-      method: "POST",
+    const url = editingId ? `/api/letters/${editingId}` : "/api/letters";
+    const method = editingId ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: form.type,
         typeOther: form.typeOther || undefined,
+        isDraft,
         recipientName: form.recipientName || undefined,
-        date: form.date,
-        purpose: form.purpose,
+        date: form.date || undefined,
+        purpose: form.purpose || undefined,
       }),
     });
     setSaving(false);
@@ -89,10 +136,9 @@ export function LettersClient({
       setError(await parseError(res));
       return;
     }
-    const created: Letter = await res.json();
-    setLetters((prev) => [created, ...prev]);
-    setForm(EMPTY_FORM);
-    setShowAdd(false);
+    const saved: Letter = await res.json();
+    setLetters((prev) => (editingId ? prev.map((l) => (l.id === editingId ? saved : l)) : [saved, ...prev]));
+    cancelForm();
   }
 
   async function handleDelete(id: string) {
@@ -106,7 +152,7 @@ export function LettersClient({
     <div>
       <div className="flex justify-end">
         <button
-          onClick={() => setShowAdd((v) => !v)}
+          onClick={() => (showAdd ? cancelForm() : startAdd())}
           className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
         >
           {showAdd ? "Cancel" : "New Letter"}
@@ -118,6 +164,9 @@ export function LettersClient({
           onSubmit={handleSubmit}
           className="mt-4 grid grid-cols-1 gap-4 rounded-lg border border-stone-200 bg-white p-5 sm:grid-cols-2"
         >
+          <p className="sm:col-span-2 text-sm font-semibold text-stone-800">
+            {editingId ? "Edit Letter" : "New Letter"}
+          </p>
           <div>
             <label className={labelClass}>
               Type <span className="text-burgundy-500">*</span>
@@ -143,9 +192,7 @@ export function LettersClient({
             </div>
           )}
           <div>
-            <label className={labelClass}>
-              Date <span className="text-burgundy-500">*</span>
-            </label>
+            <label className={labelClass}>Date</label>
             <input type="date" value={form.date} onChange={(e) => update("date", e.target.value)} className={inputClass} />
           </div>
           <div>
@@ -158,9 +205,7 @@ export function LettersClient({
             />
           </div>
           <div className="sm:col-span-2">
-            <label className={labelClass}>
-              Purpose / Letter Body <span className="text-burgundy-500">*</span>
-            </label>
+            <label className={labelClass}>Purpose / Letter Body</label>
             <textarea
               value={form.purpose}
               onChange={(e) => update("purpose", e.target.value)}
@@ -169,14 +214,23 @@ export function LettersClient({
               className={inputClass}
             />
           </div>
-          <div className="sm:col-span-2">
-            {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+          <div className="sm:col-span-2 flex items-center gap-3">
+            {error && <p className="mb-2 w-full text-sm text-red-600">{error}</p>}
             <button
               type="submit"
               disabled={saving}
               className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Create Letter"}
+              {saving ? "Saving..." : editingId ? "Save Changes" : "Create Letter"}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              disabled={saving || !draftFilled}
+              className="rounded-md border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Save with just the Type picked — finish the rest later. Only you can see a draft until you finish it or add it to a meeting's minutes."
+            >
+              {saving ? "Saving..." : "Save as Draft"}
             </button>
           </div>
         </form>
@@ -204,37 +258,59 @@ export function LettersClient({
               </tr>
             )}
             {letters.map((l) => {
-              const canManage = l.createdByMemberId === viewerId || canSeeAll;
+              const manageable = canManage(l);
               const eligibleForMinutes = ADD_TO_MINUTES_TYPES.includes(l.type);
               return (
                 <tr key={l.id}>
-                  <td className={`${td} font-medium text-stone-900`}>{l.date}</td>
-                  <td className={td}>{letterTitle(l)}</td>
+                  <td className={`${td} font-medium text-stone-900`}>{l.date || "—"}</td>
+                  <td className={td}>
+                    {letterTitle(l)}
+                    {l.isDraft && (
+                      <span className="ml-1.5 inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                        Draft
+                      </span>
+                    )}
+                  </td>
                   <td className={`${td} max-w-sm truncate`} title={l.purpose}>
-                    {l.purpose}
+                    {l.purpose || "—"}
                   </td>
                   {canSeeAll && <td className={td}>{l.createdByName}</td>}
                   <td className={`${td} whitespace-nowrap text-right`}>
                     {eligibleForMinutes &&
-                      canManage &&
+                      manageable &&
                       (l.addedToMeetingId ? (
                         <span className="text-xs text-stone-400">Added to minutes</span>
                       ) : (
                         <button
                           onClick={() => handleAddToMinutes(l.id)}
-                          disabled={addingToMinutesId === l.id}
-                          className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800 disabled:opacity-50"
+                          disabled={addingToMinutesId === l.id || !l.purpose.trim()}
+                          title={!l.purpose.trim() ? "Fill in the letter body first." : undefined}
+                          className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {addingToMinutesId === l.id ? "Adding..." : "Add to Next Meeting Minutes"}
                         </button>
                       ))}
-                    <a
-                      href={`/api/letters/export/${l.id}`}
-                      className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
-                    >
-                      Download
-                    </a>
-                    {canManage && (
+                    {l.isDraft ? (
+                      <span className="ml-3 text-sm text-stone-400" title="Finish or add to a meeting's minutes before exporting.">
+                        Download
+                      </span>
+                    ) : (
+                      <a
+                        href={`/api/letters/export/${l.id}`}
+                        className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
+                      >
+                        Download
+                      </a>
+                    )}
+                    {manageable && (
+                      <button
+                        onClick={() => startEdit(l)}
+                        className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {manageable && (
                       <button
                         onClick={() => handleDelete(l.id)}
                         className="ml-3 text-sm font-medium text-stone-400 hover:text-red-600"

@@ -36,6 +36,11 @@ export async function POST(_request: Request, { params }: RouteParams) {
   if (letter.addedToMeetingId) {
     return NextResponse.json({ error: "Already added to a meeting's minutes." }, { status: 400 });
   }
+  // Aug 2026 — a draft can't be sent out half-empty just because someone
+  // clicked this button; finish the body first.
+  if (!letter.purpose.trim()) {
+    return NextResponse.json({ error: "Fill in the letter body before adding it to the minutes." }, { status: 400 });
+  }
 
   const added = await addActionItemToNextMeeting(`${letterTitle(letter)} — ${letter.purpose}`, {
     id: member.id,
@@ -48,6 +53,10 @@ export async function POST(_request: Request, { params }: RouteParams) {
     );
   }
 
-  await prisma.letter.update({ where: { id }, data: { addedToMeetingId: added.meetingId } });
+  // Aug 2026 — "only publish them to everyone if they add them to the
+  // meeting minutes": this is the other of the two ways a draft
+  // publishes (the normal finalize/save path is the other) — see
+  // GET /api/letters for what isDraft actually gates.
+  await prisma.letter.update({ where: { id }, data: { addedToMeetingId: added.meetingId, isDraft: false } });
   return NextResponse.json(added);
 }

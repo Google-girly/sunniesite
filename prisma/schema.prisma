@@ -821,6 +821,14 @@ model Letter {
   id                 String   @id @default(cuid())
   type               String // see lib/letters.ts LETTER_TYPES — "Other" pairs with typeOther below
   typeOther          String? // free text when type === "Other"
+  // Aug 2026 — "make the letterhead be able to have drafts... keep those
+  // isolated to the person." A draft is visible only to whoever created
+  // it (not even the President, unlike a finished letter — see
+  // app/api/letters/route.ts GET) until it's finalized or added to a
+  // meeting's minutes, either of which flips this back to false. See
+  // lib/letters.ts parseLetterInput's isDraft branch for what's actually
+  // required to save one.
+  isDraft            Boolean  @default(false)
   purpose            String // what it's for / who it's addressed to — printed as the letter's body
   recipientName      String?
   date               String // ISO "YYYY-MM-DD" — the date printed on the letter

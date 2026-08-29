@@ -8,13 +8,23 @@ import { ownsModule } from "@/lib/permissions";
 // ever sees her own list back here — the President (ownsModule's
 // always-true case) sees every letter, per "make sure there is a place
 // where they are stored for the president to see."
+//
+// Aug 2026 — "keep [drafts] isolated to the person... only publish them
+// to everyone if they add them to the meeting minutes." A draft is the
+// one exception to the President seeing everything: it stays visible
+// only to whoever created it (not even the President) until it's either
+// finalized or added to a meeting's minutes — both flip isDraft back to
+// false, at which point it shows up under the normal own/President
+// rules like any other letter.
 export async function GET() {
   const member = await getCurrentMember();
   if (!member) {
     return NextResponse.json({ error: "Not logged in." }, { status: 401 });
   }
   const letters = await prisma.letter.findMany({
-    where: ownsModule(member, "letters") ? {} : { createdByMemberId: member.id },
+    where: ownsModule(member, "letters")
+      ? { OR: [{ isDraft: false }, { createdByMemberId: member.id }] }
+      : { createdByMemberId: member.id },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(letters);
