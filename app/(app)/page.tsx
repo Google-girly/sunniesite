@@ -31,10 +31,23 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">Dashboard</h1>
-      <p className="mt-1 text-sm text-stone-500">
-        {CHAPTER_FULL_NAME} — exec board admin tools.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-stone-900">Dashboard</h1>
+          <p className="mt-1 text-sm text-stone-500">
+            {CHAPTER_FULL_NAME} — exec board admin tools.
+          </p>
+        </div>
+        {/* Aug 2026 — "add this link to the dashboard as linktree." */}
+        <a
+          href="https://linktr.ee/montereysunnies"
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+        >
+          Linktree ↗
+        </a>
+      </div>
 
       <div className="mt-6">
         <MyToDoList items={toDoItems} />

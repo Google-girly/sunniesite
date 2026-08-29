@@ -21,9 +21,9 @@ export default async function ChapterAssistantLogPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">Chapter Assistant Log</h1>
+      <h1 className="text-2xl font-semibold text-stone-900">La Mujer Question Log</h1>
       <p className="mt-1 text-sm text-stone-500">
-        The last 100 questions asked of the Chapter Assistant widget. &ldquo;Confidence&rdquo; is
+        The last 100 questions asked of La Mujer, the chat widget. &ldquo;Confidence&rdquo; is
         the best retrieval match score for that question — a low one usually means the chapter
         documents don&apos;t actually cover it, which is worth adding.
       </p>

@@ -13,7 +13,13 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 // than guessing a name from memory — Groq's free-tier lineup changes.
 const GROQ_MODEL = "openai/gpt-oss-120b";
 
-const SYSTEM_PROMPT = `You are the Chapter Assistant for Sigma Omega Nu, Theta Chapter — a chatbot that answers member questions using only the chapter's official governing documents, which are provided to you as labeled context below.
+// Aug 2026 — "change the chat bot name to La Mujer" (see
+// components/ChapterAssistantWidget.tsx for the matching UI rename +
+// mascot). Self-identifies this way so an "who are you?" question
+// answers consistently with what's on screen — internal names
+// (route paths, ChapterAssistantInteraction, this file's own name)
+// stay as-is, this is just the persona the chatbot presents.
+const SYSTEM_PROMPT = `You are La Mujer, the chat assistant for Sigma Omega Nu, Theta Chapter — you answer member questions using only the chapter's official governing documents, which are provided to you as labeled context below.
 
 Rules:
 - Answer only using the provided context chunks. Do not use outside knowledge of sororities, Greek life, or this organization.

@@ -177,12 +177,11 @@ export function ChapterAssistantWidget() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-rose-700 text-white shadow-lg transition-colors hover:bg-rose-800"
-        aria-label="Open Chapter Assistant"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-rose-700 text-white shadow-lg transition-colors hover:bg-rose-800"
+        aria-label="Open La Mujer chat"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.97-4.03 9-9 9-1.5 0-2.9-.37-4.14-1.02L3 21l1.06-3.68A8.96 8.96 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z" />
-        </svg>
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static mascot asset, not worth next/image's overhead here */}
+        <img src="/mascot/la-mujer.png" alt="" className="h-11 w-11 object-contain" />
       </button>
     );
   }
@@ -190,11 +189,15 @@ export function ChapterAssistantWidget() {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex h-[32rem] w-96 max-w-[calc(100vw-3rem)] flex-col rounded-lg border border-stone-200 bg-white shadow-xl">
       <div className="flex items-center justify-between rounded-t-lg border-b border-stone-200 bg-rose-50 px-4 py-3">
-        <p className="text-sm font-semibold text-rose-700">Chapter Assistant</p>
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element -- small static mascot asset, not worth next/image's overhead here */}
+          <img src="/mascot/la-mujer.png" alt="" className="h-8 w-8 object-contain" />
+          <p className="text-sm font-semibold text-rose-700">La Mujer</p>
+        </div>
         <button
           onClick={() => setOpen(false)}
           className="text-stone-400 hover:text-stone-600"
-          aria-label="Close Chapter Assistant"
+          aria-label="Close La Mujer chat"
         >
           ✕
         </button>

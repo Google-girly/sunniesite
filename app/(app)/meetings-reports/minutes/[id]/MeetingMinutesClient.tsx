@@ -240,6 +240,27 @@ export function MeetingMinutesClient({
 }) {
   const [reports, setReports] = useState(meeting.officerReports);
   const [notes, setNotes] = useState(meeting.notes);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState<string | null>(null);
+
+  // Aug 2026 — "I also want to test the emails are working can you add
+  // a dummy test emails on the meeting minutes page." Sends the exact
+  // same email the real 24h-before reminder would send for this
+  // meeting (minutes + pending tentative budgets + letters due), but
+  // always to one fixed test address regardless of who's logged in —
+  // see app/api/meeting-minutes/test-email/[id].
+  async function handleSendTestEmail() {
+    setSendingTestEmail(true);
+    setTestEmailResult(null);
+    const res = await fetch(`/api/meeting-minutes/test-email/${meeting.id}`, { method: "POST" });
+    setSendingTestEmail(false);
+    if (res.ok) {
+      const data = await res.json();
+      setTestEmailResult(`Sent to ${data.sentTo}.`);
+    } else {
+      setTestEmailResult(await parseError(res));
+    }
+  }
 
   // Aug 2026: "even the officers who do have access I only want it to be
   // access to edit and see their reports" — a regular officer only sees
@@ -269,13 +290,24 @@ export function MeetingMinutesClient({
           </h1>
           <p className="mt-1 text-sm text-stone-500">{meeting.time || "No time on file"}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <a
-            href={`/api/meeting-minutes/export/${meeting.id}`}
-            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
-          >
-            Export Minutes
-          </a>
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-3">
+            <a
+              href={`/api/meeting-minutes/export/${meeting.id}`}
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
+            >
+              Export Minutes
+            </a>
+            <button
+              onClick={handleSendTestEmail}
+              disabled={sendingTestEmail}
+              className="rounded-md border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+              title="Sends this meeting's email (minutes, pending tentative budgets, and letters due) only to destorres@csumb.edu, to test that email delivery is working."
+            >
+              {sendingTestEmail ? "Sending..." : "Send Test Email"}
+            </button>
+          </div>
+          {testEmailResult && <p className="text-xs text-stone-500">{testEmailResult}</p>}
         </div>
       </div>
 
