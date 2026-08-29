@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requirePresidentPage } from "@/lib/session";
 import { NotAuthorized } from "@/components/NotAuthorized";
+import { PendingSignupsPanel } from "@/components/PendingSignupsPanel";
 import { OfficersClient } from "./OfficersClient";
 
 // President-only — assigns positions (the `role` field every other
@@ -17,7 +18,10 @@ export default async function OfficersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">Manage Officers &amp; Logins</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-stone-900">Manage Officers &amp; Logins</h1>
+        <PendingSignupsPanel buttonClassName="flex items-center gap-2 rounded-md border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50" />
+      </div>
 
       <div className="mt-6">
         <OfficersClient initialMembers={members} />

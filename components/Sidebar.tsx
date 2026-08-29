@@ -76,15 +76,17 @@ export function Sidebar({ member }: { member: Member }) {
             Communications, not just the President — see
             lib/permissions.ts canApproveSignups(). "Manage Officers &
             Logins" itself stays President-only. Pending Sign-Ups is a
-            slide-over panel (Aug 2026), not its own page/module — see
-            components/PendingSignupsPanel.tsx. */}
+            slide-over panel (components/PendingSignupsPanel.tsx) — the
+            President's trigger now lives on Manage Officers & Logins
+            itself instead of here, so this one only shows for VP/VP
+            Comms, who don't have that page. */}
         {canApproveSignups(member) && (
           <>
             <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">
               Officer Tools
             </p>
             {isPresident(member) && <NavLink href="/officers" label="Manage Officers & Logins" />}
-            <PendingSignupsPanel />
+            {!isPresident(member) && <PendingSignupsPanel />}
           </>
         )}
       </nav>

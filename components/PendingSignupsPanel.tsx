@@ -13,11 +13,19 @@ async function parseError(res: Response): Promise<string> {
 // /pending-signups page/module — "make pending signups a pop-up bar on
 // the right hand side of the officer tools as opposed to its own
 // module") — same approve/deny logic and routes as before
-// (app/api/officers/pending), just surfaced from the Sidebar instead of
-// its own nav entry. Rendered inside components/Sidebar.tsx's Officer
-// Tools section, only for whoever canApproveSignups() (that gate
-// already happened before this renders at all).
-export function PendingSignupsPanel() {
+// (app/api/officers/pending). Two trigger buttons render this same
+// panel: the President's lives on Manage Officers & Logins
+// (app/(app)/officers/page.tsx — "the pending sign ups should be a
+// button on the manage officers and logins module"); Vice President
+// and VP of Communications don't have that page, so theirs stays in
+// components/Sidebar.tsx's Officer Tools section instead. Both are
+// gated by the caller (canApproveSignups()) before this ever renders.
+export function PendingSignupsPanel({
+  buttonClassName = "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900",
+}: {
+  /** Lets the officers page style this as a solid action button instead of the sidebar's nav-link look. */
+  buttonClassName?: string;
+}) {
   const [pending, setPending] = useState<Member[] | null>(null);
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -74,7 +82,7 @@ export function PendingSignupsPanel() {
           setOpen(true);
           refresh();
         }}
-        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900"
+        className={buttonClassName}
       >
         <span>Pending Sign-Ups</span>
         {count > 0 && (
