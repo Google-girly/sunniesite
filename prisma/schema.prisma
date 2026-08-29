@@ -90,6 +90,7 @@ model Member {
   letters                  Letter[]
   chapterAssistantAsks     ChapterAssistantInteraction[]
   checklistDocuments       ChecklistDocument[]
+  meetingAttachments       MeetingAttachment[]
 }
 
 // --- Fines / Member Accounts module -------------------------------------
@@ -344,9 +345,33 @@ model Meeting {
 
   officerReports OfficerReport[]
   notes          MeetingNote[]
+  attachments    MeetingAttachment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// A file dropped onto a specific meeting (Aug 2026 — "add a something
+// where the meeting minutes are where I can drop in files or anything
+// else that will also be sent out with the meeting minutes") — a flyer,
+// a handout, a photo, anything that doesn't fit the minutes docx itself.
+// Included as its own attachment on that meeting's reminder/test email
+// (see lib/meetingReminders.ts buildMeetingEmailContent), same base64
+// data-URL-in-the-row storage as ChecklistDocument above (see
+// lib/checklistDocuments.ts for the size cap this implies), reused here
+// via lib/meetingAttachments.ts.
+model MeetingAttachment {
+  id                 String   @id @default(cuid())
+  meetingId          String
+  meeting            Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  label              String // what this actually is, e.g. "Retreat flyer"
+  fileName           String
+  mimeType           String
+  fileData           String // base64 data URL
+  uploadedByMemberId String?
+  uploadedByMember   Member?  @relation(fields: [uploadedByMemberId], references: [id], onDelete: SetNull)
+  uploadedByName     String
+  createdAt          DateTime @default(now())
 }
 
 // One officer's written report for one Meeting. Upserts on

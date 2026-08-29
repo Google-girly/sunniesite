@@ -34,14 +34,23 @@ export const ACTIVE_ROSTER_ROW_CAPACITY = 4;
 // Sisterhood," no "Commissioner of" prefix on several positions).
 const HEADING_ANCHORS: Record<OfficerPosition, string> = OFFICER_REPORT_TEMPLATE_LABELS;
 
-// Builds one <w:p> for a submitted report — same list (numId=1) as the
-// officer headings, one level deeper (ilvl=2, which this template's own
-// numbering.xml defines as a plain decimal sub-list: "1.", "2.", ...),
-// nesting it under whichever heading it's inserted after. Literal
-// newlines become <w:br/> so a multi-line report still renders as line
-// breaks within the one list item, not run together.
+// Builds the <w:p>(s) for a submitted report — same list (numId=1) as
+// the officer headings, one level deeper (ilvl=2, which this template's
+// own numbering.xml defines as a plain decimal sub-list: "1.", "2.",
+// ...), nesting it under whichever heading it's inserted after.
+//
+// Aug 2026 — "make a new number at every line break": each non-blank
+// line becomes its OWN list item/paragraph now, so Word's own
+// auto-numbering counts up "1., 2., 3., ..." per line, rather than one
+// numbered item containing every line glued together with manual line
+// breaks (blank lines are dropped rather than each eating a number).
 function buildReportParagraphXml(text: string): string {
-  return buildListParagraphXml(text, 2);
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return buildListParagraphXml(text, 2);
+  return lines.map((line) => buildListParagraphXml(line, 2)).join("");
 }
 
 // Same shape as buildReportParagraphXml, generalized to any list level

@@ -138,6 +138,17 @@ export async function buildMeetingEmailContent(
     orderBy: { date: "asc" },
   });
 
+  // Anything an officer dropped onto this meeting directly (Aug 2026 —
+  // "add a something where the meeting minutes are where I can drop in
+  // files or anything else that will also be sent out with the meeting
+  // minutes") — a flyer, a handout, a photo, whatever doesn't fit the
+  // minutes docx itself. See app/(app)/meetings-reports/minutes/[id]/
+  // MeetingAttachmentsSection.tsx.
+  const droppedFiles = await prisma.meetingAttachment.findMany({
+    where: { meetingId: meeting.id },
+    orderBy: { createdAt: "asc" },
+  });
+
   const budgetLines = pendingBudgets.map(
     (b) =>
       `${b.budget.eventName} (Chair: ${b.budget.chair}) — ${money(
@@ -147,6 +158,7 @@ export async function buildMeetingEmailContent(
   const letterLines = letters.map(
     (l) => `${letterTitle(l)} — ${l.createdByName}${l.recipientName ? `, re: ${l.recipientName}` : ""}`
   );
+  const fileLines = droppedFiles.map((f) => `${f.label} (${f.fileName}) — added by ${f.uploadedByName}`);
 
   const text = [
     `${label}: ${when}.`,
@@ -159,6 +171,7 @@ export async function buildMeetingEmailContent(
     ...(letterLines.length > 0
       ? ["", "Letters to review at this meeting:", ...letterLines.map((l) => `- ${l}`)]
       : []),
+    ...(fileLines.length > 0 ? ["", "Also attached:", ...fileLines.map((l) => `- ${l}`)] : []),
     "",
     `— ${CHAPTER_FULL_NAME}`,
   ]
@@ -181,6 +194,11 @@ export async function buildMeetingEmailContent(
         ? `<p>Letters to review at this meeting:</p><ul>${letterLines.map((l) => `<li>${l}</li>`).join("")}</ul>`
         : ""
     }
+    ${
+      fileLines.length > 0
+        ? `<p>Also attached:</p><ul>${fileLines.map((l) => `<li>${l}</li>`).join("")}</ul>`
+        : ""
+    }
     <p>— ${CHAPTER_FULL_NAME}</p>
   `;
 
@@ -195,6 +213,10 @@ export async function buildMeetingEmailContent(
   }
   for (const letter of letters) {
     attachments.push({ filename: letterFilename(letter), content: await buildLetterDocx(letter) });
+  }
+  for (const file of droppedFiles) {
+    const base64 = file.fileData.split(",").pop() ?? "";
+    attachments.push({ filename: file.fileName, content: new Uint8Array(Buffer.from(base64, "base64")) });
   }
 
   return { subject, html, text, attachments };

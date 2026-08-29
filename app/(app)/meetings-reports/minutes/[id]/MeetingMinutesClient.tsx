@@ -12,6 +12,7 @@ import {
   type MeetingNoteCategory,
 } from "@/lib/meetingNotes";
 import { confirmDelete } from "@/lib/confirmDelete";
+import { MeetingAttachmentsSection, type MeetingAttachmentRow } from "./MeetingAttachmentsSection";
 
 type MeetingNoteWithAuthor = MeetingNote & { author: Member | null };
 type MeetingWithReports = Meeting & { officerReports: OfficerReport[]; notes: MeetingNoteWithAuthor[] };
@@ -20,6 +21,59 @@ type MemberLite = Pick<Member, "name" | "role">;
 async function parseError(res: Response): Promise<string> {
   const data = await res.json().catch(() => null);
   return data?.error ?? "Something went wrong. Please try again.";
+}
+
+// Aug 2026 — "is there any way we can make links put into the meeting
+// minutes clickable." Splits on URLs (with or without a scheme) and
+// newlines, rendering the URLs as real anchor tags — everything still
+// goes through as plain text/React children (never
+// dangerouslySetInnerHTML), so this can't introduce an XSS vector the
+// plain-text version didn't already avoid.
+const URL_SPLIT_REGEX = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+const IS_URL = /^(https?:\/\/|www\.)/i;
+
+function linkify(text: string): React.ReactNode {
+  const lines = text.split("\n");
+  return lines.map((line, li) => (
+    <span key={li}>
+      {li > 0 && <br />}
+      {line.split(URL_SPLIT_REGEX).map((part, i) =>
+        IS_URL.test(part) ? (
+          <a
+            key={i}
+            href={part.startsWith("www.") ? `https://${part}` : part}
+            target="_blank"
+            rel="noreferrer"
+            className="text-burgundy-600 underline hover:text-burgundy-800"
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  ));
+}
+
+// Aug 2026 — "make a new number at every line break" (Officer Reports
+// specifically — matches lib/meetingMinutesExport.ts's buildReportParagraphXml,
+// which does the same thing for the exported docx, so what's shown here
+// matches what actually exports). Blank lines don't consume a number.
+// A single-line report just renders plain — nothing to number.
+function numberedLinkify(text: string): React.ReactNode {
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length <= 1) return linkify(text);
+  return (
+    <ol className="list-decimal space-y-1 pl-5">
+      {lines.map((line, i) => (
+        <li key={i}>{linkify(line)}</li>
+      ))}
+    </ol>
+  );
 }
 
 function OfficerReportRow({
@@ -44,6 +98,12 @@ function OfficerReportRow({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Aug 2026 — view/edit toggle (was an always-visible textarea, even
+  // read-only): a saved report now renders as real text with clickable
+  // links (see linkify() above), which a <textarea> can never do —
+  // "Edit" swaps back to the textarea to change it, same convention as
+  // Roster's own inline row editing.
+  const [editing, setEditing] = useState(canEdit && !existing);
 
   async function handleSave() {
     if (!text.trim()) {
@@ -66,6 +126,7 @@ function OfficerReportRow({
     const saved: OfficerReport = await res.json();
     onSaved(saved);
     setSaved(true);
+    setEditing(false);
   }
 
   async function handleRemove() {
@@ -74,6 +135,7 @@ function OfficerReportRow({
     const res = await fetch(`/api/meeting-minutes/reports/${existing.id}`, { method: "DELETE" });
     if (res.ok) {
       setText("");
+      setEditing(canEdit);
       onDeleted();
     } else {
       alert(await parseError(res));
@@ -86,37 +148,70 @@ function OfficerReportRow({
         <h3 className="text-sm font-semibold text-stone-900">{position}</h3>
         <p className="text-xs text-stone-500">{holders || "No one currently holds this position"}</p>
       </div>
-      <textarea
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-          setSaved(false);
-        }}
-        rows={3}
-        disabled={!canEdit}
-        placeholder={canEdit ? "Report for this meeting..." : "No report submitted."}
-        className="mt-2 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
-      />
-      {canEdit ? (
-        <div className="mt-2 flex items-center gap-3">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-md bg-burgundy-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
-          >
-            {saving ? "Saving..." : existing ? "Update" : "Submit"}
-          </button>
-          {existing && (
-            <button onClick={handleRemove} className="text-sm font-medium text-stone-400 hover:text-red-600">
-              Remove
+
+      {editing ? (
+        <>
+          <textarea
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              setSaved(false);
+            }}
+            rows={3}
+            autoFocus={Boolean(existing)}
+            placeholder="Report for this meeting..."
+            className="mt-2 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+          />
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-md bg-burgundy-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : existing ? "Update" : "Submit"}
             </button>
+            {existing && (
+              <button
+                onClick={() => {
+                  setText(existing.report);
+                  setError(null);
+                  setEditing(false);
+                }}
+                className="text-sm font-medium text-stone-500 hover:text-stone-700"
+              >
+                Cancel
+              </button>
+            )}
+            {existing && (
+              <button onClick={handleRemove} className="text-sm font-medium text-stone-400 hover:text-red-600">
+                Remove
+              </button>
+            )}
+            {error && <span className="text-sm text-red-600">{error}</span>}
+          </div>
+        </>
+      ) : existing ? (
+        <>
+          <div className="mt-2 whitespace-pre-wrap text-sm text-stone-800">{numberedLinkify(existing.report)}</div>
+          {canEdit && (
+            <div className="mt-2 flex items-center gap-3">
+              <button
+                onClick={() => setEditing(true)}
+                className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
+              >
+                Edit
+              </button>
+              <button onClick={handleRemove} className="text-sm font-medium text-stone-400 hover:text-red-600">
+                Remove
+              </button>
+              {saved && !error && <span className="text-sm text-green-600">Saved.</span>}
+            </div>
           )}
-          {saved && !error && <span className="text-sm text-green-600">Saved.</span>}
-          {error && <span className="text-sm text-red-600">{error}</span>}
-        </div>
+        </>
       ) : (
         <p className="mt-2 text-xs text-stone-400">
-          Only whoever holds {position} (or the Secretary/President) can edit this one.
+          No report submitted.{" "}
+          {!canEdit && `Only whoever holds ${position} (or the Secretary/President) can add one.`}
         </p>
       )}
     </div>
@@ -183,7 +278,7 @@ function MeetingNoteSection({
             return (
               <li key={note.id} className="flex items-start justify-between gap-2 text-sm">
                 <div>
-                  <p className="text-stone-800">{note.text}</p>
+                  <p className="text-stone-800">{linkify(note.text)}</p>
                   <p className="text-xs text-stone-400">— {note.authorName}</p>
                 </div>
                 {canRemove && (
@@ -229,6 +324,7 @@ export function MeetingMinutesClient({
   viewerId,
   viewerPositions,
   viewerOwnsModule,
+  initialAttachments,
 }: {
   meeting: MeetingWithReports;
   members: MemberLite[];
@@ -237,6 +333,7 @@ export function MeetingMinutesClient({
   viewerPositions: string[];
   /** Vice President of Communications, Historian, or President — can edit/remove anyone's Officer Report or Meeting Note. */
   viewerOwnsModule: boolean;
+  initialAttachments: MeetingAttachmentRow[];
 }) {
   const [reports, setReports] = useState(meeting.officerReports);
   const [notes, setNotes] = useState(meeting.notes);
@@ -309,6 +406,15 @@ export function MeetingMinutesClient({
           </div>
           {testEmailResult && <p className="text-xs text-stone-500">{testEmailResult}</p>}
         </div>
+      </div>
+
+      <div className="mt-6">
+        <MeetingAttachmentsSection
+          meetingId={meeting.id}
+          viewerId={viewerId}
+          viewerOwnsModule={viewerOwnsModule}
+          initialAttachments={initialAttachments}
+        />
       </div>
 
       <h2 className="mt-8 text-lg font-medium text-stone-900">Officer Reports</h2>

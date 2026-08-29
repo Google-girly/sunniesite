@@ -35,6 +35,12 @@ export default async function MeetingMinutesPage({
     orderBy: { name: "asc" },
   });
 
+  const attachments = await prisma.meetingAttachment.findMany({
+    where: { meetingId: id },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, meetingId: true, label: true, fileName: true, mimeType: true, uploadedByName: true, uploadedByMemberId: true, createdAt: true },
+  });
+
   return (
     <MeetingMinutesClient
       meeting={meeting}
@@ -42,6 +48,7 @@ export default async function MeetingMinutesPage({
       viewerId={viewer.id}
       viewerPositions={parseRoles(viewer.role)}
       viewerOwnsModule={ownsModule(viewer, "meetings-reports")}
+      initialAttachments={attachments.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
     />
   );
 }
