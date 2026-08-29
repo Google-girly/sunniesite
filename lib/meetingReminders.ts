@@ -26,12 +26,6 @@
 // (what hour it sends) — chapterTodayIso() below computes the actual
 // *date* boundary correctly regardless, so DST never shifts which
 // meeting counts as "tomorrow."
-//
-// buildMeetingEmailContent below (minutes + pending budgets + letters,
-// for one specific meeting) is also reused directly by the Meeting
-// Minutes page's "Send Test Email" button (Aug 2026 — "I also want to
-// test the emails are working... send an email only to
-// destorres@csumb.edu") — see app/api/meeting-minutes/test-email/[id].
 import { prisma } from "@/lib/prisma";
 import { nextOccurrence, formatTime12h } from "@/lib/meetings";
 import { formatMeetingDate } from "@/lib/meetingMinutes";
@@ -97,12 +91,11 @@ export interface MeetingEmailContent {
 // works for a one-off meeting too, not just a recurring series.
 export async function buildMeetingEmailContent(
   meeting: MeetingWithExtras,
-  opts: { label?: string; isTest?: boolean } = {}
+  opts: { label?: string } = {}
 ): Promise<MeetingEmailContent> {
   const label = opts.label || "Chapter Meeting";
   const when = formatMeetingDate(meeting.date) + (meeting.time ? ` at ${meeting.time}` : "");
-  const subjectPrefix = opts.isTest ? "[TEST] " : "";
-  const subject = `${subjectPrefix}${label} — ${formatMeetingDate(meeting.date)}`;
+  const subject = `${label} — ${formatMeetingDate(meeting.date)}`;
 
   // Aug 2026 — "I just want it to say please review before the meeting
   // {enter meeting date here}, see you all tomorrow!"
