@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
+import { ownsModule } from "@/lib/permissions";
 import { resolveCurrentVotingPeriod } from "@/lib/sisterOfMonthVoting";
 
 // The "general consensus" ballot — every Active member gets one vote,
@@ -28,6 +29,17 @@ export async function GET() {
     }),
   ]);
 
+  const myVote = votes.find((v) => v.voterId === viewer.id);
+
+  // Aug 2026 — "I only want cultura and sisterhood to be able to see
+  // who won sister of the month." Every Active member still gets one
+  // vote (the whole point of a general-consensus ballot), but the
+  // per-nominee tally — which reveals who's currently leading/would win
+  // — is only handed back to whoever owns Sisterhood (the Commissioner
+  // of Cultura and Sisterhood, or the President). Everyone else still
+  // gets the total vote count so the ballot doesn't feel like a black
+  // box, just not the breakdown by name.
+  const canSeeResults = ownsModule(viewer, "sisterhood");
   const tally = new Map<string, { member: { id: string; name: string }; count: number }>();
   for (const v of votes) {
     const existing = tally.get(v.nomineeId);
@@ -36,12 +48,10 @@ export async function GET() {
   }
   const results = [...tally.values()].sort((a, b) => b.count - a.count);
 
-  const myVote = votes.find((v) => v.voterId === viewer.id);
-
   return NextResponse.json({
     open: !alreadyDecided,
     period,
-    results,
+    ...(canSeeResults ? { results } : {}),
     totalVotes: votes.length,
     myVote: myVote ? myVote.nomineeId : null,
   });
