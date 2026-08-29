@@ -8,6 +8,7 @@ import {
   type BudgetStage,
   calculateBudgetTotals,
   formatEventDate,
+  isPendingApproval,
 } from "@/lib/budgets";
 import { OFFICER_POSITIONS } from "@/lib/positions";
 import { confirmDelete } from "@/lib/confirmDelete";
@@ -56,6 +57,20 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Aug 2026 — "the tentative budgets should be awaiting approval in the
+  // queue." Every Tentative or Final version still waiting on a chapter
+  // vote (status unset or "Pending" — see lib/budgets.ts
+  // isPendingApproval), across every budget, in one place — same idea as
+  // the per-version badge on its own detail page, but as a queue you can
+  // work down without opening each budget one at a time.
+  const pendingApprovals = budgets
+    .flatMap((budget) =>
+      budget.versions
+        .filter((version) => isPendingApproval(version))
+        .map((version) => ({ budget, version }))
+    )
+    .sort((a, b) => (a.budget.eventDate ?? "").localeCompare(b.budget.eventDate ?? ""));
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -126,6 +141,46 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
           {showAddForm ? "Cancel" : "New Budget"}
         </button>
       </div>
+
+      {pendingApprovals.length > 0 && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <h2 className="text-sm font-semibold text-amber-900">
+            Awaiting Approval ({pendingApprovals.length})
+          </h2>
+          <p className="mt-0.5 text-xs text-amber-700">
+            Still needs a chapter vote (Motion/Second/Vote/Status, under &quot;NVP Finance / Comptroller
+            Use Only&quot; on each budget). Tentative budgets due at the next meeting also go out with
+            the meeting-reminder email automatically — see lib/meetingReminders.ts.
+          </p>
+          <ul className="mt-3 divide-y divide-amber-100">
+            {pendingApprovals.map(({ budget, version }) => {
+              const { total } = calculateBudgetTotals(version.lineItems, version.salesTaxRate);
+              return (
+                <li key={version.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <div>
+                    <Link
+                      href={`/budgets/${budget.id}`}
+                      className="font-medium text-stone-900 hover:text-burgundy-700 hover:underline"
+                    >
+                      {budget.eventName}
+                    </Link>{" "}
+                    <span className="text-stone-500">
+                      — {BUDGET_STAGE_LABELS[version.stage as BudgetStage]}, {money(total)}
+                      {budget.chair ? `, Chair: ${budget.chair}` : ""}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/budgets/${budget.id}/${version.stage === "FINAL" ? "final" : "tentative"}`}
+                    className="shrink-0 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
+                  >
+                    Review →
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {showAddForm && (
         <form

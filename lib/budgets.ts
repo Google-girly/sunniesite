@@ -46,6 +46,15 @@ export function isApprovedVersion(version: { status: string | null }): boolean {
   return version.status === "Passed";
 }
 
+// A Tentative *or* Final version still waiting on a chapter vote (Aug
+// 2026 — "the tentative budgets should be awaiting approval in the
+// queue") — status is unset or explicitly "Pending". "Failed"/"Tabled"
+// are resolved outcomes, not pending ones, so those don't count here
+// even though they also aren't "Passed".
+export function isPendingApproval(version: { status: string | null }): boolean {
+  return !version.status || version.status === "Pending";
+}
+
 export const REIMBURSEMENT_METHODS = [
   "Cashapp",
   "Venmo",

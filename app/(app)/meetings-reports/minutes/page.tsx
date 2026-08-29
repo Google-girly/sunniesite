@@ -5,7 +5,10 @@ export default async function MinutesPage() {
   const [meetings, schedules] = await Promise.all([
     prisma.meeting.findMany({
       include: { officerReports: true },
-      orderBy: { date: "desc" },
+      // Most recent/soonest meeting first, farthest-out last (Aug 2026
+      // — "arrange the meeting minutes from most recent to farthest
+      // out"). Ascending date puts the nearest one on top.
+      orderBy: { date: "asc" },
     }),
     prisma.meetingSchedule.findMany({ where: { active: true } }),
   ]);

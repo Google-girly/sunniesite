@@ -10,6 +10,7 @@ import {
   type BudgetStage,
   calculateBudgetTotals,
   isApprovedVersion,
+  isPendingApproval,
   REIMBURSEMENT_METHODS,
 } from "@/lib/budgets";
 import { EXPENSE_ACCOUNTS } from "@/lib/financialBooksAccounts";
@@ -481,16 +482,23 @@ export function VersionDetailClient({
             <h1 className="text-2xl font-semibold text-stone-900">
               {BUDGET_STAGE_LABELS[stage]} Budget
             </h1>
-            {stage === "FINAL" &&
-              (isApprovedVersion(version) ? (
-                <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                  Approved
-                </span>
-              ) : (
-                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                  Awaiting Approval
-                </span>
-              ))}
+            {/* Aug 2026 — this used to only show on Final; Tentative
+                budgets go up for a chapter vote too, so both stages get
+                the same Approved/Awaiting Approval/Failed/Tabled badge
+                now. See lib/budgets.ts isApprovedVersion/isPendingApproval. */}
+            {isApprovedVersion(version) ? (
+              <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                Approved
+              </span>
+            ) : isPendingApproval(version) ? (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                Awaiting Approval
+              </span>
+            ) : (
+              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+                {version.status}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm text-stone-500">{budget.eventName}</p>
           {stage === "FINAL" && !isApprovedVersion(version) && (

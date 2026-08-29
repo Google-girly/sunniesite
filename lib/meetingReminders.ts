@@ -1,12 +1,15 @@
 // "Email the meeting minutes to Active sisters 24 hours before every
-// meeting" (Aug 2026) — driven off MeetingSchedule (the recurring
-// *rule*), not logged Meeting rows, since a Meeting row for tomorrow
-// usually doesn't exist yet (those get logged around/after the meeting
-// itself, via "+ Log a Meeting"). What actually gets sent is the most
-// recently logged Meeting's minutes from *this same series* — the
-// current meeting's own minutes obviously don't exist a day before it
-// happens, so this is "review last time's minutes before you come," a
-// real, common chapter practice, not a bug.
+// meeting" (Aug 2026, reworked Aug 2026) — driven off MeetingSchedule
+// (the recurring *rule*) to find which series has a meeting tomorrow,
+// then sends *that* meeting's own minutes, as filled in so far —
+// officers submit their Officer Reports against the upcoming meeting
+// all week (see the Dashboard to-do list), not after the fact, and
+// Meeting rows themselves auto-generate ahead of time for a whole term
+// (lib/meetingGeneration.ts), so tomorrow's Meeting record (and
+// whatever's been added to it — reports, action items, old business,
+// reminders, announcements) already exists by the time this runs. Not
+// last meeting's minutes — this week's draft, so everyone can review
+// what's actually on the agenda before they show up.
 //
 // This is meant to be driven by a daily cron job hitting
 // app/api/cron/meeting-reminders (see vercel.json), not called from
@@ -19,9 +22,20 @@ import { prisma } from "@/lib/prisma";
 import { nextOccurrence, formatTime12h } from "@/lib/meetings";
 import { formatMeetingDate } from "@/lib/meetingMinutes";
 import { buildMeetingMinutesDocx, meetingMinutesFilename } from "@/lib/meetingMinutesExport";
+import { buildBudgetWorkbook, budgetExportFilename } from "@/lib/budgetExport";
+import { calculateBudgetTotals, isPendingApproval } from "@/lib/budgets";
 import { sendEmail } from "@/lib/email";
 import { CHAPTER_FULL_NAME } from "@/lib/chapterConfig";
-import type { Meeting, MeetingSchedule, OfficerReport } from "@/app/generated/prisma/client";
+import type {
+  Budget,
+  BudgetLineItem,
+  BudgetVersion,
+  Meeting,
+  MeetingSchedule,
+  OfficerReport,
+} from "@/app/generated/prisma/client";
+
+type PendingBudget = { budget: Budget; version: BudgetVersion & { lineItems: BudgetLineItem[] } };
 
 function todayIsoUTC(): string {
   const d = new Date();
@@ -47,28 +61,43 @@ function baseUrl(): string {
 function buildReminderEmail(
   schedule: MeetingSchedule,
   meetingDate: string,
-  lastMeeting: (Meeting & { officerReports: OfficerReport[] }) | null
+  thisMeeting: (Meeting & { officerReports: OfficerReport[] }) | null,
+  pendingBudgets: PendingBudget[]
 ): { subject: string; html: string; text: string } {
   const label = schedule.label || "Chapter Meeting";
   const when = formatMeetingDate(meetingDate) + (schedule.time ? ` at ${formatTime12h(schedule.time)}` : "");
   const subject = `Reminder: ${label} tomorrow (${formatMeetingDate(meetingDate)})`;
 
-  const minutesLine = lastMeeting
-    ? `Attached (and linked below) are the minutes from our last meeting (${formatMeetingDate(
-        lastMeeting.date
-      )}) — please review before you come.`
-    : "There are no prior minutes on file yet for this meeting series.";
+  const minutesLine = thisMeeting
+    ? "Attached (and linked below) are this week's draft minutes — whatever's been filled in so far — please review before you come."
+    : "There's no meeting record on file yet for this one — check the Minutes list closer to the date.";
   // Links to the Minutes list (open to every logged-in member) rather
   // than a specific meeting's own page — that page is officer-only
   // (Aug 2026), and this reminder goes out to every Active member, most
   // of whom aren't officers.
-  const minutesLink = lastMeeting ? `${baseUrl()}/meetings-reports/minutes` : null;
+  const minutesLink = thisMeeting ? `${baseUrl()}/meetings-reports/minutes` : null;
+
+  // Aug 2026 — "the tentative budgets should be awaiting approval in the
+  // queue and it should also be sent out along with the meeting minutes
+  // for the next meeting." Each still-pending Tentative budget that
+  // landed on this meeting (see lib/meetingMinutesAutoAdd.ts, called from
+  // POST /api/budgets) gets its own line here plus its own workbook
+  // attached below, same treatment as the minutes docx.
+  const budgetLines = pendingBudgets.map(
+    (b) =>
+      `${b.budget.eventName} (Chair: ${b.budget.chair}) — ${money(
+        calculateBudgetTotals(b.version.lineItems, b.version.salesTaxRate).total
+      )} — up for a vote at this meeting`
+  );
 
   const text = [
     `${label} is tomorrow: ${when}.`,
     "",
     minutesLine,
     minutesLink ? minutesLink : "",
+    ...(budgetLines.length > 0
+      ? ["", "Tentative budgets up for approval at this meeting:", ...budgetLines.map((l) => `- ${l}`)]
+      : []),
     "",
     `— ${CHAPTER_FULL_NAME}`,
   ]
@@ -79,10 +108,21 @@ function buildReminderEmail(
     <p><strong>${label}</strong> is tomorrow: ${when}.</p>
     <p>${minutesLine}</p>
     ${minutesLink ? `<p><a href="${minutesLink}">${minutesLink}</a></p>` : ""}
+    ${
+      budgetLines.length > 0
+        ? `<p>Tentative budgets up for approval at this meeting:</p><ul>${budgetLines
+            .map((l) => `<li>${l}</li>`)
+            .join("")}</ul>`
+        : ""
+    }
     <p>— ${CHAPTER_FULL_NAME}</p>
   `;
 
   return { subject, html, text };
+}
+
+function money(n: number): string {
+  return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
 
 export interface ReminderRunResult {
@@ -127,19 +167,43 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
       continue;
     }
 
-    const lastMeeting = await prisma.meeting.findFirst({
-      where: { scheduleId: schedule.id, date: { lt: tomorrow } },
-      orderBy: { date: "desc" },
+    // Tomorrow's own Meeting record — not the last one. Meeting rows
+    // auto-generate ahead of time for a whole term (see
+    // lib/meetingGeneration.ts), and Officer Reports/action items get
+    // submitted against the upcoming meeting all week, so this should
+    // already exist with whatever's been filled in so far.
+    const thisMeeting = await prisma.meeting.findFirst({
+      where: { scheduleId: schedule.id, date: tomorrow },
       include: { officerReports: true, notes: true },
     });
 
-    const { subject, html, text } = buildReminderEmail(schedule, tomorrow, lastMeeting);
+    // Tentative budgets that auto-landed on this same meeting (see
+    // lib/meetingMinutesAutoAdd.ts) and still haven't gotten a chapter
+    // vote — these go out to Actives too, not just the minutes.
+    const pendingBudgets: PendingBudget[] = thisMeeting
+      ? (
+          await prisma.budget.findMany({
+            where: { addedToMeetingId: thisMeeting.id },
+            include: { versions: { include: { lineItems: true } } },
+          })
+        ).flatMap((budget) =>
+          budget.versions
+            .filter((v) => v.stage === "TENTATIVE" && isPendingApproval(v))
+            .map((version) => ({ budget, version }))
+        )
+      : [];
 
-    let attachments: { filename: string; content: Uint8Array }[] | undefined;
-    if (lastMeeting) {
+    const { subject, html, text } = buildReminderEmail(schedule, tomorrow, thisMeeting, pendingBudgets);
+
+    const attachments: { filename: string; content: Uint8Array }[] = [];
+    if (thisMeeting) {
       const members = await prisma.member.findMany({ select: { name: true, role: true, status: true, email: true } });
-      const bytes = await buildMeetingMinutesDocx(lastMeeting, lastMeeting.officerReports, members, lastMeeting.notes);
-      attachments = [{ filename: meetingMinutesFilename(lastMeeting), content: bytes }];
+      const bytes = await buildMeetingMinutesDocx(thisMeeting, thisMeeting.officerReports, members, thisMeeting.notes);
+      attachments.push({ filename: meetingMinutesFilename(thisMeeting), content: bytes });
+    }
+    for (const { budget, version } of pendingBudgets) {
+      const bytes = await buildBudgetWorkbook(budget, version);
+      attachments.push({ filename: budgetExportFilename(budget, version), content: bytes });
     }
 
     await sendEmail({ to: recipients, subject, html, text, attachments });
