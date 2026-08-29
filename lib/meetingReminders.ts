@@ -12,12 +12,20 @@
 // what's actually on the agenda before they show up.
 //
 // This is meant to be driven by a daily cron job hitting
-// app/api/cron/meeting-reminders (see vercel.json), not called from
+// app/api/cron/meeting-reminders (see vercel.json — "30 2 * * *", i.e.
+// ~7:30pm Pacific during PDT/summer, chosen Aug 2026), not called from
 // anywhere in the UI — Vercel's free (Hobby) tier only allows once-a-day
-// cron schedules, so "24 hours before" here really means "the day
-// before," checked once daily. A chapter that needs hour-precision
-// timing would need a paid Vercel plan (more frequent cron) or a
-// different scheduler entirely; flagged in MODULES.md.
+// cron schedules, so "24 hours before" here really means "the evening
+// before," checked once daily. Vercel cron times are fixed UTC
+// year-round (no DST awareness of their own), so this same schedule
+// drifts to ~6:30pm Pacific once Pacific switches to standard time
+// (PST) in November — a paid Vercel plan (more frequent cron, so the
+// job itself can check the local hour) or a different scheduler
+// entirely would be needed to hold it exactly at 7:30pm across the DST
+// change; flagged in MODULES.md. This UTC drift is purely cosmetic
+// (what hour it sends) — chapterTodayIso() below computes the actual
+// *date* boundary correctly regardless, so DST never shifts which
+// meeting counts as "tomorrow."
 //
 // buildMeetingEmailContent below (minutes + pending budgets + letters,
 // for one specific meeting) is also reused directly by the Meeting
@@ -47,9 +55,19 @@ import type {
 type PendingBudget = { budget: Budget; version: BudgetVersion & { lineItems: BudgetLineItem[] } };
 type MeetingWithExtras = Meeting & { officerReports: OfficerReport[]; notes: MeetingNote[] };
 
-function todayIsoUTC(): string {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
+// Aug 2026 fix — this used to be the server's raw UTC calendar date
+// (`new Date().toISOString().slice(0,10)`). Vercel serverless functions
+// run in UTC by default regardless of where the chapter actually is
+// (Pacific), so a cron firing in the evening Pacific time could already
+// be on the *next* UTC calendar day — silently making "tomorrow" mean
+// two days out from the chapter's actual local day, not one. Every
+// Meeting.date/MeetingSchedule occurrence in this app is implicitly a
+// Pacific calendar date (that's the chapter's own timezone), so "today"
+// has to be computed the same way for the comparison to mean anything.
+// Intl's timeZone conversion handles the PDT/PST switch automatically —
+// no manual UTC-offset math, and no drift across the DST changeover.
+function chapterTodayIso(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -196,7 +214,7 @@ export interface ReminderRunResult {
 // constraint means a second run just reports each schedule as already
 // sent rather than emailing twice.
 export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResult[]> {
-  const tomorrow = addDaysIso(todayIsoUTC(), 1);
+  const tomorrow = addDaysIso(chapterTodayIso(), 1);
 
   const schedules = await prisma.meetingSchedule.findMany({ where: { active: true } });
   const dueTomorrow = schedules.filter((s) => nextOccurrence(s, tomorrow) === tomorrow);
