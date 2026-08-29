@@ -256,12 +256,18 @@ export function MeetingScheduleDetailClient({
                   >
                     Open Minutes
                   </Link>
-                  <Link
-                    href={`/meetings-reports/minutes/${m.id}/final`}
+                  <a
+                    href={`/api/meeting-minutes/export/${m.id}`}
                     className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
                   >
-                    Final Version
-                  </Link>
+                    Export .docx
+                  </a>
+                  <a
+                    href={`/api/meeting-minutes/export-pdf/${m.id}`}
+                    className="ml-3 text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
+                  >
+                    Export PDF
+                  </a>
                   {canManage && (
                     <button
                       onClick={() => handleDeleteMeeting(m.id)}

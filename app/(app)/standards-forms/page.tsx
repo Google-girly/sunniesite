@@ -1,8 +1,12 @@
+import { redirect } from "next/navigation";
 import { TemplateLibrarySection } from "@/components/TemplateLibrarySection";
 import { CPR_FIRST_AID_MIN_CERTIFIED } from "@/lib/standardsForms";
 import { currentAcademicYear } from "@/lib/standardsForms";
 import { currentTermLabel, currentTermRange } from "@/lib/studyHours";
 import { prisma } from "@/lib/prisma";
+import { getCurrentMember } from "@/lib/session";
+import { canAccessModule } from "@/lib/permissions";
+import { NotAuthorized } from "@/components/NotAuthorized";
 import { ChapterStandardsChecklistClient } from "./ChapterStandardsChecklistClient";
 
 // Official Standards Forms — as of Aug 2026, a pure checklist over
@@ -14,6 +18,12 @@ import { ChapterStandardsChecklistClient } from "./ChapterStandardsChecklistClie
 // back and shows it as a hint. See lib/chapterStandardsChecklist.ts for
 // the full item list and MODULES.md for why this got split up.
 export default async function StandardsFormsPage() {
+  const viewer = await getCurrentMember();
+  if (!viewer) redirect("/login");
+  if (!canAccessModule(viewer, "standards-forms")) {
+    return <NotAuthorized moduleTitle="Official Standards Forms" positions={[]} />;
+  }
+
   const term = currentTermLabel();
   const { start, end } = currentTermRange();
   const academicYear = currentAcademicYear();

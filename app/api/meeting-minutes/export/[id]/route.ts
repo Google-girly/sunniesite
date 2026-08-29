@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
 import { buildMeetingMinutesDocx, meetingMinutesFilename } from "@/lib/meetingMinutesExport";
 import { prisma } from "@/lib/prisma";
-import { requireModuleOwnerApi } from "@/lib/session";
+import { getCurrentMember } from "@/lib/session";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// Compiling the final, official Minutes document is the Secretary's
-// (Vice President of Communications) job — see lib/permissions.ts.
+// Downloading the compiled Minutes is open to every logged-in member
+// (Aug 2026 — "anyone should be able to export the minutes"); only
+// *editing* officer reports (app/(app)/meetings-reports/minutes/[id])
+// stays officer-only.
 export async function GET(_request: Request, { params }: RouteParams) {
-  const access = await requireModuleOwnerApi("meetings-reports");
-  if ("error" in access) return access.error;
+  const member = await getCurrentMember();
+  if (!member) {
+    return NextResponse.json({ error: "Not logged in." }, { status: 401 });
+  }
 
   const { id } = await params;
   const meeting = await prisma.meeting.findUnique({

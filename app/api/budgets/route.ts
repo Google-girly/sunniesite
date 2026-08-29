@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAccess } from "@/lib/session";
+import { addActionItemToNextMeeting } from "@/lib/meetingMinutesAutoAdd";
 
 export async function GET() {
   const budgets = await prisma.budget.findMany({
@@ -10,6 +12,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const access = await requireApiAccess("budgets");
+  if ("error" in access) return access.error;
+  const { member } = access;
+
   const body = await request.json().catch(() => null);
   const eventName = typeof body?.eventName === "string" ? body.eventName.trim() : "";
   const chair = typeof body?.chair === "string" ? body.chair.trim() : "";
@@ -29,6 +35,21 @@ export async function POST(request: Request) {
     data: { eventName, chair, eventDate, budgetNumber: await nextBudgetNumber() },
     include: { versions: { include: { lineItems: true } } },
   });
+
+  // Aug 2026 — "when a budget is submitted it should automatically go
+  // with the next meeting, as long as it is not within 24 hrs and 5 min
+  // of the meeting." Set once, here at creation — a later Final Budget
+  // version submitted for this same event doesn't add a second entry.
+  // Best-effort: a submitted budget is real either way, so this
+  // shouldn't fail the request if it doesn't find a meeting to attach to.
+  const added = await addActionItemToNextMeeting(
+    `${eventName} — Tentative Budget submitted (Chair: ${chair})`,
+    { id: member.id, name: chair }
+  );
+  if (added) {
+    await prisma.budget.update({ where: { id: budget.id }, data: { addedToMeetingId: added.meetingId } });
+    budget.addedToMeetingId = added.meetingId;
+  }
 
   return NextResponse.json(budget, { status: 201 });
 }

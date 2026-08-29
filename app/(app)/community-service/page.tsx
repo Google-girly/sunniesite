@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
-import { ownsModule } from "@/lib/permissions";
+import { canAccessModule, ownsModule } from "@/lib/permissions";
+import { NotAuthorized } from "@/components/NotAuthorized";
 import { CommunityServiceClient } from "./CommunityServiceClient";
 
 // Server component: reads every Active/Inactive member plus her logged
@@ -15,6 +16,9 @@ import { CommunityServiceClient } from "./CommunityServiceClient";
 export default async function CommunityServicePage() {
   const viewer = await getCurrentMember();
   if (!viewer) redirect("/login");
+  if (!canAccessModule(viewer, "community-service")) {
+    return <NotAuthorized moduleTitle="Community Service" positions={["Commissioner of Community Service"]} />;
+  }
   const canSeeEveryone = ownsModule(viewer, "community-service");
 
   const members = await prisma.member.findMany({

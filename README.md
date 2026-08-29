@@ -99,15 +99,21 @@ prisma/
   schema.prisma           the database schema — all models live here
   migrations/              generated migration history (commit this)
   dev.db                  the actual SQLite file (gitignored, local only)
-rag/                     Chapter Assistant (chat widget) source docs +
-                          generated index/model — see MODULES.md
-  source_docs/             the approved PDF set it's allowed to answer from
+rag/                     Chapter Assistant (chat widget) generated
+                          index/model — see MODULES.md
   index.json               generated: chunks + embeddings (commit this)
   models/                  generated: local embedding model (commit this)
+public/
+  rag-source-docs/         the approved PDF/docx/xlsx set the Chapter
+                            Assistant answers from — lives under public/
+                            so citations can link straight to the file,
+                            but still session-gated (proxy.ts protects
+                            everything except a short explicit allowlist,
+                            not just app/ routes)
 scripts/
   rag-ingest.ts             rebuilds rag/index.json — run via
                             `npm run rag:ingest` after touching
-                            rag/source_docs/
+                            public/rag-source-docs/
 proxy.ts                  runs before every request; redirects to
                            /login if you're not signed in (Next.js 16
                            renamed "middleware" to "proxy" — same thing)

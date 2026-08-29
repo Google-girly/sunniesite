@@ -241,6 +241,14 @@ export function MeetingMinutesClient({
   const [reports, setReports] = useState(meeting.officerReports);
   const [notes, setNotes] = useState(meeting.notes);
 
+  // Aug 2026: "even the officers who do have access I only want it to be
+  // access to edit and see their reports" — a regular officer only sees
+  // her own held position(s) here at all; module owners (Secretary/
+  // President) still see and can edit every position, same as always.
+  const visiblePositions = viewerOwnsModule
+    ? OFFICER_POSITIONS
+    : OFFICER_POSITIONS.filter((p) => viewerPositions.includes(p));
+
   function upsertLocal(report: OfficerReport) {
     setReports((prev) => [...prev.filter((r) => r.id !== report.id), report]);
   }
@@ -262,29 +270,29 @@ export function MeetingMinutesClient({
           <p className="mt-1 text-sm text-stone-500">{meeting.time || "No time on file"}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href={`/meetings-reports/minutes/${meeting.id}/final`}
-            className="rounded-md border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
-          >
-            Final Version →
-          </Link>
           <a
             href={`/api/meeting-minutes/export/${meeting.id}`}
+            className="rounded-md border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+          >
+            Export .docx
+          </a>
+          <a
+            href={`/api/meeting-minutes/export-pdf/${meeting.id}`}
             className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
           >
-            Export Minutes
+            Export PDF
           </a>
         </div>
       </div>
 
       <h2 className="mt-8 text-lg font-medium text-stone-900">Officer Reports</h2>
       <p className="mt-1 text-sm text-stone-500">
-        {reports.length} / {OFFICER_POSITIONS.length} reports submitted. Each officer can only
-        submit her own position&apos;s report — the Secretary/President can edit any of them.
+        {reports.length} / {OFFICER_POSITIONS.length} reports submitted overall. You can only see
+        and edit the report(s) for your own position{viewerOwnsModule ? " — as Secretary/President, you can see and edit everyone's" : ""}.
       </p>
 
       <div className="mt-4 space-y-4">
-        {OFFICER_POSITIONS.map((position) => (
+        {visiblePositions.map((position) => (
           <OfficerReportRow
             key={position}
             meetingId={meeting.id}
@@ -296,6 +304,11 @@ export function MeetingMinutesClient({
             onDeleted={() => setReports((prev) => prev.filter((r) => r.position !== position))}
           />
         ))}
+        {visiblePositions.length === 0 && (
+          <p className="text-sm text-stone-400">
+            You don&apos;t currently hold a position with a report here.
+          </p>
+        )}
       </div>
 
       <h2 className="mt-8 text-lg font-medium text-stone-900">Action Items, Business &amp; More</h2>

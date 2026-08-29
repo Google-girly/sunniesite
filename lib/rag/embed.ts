@@ -10,7 +10,15 @@
 import { env, pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
 import path from "node:path";
 
-const MODEL_ID = "Xenova/all-MiniLM-L6-v2";
+// bge-small-en-v1.5 (Aug 2026 swap, replacing all-MiniLM-L6-v2 — see
+// MODULES.md's Chapter Assistant entry) retrieves noticeably better
+// against short/structured documents. BGE models are trained
+// asymmetrically: queries need an instruction prefix prepended for best
+// retrieval accuracy, documents don't — see embedQuery vs embedDocument
+// below. Getting this backwards (or applying it to both) measurably hurts
+// results, so don't just call embedText from new code.
+const MODEL_ID = "Xenova/bge-small-en-v1.5";
+const QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: ";
 const MODELS_DIR = path.join(process.cwd(), "rag", "models");
 
 // The app's own query-time runtime never touches the network for this —
@@ -26,9 +34,9 @@ let pipelinePromise: Promise<FeatureExtractionPipeline> | null = null;
 
 function getPipeline(): Promise<FeatureExtractionPipeline> {
   if (!pipelinePromise) {
-    // q8 (int8) quantized weights — ~25MB instead of the ~90MB fp32
-    // default, which matters here since rag/models/ gets committed to the
-    // repo and shipped with every deploy.
+    // q8 (int8) quantized weights — much smaller than the fp32 default,
+    // which matters here since rag/models/ gets committed to the repo and
+    // shipped with every deploy.
     pipelinePromise = pipeline("feature-extraction", MODEL_ID, {
       dtype: "q8",
     }) as Promise<FeatureExtractionPipeline>;
@@ -36,17 +44,15 @@ function getPipeline(): Promise<FeatureExtractionPipeline> {
   return pipelinePromise;
 }
 
-/** Mean-pooled, L2-normalized embedding for one piece of text. */
-export async function embedText(text: string): Promise<number[]> {
+async function embed(text: string): Promise<number[]> {
   const extractor = await getPipeline();
-  const output = await extractor(text, { pooling: "mean", normalize: true });
+  const output = await extractor(text, { pooling: "cls", normalize: true });
   return Array.from(output.data as Float32Array);
 }
 
-/** Same as embedText, but batched — much faster for ingesting many chunks. */
-export async function embedBatch(texts: string[]): Promise<number[][]> {
+async function embedBatchRaw(texts: string[]): Promise<number[][]> {
   const extractor = await getPipeline();
-  const output = await extractor(texts, { pooling: "mean", normalize: true });
+  const output = await extractor(texts, { pooling: "cls", normalize: true });
   const dims = output.dims[output.dims.length - 1];
   const data = output.data as Float32Array;
   const vectors: number[][] = [];
@@ -54,6 +60,21 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
     vectors.push(Array.from(data.slice(i * dims, (i + 1) * dims)));
   }
   return vectors;
+}
+
+/** Embed a user's question — retrieval-side, gets BGE's query instruction prefix. */
+export async function embedQuery(text: string): Promise<number[]> {
+  return embed(QUERY_INSTRUCTION + text);
+}
+
+/** Embed a document chunk at ingest time — no instruction prefix. */
+export async function embedDocument(text: string): Promise<number[]> {
+  return embed(text);
+}
+
+/** Batched document embedding — much faster than one-at-a-time for ingesting many chunks. */
+export async function embedDocumentBatch(texts: string[]): Promise<number[][]> {
+  return embedBatchRaw(texts);
 }
 
 export { MODEL_ID, MODELS_DIR };

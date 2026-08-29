@@ -1,19 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import { isMemberStatus } from "@/lib/roster";
+import { OFFICER_POSITIONS } from "@/lib/positions";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GENERAL_MEMBER_ROLE = "__none__"; // signup form's dropdown value for "no position"
 
 // Self-service account creation (Aug 2026, reworked from an earlier
 // "claim a Roster row the President already added" design on request —
 // the President doesn't want a fixed roster to sign up against, she
 // wants anyone who knows the chapter password to be able to register,
 // then have an officer approve her). This creates a brand-new Member
-// row — status defaults to "ACTIVE", no position — but `approved`
-// defaults `false` for anything created through this route (see
-// prisma/schema.prisma), so she can't actually log in
+// row — `approved` defaults `false` for anything created through this
+// route (see prisma/schema.prisma), so she can't actually log in
 // (app/api/auth/login checks it) until the President, Vice President,
-// or VP of Communications approves her from /pending-signups.
+// or VP of Communications approves her from the Pending Sign-Ups panel (see components/PendingSignupsPanel.tsx).
+//
+// Aug 2026: every real Roster column (Class, Line #, Name, Nickname,
+// Role, Status, Crossing Term, Email) is now required here too, so an
+// approved signup already IS a complete Roster row rather than needing
+// an officer to backfill it afterward — same fields/validation Roster's
+// own "Add Member" form uses (app/(app)/roster/RosterClient.tsx), just
+// self-reported. Notes stays optional — a free-text catch-all, mainly
+// meant for "I hold position(s) X/Y" if Role's single-select isn't
+// enough, for the approving officer to reconcile onto Roster.
 //
 // No session cookie is set here — unlike the old design, signing up
 // doesn't log her in, since there's nothing to log her into yet.
@@ -32,12 +43,41 @@ export async function POST(request: Request) {
   const email = typeof body?.email === "string" ? body.email.trim() : "";
   const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
   const password = typeof body?.password === "string" ? body.password : "";
+  const memberClass = typeof body?.class === "string" ? body.class.trim() : "";
+  const crossingNumberRaw = typeof body?.crossingNumber === "string" ? body.crossingNumber.trim() : "";
+  const nickname = typeof body?.nickname === "string" ? body.nickname.trim() : "";
+  const role = typeof body?.role === "string" ? body.role.trim() : "";
+  const status = typeof body?.status === "string" ? body.status.trim() : "";
+  const crossingTerm = typeof body?.crossingTerm === "string" ? body.crossingTerm.trim() : "";
+  const notes = typeof body?.notes === "string" ? body.notes.trim() : "";
 
   if (enteredSignupPassword !== signupPassword) {
     return NextResponse.json({ error: "That's not the chapter password. Ask an officer." }, { status: 401 });
   }
   if (name.split(/\s+/).filter(Boolean).length < 2) {
     return NextResponse.json({ error: "Enter your first and last name." }, { status: 400 });
+  }
+  if (!memberClass) {
+    return NextResponse.json({ error: "Class is required (e.g. ΑΒ, or Founding)." }, { status: 400 });
+  }
+  const crossingNumber = Number.parseInt(crossingNumberRaw, 10);
+  if (!crossingNumberRaw || !Number.isInteger(crossingNumber) || crossingNumber < 0) {
+    return NextResponse.json({ error: "Enter a valid Line #." }, { status: 400 });
+  }
+  if (!nickname) {
+    return NextResponse.json({ error: "Nickname is required." }, { status: 400 });
+  }
+  if (!role) {
+    return NextResponse.json({ error: "Select a Role — pick \"General Member\" if you don't hold a position." }, { status: 400 });
+  }
+  if (role !== GENERAL_MEMBER_ROLE && !(OFFICER_POSITIONS as readonly string[]).includes(role)) {
+    return NextResponse.json({ error: "Invalid Role selected." }, { status: 400 });
+  }
+  if (!isMemberStatus(status)) {
+    return NextResponse.json({ error: "Select a valid Status." }, { status: 400 });
+  }
+  if (!crossingTerm) {
+    return NextResponse.json({ error: "Crossing Term is required (e.g. Fall 2024)." }, { status: 400 });
   }
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
@@ -71,6 +111,13 @@ export async function POST(request: Request) {
       name,
       email,
       phone,
+      class: memberClass,
+      crossingNumber,
+      nickname,
+      role: role === GENERAL_MEMBER_ROLE ? null : role,
+      status,
+      crossingTerm,
+      notes: notes || null,
       passwordHash: hashPassword(password),
       approved: false,
     },

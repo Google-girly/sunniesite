@@ -7,6 +7,7 @@ import { MODULES } from "@/lib/modules";
 import { canAccessModule, canApproveSignups, isPresident, type ModuleKey } from "@/lib/permissions";
 import { parseRoles } from "@/lib/roster";
 import { LogoutButton } from "@/components/LogoutButton";
+import { PendingSignupsPanel } from "@/components/PendingSignupsPanel";
 import { CHAPTER_ORG_NAME, CHAPTER_LABEL } from "@/lib/chapterConfig";
 
 function NavLink({
@@ -74,14 +75,16 @@ export function Sidebar({ member }: { member: Member }) {
         {/* "Pending Sign-Ups" also goes to Vice President/VP of
             Communications, not just the President — see
             lib/permissions.ts canApproveSignups(). "Manage Officers &
-            Logins" itself stays President-only. */}
+            Logins" itself stays President-only. Pending Sign-Ups is a
+            slide-over panel (Aug 2026), not its own page/module — see
+            components/PendingSignupsPanel.tsx. */}
         {canApproveSignups(member) && (
           <>
             <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">
               Officer Tools
             </p>
             {isPresident(member) && <NavLink href="/officers" label="Manage Officers & Logins" />}
-            <NavLink href="/pending-signups" label="Pending Sign-Ups" />
+            <PendingSignupsPanel />
           </>
         )}
       </nav>

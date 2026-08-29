@@ -10,10 +10,15 @@ interface VoteResult {
 
 interface VoteResponse {
   open: boolean;
-  period: { year: number; month: string } | null;
+  period: { year: number; month: string; dueDate: string | null } | null;
   results?: VoteResult[];
   totalVotes?: number;
   myVote?: string | null;
+}
+
+function formatDueDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "long", day: "numeric" });
 }
 
 async function parseError(res: Response): Promise<string> {
@@ -68,8 +73,11 @@ export function SisterOfMonthBallotCard({ activeMembers }: { activeMembers: Memb
         Sister of the Month — {data.period.month}
       </p>
       <p className="mt-1 text-sm text-stone-600">
-        Vote for who you think deserves it this month — {data.totalVotes ?? 0} vote
+        Vote for who you think deserves it — {data.totalVotes ?? 0} vote
         {(data.totalVotes ?? 0) === 1 ? "" : "s"} so far.
+        {data.period.dueDate && (
+          <> Voting closes before the first {data.period.month} meeting, on {formatDueDate(data.period.dueDate)}.</>
+        )}
       </p>
 
       <form onSubmit={handleVote} className="mt-3 flex flex-wrap items-center gap-2">

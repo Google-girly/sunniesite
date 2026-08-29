@@ -4,7 +4,7 @@
 // nowhere near the scale where that needs a real vector index.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { embedText } from "./embed";
+import { embedQuery } from "./embed";
 
 export interface RetrievedChunk {
   sourceFile: string;
@@ -47,7 +47,7 @@ function dot(a: number[], b: number[]): number {
 }
 
 export async function retrieve(query: string, topK = 5): Promise<RetrievedChunk[]> {
-  const [index, queryEmbedding] = await Promise.all([loadIndex(), embedText(query)]);
+  const [index, queryEmbedding] = await Promise.all([loadIndex(), embedQuery(query)]);
 
   const scored = index.chunks.map((chunk) => ({
     sourceFile: chunk.sourceFile,

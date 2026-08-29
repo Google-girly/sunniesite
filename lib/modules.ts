@@ -107,4 +107,11 @@ export const MODULES: ModuleDef[] = [
     description: "Log events against Chapter Standards credits and sign off with a drawn signature.",
     status: "active",
   },
+  {
+    key: "letters",
+    title: "Official Letterhead",
+    href: "/letters",
+    description: "Generate a letter on the chapter's real letterhead — Letter of Excuse, Active Member Request, or anything else.",
+    status: "active",
+  },
 ];

@@ -60,6 +60,12 @@ model Member {
   crossingNumber Int?
   nickname       String?
 
+  // Free-text, optional (Aug 2026) — surfaced on /signup so a sister can
+  // flag anything that doesn't fit the other fields, most commonly "I
+  // hold position(s) X/Y" for the approving officer to set on Roster
+  // once she's approved — this field itself never drives permissions.
+  notes String?
+
   accountEntries AccountEntry[]
   serviceHours   ServiceHourEntry[]
   makeUpProjects MakeUpProject[]
@@ -81,6 +87,8 @@ model Member {
   leadershipPositions      LeadershipPosition[]
   letterSignoffs           LetterSignoff[]
   meetingNotes             MeetingNote[]
+  letters                  Letter[]
+  chapterAssistantAsks     ChapterAssistantInteraction[]
 }
 
 // --- Fines / Member Accounts module -------------------------------------
@@ -168,6 +176,13 @@ model Budget {
   budgetNumber String? // auto-assigned at creation, see nextBudgetNumber() in app/api/budgets/route.ts
 
   versions BudgetVersion[]
+
+  // Aug 2026 — "when a budget is submitted it should automatically go
+  // with the next meeting, as long as it is not within 24 hrs and 5 min
+  // of the meeting." Set once, at Budget creation, so a later Final
+  // Budget/version submitted for the same event doesn't add a second
+  // entry — see lib/meetingMinutesAutoAdd.ts.
+  addedToMeetingId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -758,6 +773,37 @@ model LeadershipPosition {
   updatedAt    DateTime @updatedAt
 }
 
+// --- Letters (Official Letterhead, general-purpose) ---------------------
+
+// "A place where people can just use the official letterhead for
+// whatever they need" (Aug 2026) — Letter of Excuse, Active Member
+// Request, etc., distinct from the Chapter Standards-specific letters
+// in lib/standardsFormsLetters.ts (those are tied to a specific credit;
+// this is free-form, any member, any purpose). Every letter created
+// here is logged — date, who created it, what it was for — and the
+// President can see the full list (see lib/permissions.ts MODULE_ACCESS
+// "letters"); everyone else sees just her own. See lib/letters.ts for
+// the type list/validation and lib/letterExport.ts for the docx build
+// (reuses lib/docxLetterhead.ts, same as the Chapter Standards letters).
+model Letter {
+  id                 String   @id @default(cuid())
+  type               String // see lib/letters.ts LETTER_TYPES — "Other" pairs with typeOther below
+  typeOther          String? // free text when type === "Other"
+  purpose            String // what it's for / who it's addressed to — printed as the letter's body
+  recipientName      String?
+  date               String // ISO "YYYY-MM-DD" — the date printed on the letter
+  createdByMemberId  String?
+  createdByMember    Member?  @relation(fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  createdByName      String // snapshot — survives the member being removed later
+  createdAt          DateTime @default(now())
+
+  // Aug 2026 — "Add to Next Meeting Minutes" button (Letter of Excuse /
+  // Active Member Request), see lib/meetingMinutesAutoAdd.ts. Set once
+  // the button's been used, so it can't be clicked twice for the same
+  // letter; null until then.
+  addedToMeetingId String?
+}
+
 // One shared signoff model for every letter-style export above that
 // needs a signature (F.4, F.5 ×2 variants) — rather than a
 // bespoke signoff model per section, `section`+`key` group which letter
@@ -780,6 +826,29 @@ model LetterSignoff {
   updatedAt      DateTime @updatedAt
 
   @@unique([section, key])
+}
+
+// --- Chapter Assistant (RAG chatbot) interaction log --------------------
+
+// One row per question asked. Created right after retrieval finishes
+// (answer starts as "") so there's an id to stream back to the widget
+// before generation even completes — see app/api/chapter-assistant/
+// route.ts — then updated with the full answer once Groq's stream ends.
+// Lets officers spot documentation gaps (a low/null topScore is this
+// session's proxy for "the docs probably don't cover this") and members
+// flag a wrong/unhelpful answer with a thumbs down.
+model ChapterAssistantInteraction {
+  id       String @id @default(cuid())
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  question String
+  answer   String @default("")
+  sources  String // JSON-encoded Source[] — see lib/rag/prompt.ts
+  topScore Float? // best retrieval cosine similarity across the chunks used
+  feedback String? // "up" | "down" | null (not yet rated) — set once, via PATCH
+
+  createdAt DateTime @default(now())
 }
 
 // Manual self-attestation for checklist items with no backing data at

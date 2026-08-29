@@ -2,11 +2,19 @@
 // the UI (dropdown options + labels). Keeping status as a plain string
 // union instead of a Prisma enum because SQLite has no native enum type.
 
+// GENERAL (Aug 2026) — "sisters who just want accounts to keep up with
+// the chapter but not be active." Not on the real Chapter Roster
+// Template's own status list the other four mirror — this one only
+// exists inside the app, for an account that isn't a Roster entry at
+// all in the traditional sense. See lib/permissions.ts
+// isGeneralOnlyMember()/OBSERVER_ALLOWED_MODULES for what it actually
+// restricts (Calendar, Meeting Minutes, Letters — nothing else).
 export const MEMBER_STATUSES = [
   "ACTIVE",
   "ACTIVE_SPECIAL_CIRCUMSTANCE",
   "INACTIVE",
   "ACTIVE_ALUMNAE",
+  "GENERAL",
 ] as const;
 
 export type MemberStatus = (typeof MEMBER_STATUSES)[number];
@@ -16,6 +24,7 @@ export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
   ACTIVE_SPECIAL_CIRCUMSTANCE: "Active – Special Circumstance",
   INACTIVE: "Inactive",
   ACTIVE_ALUMNAE: "Active Alumnae",
+  GENERAL: "General Member (not Active — just following along)",
 };
 
 export function isMemberStatus(value: string): value is MemberStatus {

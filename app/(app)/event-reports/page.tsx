@@ -1,12 +1,16 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
-import { isPresident } from "@/lib/permissions";
+import { canAccessModule, isPresident } from "@/lib/permissions";
+import { NotAuthorized } from "@/components/NotAuthorized";
 import { EventReportsClient } from "./EventReportsClient";
 
 export default async function EventReportsPage() {
   const viewer = await getCurrentMember();
   if (!viewer) redirect("/login");
+  if (!canAccessModule(viewer, "event-reports")) {
+    return <NotAuthorized moduleTitle="Event Reports" positions={[]} />;
+  }
 
   const [reports, members] = await Promise.all([
     prisma.eventReport.findMany({

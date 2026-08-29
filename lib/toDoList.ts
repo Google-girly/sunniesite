@@ -8,7 +8,7 @@ import type { Member } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseRoles } from "@/lib/roster";
 import { formatMeetingDate } from "@/lib/meetingMinutes";
-import { currentVotingPeriod } from "@/lib/sisterOfMonthVoting";
+import { resolveCurrentVotingPeriod } from "@/lib/sisterOfMonthVoting";
 import { calculateBalance, formatCurrency } from "@/lib/fines";
 import { WEEKLY_HOURS_REQUIRED, weekStart } from "@/lib/studyHours";
 
@@ -56,7 +56,7 @@ export async function getMyToDoItems(member: Member): Promise<ToDoItem[]> {
   // month's ballot is genuinely still open (see
   // lib/sisterOfMonthVoting.ts + the vote route for the exact rules).
   if (member.status === "ACTIVE") {
-    const period = currentVotingPeriod();
+    const period = await resolveCurrentVotingPeriod();
     if (period) {
       const [alreadyDecided, myVote] = await Promise.all([
         prisma.sisterOfTheMonth.findUnique({

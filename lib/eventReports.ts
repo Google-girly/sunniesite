@@ -170,26 +170,35 @@ export function standardLabel(value: string): string {
   return option ? `${option.value} — ${option.title}` : value;
 }
 
+// Every field is required (Aug 2026) except signerMemberId — the signer
+// isn't always someone on Roster (see EVENT_REPORT_STANDARDS
+// signerHints, e.g. a Greek Life advisor or presenter).
 export interface EventReportInput {
   standardSection: string;
   eventName: string;
-  hostingOrganization: string | null;
+  hostingOrganization: string;
   date: string;
-  lengthOfTime: string | null;
-  location: string | null;
-  membersInAttendance: number | null;
+  lengthOfTime: string;
+  location: string;
+  membersInAttendance: number;
   purpose: string;
-  resourcesUtilized: string | null;
+  resourcesUtilized: string;
   signerName: string;
-  signerTitle: string | null;
+  signerTitle: string;
   signerMemberId: string | null;
-  signedDate: string | null;
-  signatureImage: string | null;
+  signedDate: string;
+  signatureImage: string;
 }
 
 // Shared by create (POST) and edit (PATCH) — same required fields
 // either way, so there's exactly one place this validation lives rather
 // than two copies drifting apart.
+//
+// Aug 2026: "Make everything in the event report required" — every
+// field on the real form is now required, not just the original five
+// (standardSection/eventName/date/purpose/signerName). See
+// app/(app)/event-reports/EventReportsClient.tsx for the matching UI
+// (required markers + a disabled submit until every field is filled).
 export function parseEventReportInput(body: unknown): { data: EventReportInput } | { error: string } {
   if (!body || typeof body !== "object") {
     return { error: "Invalid request body." };
@@ -204,41 +213,71 @@ export function parseEventReportInput(body: unknown): { data: EventReportInput }
   if (!eventName) {
     return { error: "Event name is required." };
   }
+  const hostingOrganization = typeof b.hostingOrganization === "string" ? b.hostingOrganization.trim() : "";
+  if (!hostingOrganization) {
+    return { error: "Hosting Organization is required." };
+  }
   const date = typeof b.date === "string" ? b.date.trim() : "";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return { error: "A valid event date is required." };
+  }
+  const lengthOfTime = typeof b.lengthOfTime === "string" ? b.lengthOfTime.trim() : "";
+  if (!lengthOfTime) {
+    return { error: "Length of Time is required." };
+  }
+  const location = typeof b.location === "string" ? b.location.trim() : "";
+  if (!location) {
+    return { error: "Location is required." };
+  }
+  const membersInAttendance =
+    typeof b.membersInAttendance === "number" && Number.isFinite(b.membersInAttendance)
+      ? Math.max(0, Math.trunc(b.membersInAttendance))
+      : null;
+  if (membersInAttendance === null) {
+    return { error: "Number of Members in Attendance is required." };
   }
   const purpose = typeof b.purpose === "string" ? b.purpose.trim() : "";
   if (!purpose) {
     return { error: "Purpose and description of the event is required." };
   }
+  const resourcesUtilized = typeof b.resourcesUtilized === "string" ? b.resourcesUtilized.trim() : "";
+  if (!resourcesUtilized) {
+    return { error: "Resources utilized in event is required." };
+  }
   const signerName = typeof b.signerName === "string" ? b.signerName.trim() : "";
   if (!signerName) {
     return { error: "A signer name is required." };
+  }
+  const signerTitle = typeof b.signerTitle === "string" ? b.signerTitle.trim() : "";
+  if (!signerTitle) {
+    return { error: "Title/Office is required." };
+  }
+  const signedDate = typeof b.signedDate === "string" ? b.signedDate.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(signedDate)) {
+    return { error: "A valid Signed Date is required." };
+  }
+  const signatureImage =
+    typeof b.signatureImage === "string" && b.signatureImage.startsWith("data:image/") ? b.signatureImage : "";
+  if (!signatureImage) {
+    return { error: "A signature is required — per Chapter Standards §I.3, a typed name alone isn't acceptable." };
   }
 
   return {
     data: {
       standardSection,
       eventName,
-      hostingOrganization: typeof b.hostingOrganization === "string" ? b.hostingOrganization.trim() || null : null,
+      hostingOrganization,
       date,
-      lengthOfTime: typeof b.lengthOfTime === "string" ? b.lengthOfTime.trim() || null : null,
-      location: typeof b.location === "string" ? b.location.trim() || null : null,
-      membersInAttendance:
-        typeof b.membersInAttendance === "number" && Number.isFinite(b.membersInAttendance)
-          ? Math.max(0, Math.trunc(b.membersInAttendance))
-          : null,
+      lengthOfTime,
+      location,
+      membersInAttendance,
       purpose,
-      resourcesUtilized: typeof b.resourcesUtilized === "string" ? b.resourcesUtilized.trim() || null : null,
+      resourcesUtilized,
       signerName,
-      signerTitle: typeof b.signerTitle === "string" ? b.signerTitle.trim() || null : null,
+      signerTitle,
       signerMemberId: typeof b.signerMemberId === "string" && b.signerMemberId ? b.signerMemberId : null,
-      signedDate: typeof b.signedDate === "string" && b.signedDate ? b.signedDate : null,
-      signatureImage:
-        typeof b.signatureImage === "string" && b.signatureImage.startsWith("data:image/")
-          ? b.signatureImage
-          : null,
+      signedDate,
+      signatureImage,
     },
   };
 }

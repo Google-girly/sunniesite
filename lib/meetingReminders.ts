@@ -58,7 +58,11 @@ function buildReminderEmail(
         lastMeeting.date
       )}) — please review before you come.`
     : "There are no prior minutes on file yet for this meeting series.";
-  const minutesLink = lastMeeting ? `${baseUrl()}/meetings-reports/minutes/${lastMeeting.id}/final` : null;
+  // Links to the Minutes list (open to every logged-in member) rather
+  // than a specific meeting's own page — that page is officer-only
+  // (Aug 2026), and this reminder goes out to every Active member, most
+  // of whom aren't officers.
+  const minutesLink = lastMeeting ? `${baseUrl()}/meetings-reports/minutes` : null;
 
   const text = [
     `${label} is tomorrow: ${when}.`,

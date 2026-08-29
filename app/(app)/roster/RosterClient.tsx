@@ -57,6 +57,7 @@ const STATUS_BADGE_CLASSES: Record<MemberStatus, string> = {
   ACTIVE_SPECIAL_CIRCUMSTANCE: "bg-amber-50 text-amber-700",
   INACTIVE: "bg-stone-100 text-stone-500",
   ACTIVE_ALUMNAE: "bg-purple-50 text-purple-700",
+  GENERAL: "bg-sky-50 text-sky-700",
 };
 
 function StatusBadge({ status }: { status: string }) {

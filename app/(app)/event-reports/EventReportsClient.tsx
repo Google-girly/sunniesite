@@ -79,6 +79,23 @@ export function EventReportsClient({
 
   const selectedStandard = form.standardSection ? findStandardOption(form.standardSection) : undefined;
 
+  // Aug 2026: "Make everything in the event report required" — mirrors
+  // lib/eventReports.ts parseEventReportInput's required set exactly.
+  const requiredFilled =
+    Boolean(form.standardSection) &&
+    Boolean(form.eventName.trim()) &&
+    Boolean(form.hostingOrganization.trim()) &&
+    Boolean(form.date) &&
+    Boolean(form.lengthOfTime.trim()) &&
+    Boolean(form.location.trim()) &&
+    form.membersInAttendance.trim() !== "" &&
+    Boolean(form.purpose.trim()) &&
+    Boolean(form.resourcesUtilized.trim()) &&
+    Boolean(form.signerName.trim()) &&
+    Boolean(form.signerTitle.trim()) &&
+    Boolean(form.signedDate) &&
+    Boolean(signatureImage);
+
   // A member can hold more than one officer position at once (see
   // lib/roster.ts's parseRoles) — Title/Office should print whichever
   // one she's actually signing in as for this report, not every
@@ -279,16 +296,26 @@ export function EventReportsClient({
           </div>
 
           <div>
-            <label className={labelClass}>Hosting Organization</label>
+            <label className={labelClass}>
+              Hosting Organization <span className="text-burgundy-500">*</span>
+            </label>
             <input
               value={form.hostingOrganization}
               onChange={(e) => update("hostingOrganization", e.target.value)}
               className={inputClass}
+              required
             />
           </div>
           <div>
-            <label className={labelClass}>Location</label>
-            <input value={form.location} onChange={(e) => update("location", e.target.value)} className={inputClass} />
+            <label className={labelClass}>
+              Location <span className="text-burgundy-500">*</span>
+            </label>
+            <input
+              value={form.location}
+              onChange={(e) => update("location", e.target.value)}
+              className={inputClass}
+              required
+            />
           </div>
 
           <div>
@@ -304,23 +331,29 @@ export function EventReportsClient({
             />
           </div>
           <div>
-            <label className={labelClass}>Length of Time</label>
+            <label className={labelClass}>
+              Length of Time <span className="text-burgundy-500">*</span>
+            </label>
             <input
               value={form.lengthOfTime}
               onChange={(e) => update("lengthOfTime", e.target.value)}
               placeholder="2 hours"
               className={inputClass}
+              required
             />
           </div>
 
           <div className="sm:col-span-2">
-            <label className={labelClass}>Number of Members in Attendance</label>
+            <label className={labelClass}>
+              Number of Members in Attendance <span className="text-burgundy-500">*</span>
+            </label>
             <input
               type="number"
               min={0}
               value={form.membersInAttendance}
               onChange={(e) => update("membersInAttendance", e.target.value)}
               className={inputClass}
+              required
             />
           </div>
 
@@ -338,12 +371,15 @@ export function EventReportsClient({
           </div>
 
           <div className="sm:col-span-2">
-            <label className={labelClass}>Resources utilized in event</label>
+            <label className={labelClass}>
+              Resources utilized in event <span className="text-burgundy-500">*</span>
+            </label>
             <textarea
               value={form.resourcesUtilized}
               onChange={(e) => update("resourcesUtilized", e.target.value)}
               rows={2}
               className={inputClass}
+              required
             />
           </div>
 
@@ -373,12 +409,15 @@ export function EventReportsClient({
             </select>
           </div>
           <div>
-            <label className={labelClass}>Signed Date</label>
+            <label className={labelClass}>
+              Signed Date <span className="text-burgundy-500">*</span>
+            </label>
             <input
               type="date"
               value={form.signedDate}
               onChange={(e) => update("signedDate", e.target.value)}
               className={inputClass}
+              required
             />
           </div>
 
@@ -394,7 +433,9 @@ export function EventReportsClient({
             />
           </div>
           <div>
-            <label className={labelClass}>Title/Office</label>
+            <label className={labelClass}>
+              Title/Office <span className="text-burgundy-500">*</span>
+            </label>
             {signerTitleOptions.length > 1 ? (
               // Holds more than one position — pick which she's signing
               // in as, instead of printing every position she holds.
@@ -409,23 +450,31 @@ export function EventReportsClient({
                   </option>
                 ))}
               </select>
+            ) : form.signerMemberId && signerTitleOptions.length === 1 ? (
+              // Read-only — a Roster member with exactly one position on
+              // file: set only from her actual position, not free text,
+              // so this can't be filled in with an office she doesn't
+              // hold.
+              <input value={form.signerTitle} readOnly disabled className={`${inputClass} bg-stone-50 text-stone-500`} />
             ) : (
-              // Read-only — set only from the signer's actual position on
-              // the Roster, not free text, so this can't be filled in with
-              // an office someone doesn't hold.
+              // Free text — not on Roster (or on Roster with no
+              // position), which several credits explicitly call for
+              // (a presenter, a Greek Life advisor, a NALFO officer —
+              // see each standard's signerHint above).
               <input
                 value={form.signerTitle}
-                readOnly
-                disabled
-                placeholder="No office on file"
-                className={`${inputClass} bg-stone-50 text-stone-500`}
+                onChange={(e) => update("signerTitle", e.target.value)}
+                placeholder="e.g. Greek Life Advisor"
+                className={inputClass}
+                required
               />
             )}
           </div>
 
           <div className="sm:col-span-2">
             <label className={labelClass}>
-              Draw Signature {loadingSignature && <span className="text-stone-400">(loading saved signature…)</span>}
+              Draw Signature <span className="text-burgundy-500">*</span>{" "}
+              {loadingSignature && <span className="text-stone-400">(loading saved signature…)</span>}
             </label>
             <div className="mt-1 max-w-md">
               <SignaturePad value={signatureImage} onChange={setSignatureImage} />
@@ -446,8 +495,8 @@ export function EventReportsClient({
             {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
             <button
               type="submit"
-              disabled={saving}
-              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
+              disabled={saving || !requiredFilled}
+              className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? "Saving..." : editingId ? "Save Changes" : "Create Event Report"}
             </button>

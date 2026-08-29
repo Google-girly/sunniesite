@@ -1100,11 +1100,191 @@ full reasoning.
   score 0.4-0.6 similarity against real chunks; an unrelated control
   question scores 0.09-0.12 — good separation), and that an unauthenticated
   request to the API route gets bounced to `/login` same as every other
-  route. **Not yet verified**: the actual Groq generation step end to end
-  (no `GROQ_API_KEY` configured yet) or the widget UI logged in as a real
-  member — both need the President to add `GROQ_API_KEY` to the deploy
-  env and someone to click-test it with the Step 8 question set from the
-  original spec.
+  route.
+
+**Groq model swap (Aug 2026)** — `llama-3.3-70b-versatile` (the model this
+was originally built against) was retired from Groq's free tier at some
+point after launch; a real question in production came back a 404
+`model_not_found`. Switched to `openai/gpt-oss-120b`, the strongest
+general instruct model on Groq's current free catalog — checked via
+`GET https://api.groq.com/openai/v1/models` rather than guessing a name
+from memory, since Groq's free-tier lineup changes. Also discovered this
+account's free tier caps every model alike at **8000 tokens/minute**,
+shared across every member hitting this one endpoint (not per-member) —
+confirmed via the `x-ratelimit-limit-tokens` response header. Trimmed
+retrieval from top-5 to top-4 chunks and capped `max_tokens: 700` on the
+response to leave headroom in that budget, and added a distinct
+`GroqRateLimitError` (`lib/rag/prompt.ts`) so a 429 surfaces as "ask again
+in ~15 seconds" instead of a generic failure. First real end-to-end
+generation (not just retrieval) was verified this pass — an actual
+community-service-hours question came back accurate and correctly cited.
+
+**Corpus expansion (Aug 2026)** — widened from the original 12 core
+governance PDFs to 65 documents, pulling in everything else from
+`Upd. SON Drive 8.8.26/` that isn't personal information, at the
+President's request. Added `mammoth` for `.docx` extraction (the original
+pipeline was PDF-only) and made `scripts/rag-ingest.ts` walk
+`rag/source_docs/` recursively — the new material is organized into
+`rag/source_docs/{pledgeship,reference,disaffiliated-organizations}/`
+subfolders purely for maintainability; the folder path isn't shown to
+members (`lib/rag/prompt.ts displayName()` strips it, citing just the
+filename).
+
+- **What got added**: every Pledgeship Documents - 2025 binder file that's
+  a blank template/form/rubric — contracts, disclaimers, applications,
+  progress report, calendar example, assignment rubrics, officer
+  descriptions, founding history, etc. (all individually opened and
+  confirmed blank/generic before adding, not just judged by filename —
+  the pledge/chapter-sister contracts in particular looked risky by name
+  alone but turned out to be genuinely blank, underscored-blank-for-a-
+  signature templates); a handful of standalone reference PDFs/docx
+  (Scholarship Application, Event Report, Third Party Alcohol Provider
+  Verification, Sunnie Summit packet, Email Etiquette, Academic How-Tos,
+  Minutes Template); and — **the one deliberate exception to "not personal
+  info, so it's fine"**, included only after explicitly flagging it to the
+  President as a different risk category and getting a direct answer — the
+  14 Sexual Misconduct Disaffiliation letters plus the disaffiliated-orgs
+  list. Those name *other* real organizations in connection with
+  misconduct findings, which isn't personal information about a member but
+  carries its own downside if an LLM ever misquotes or paraphrases it
+  imprecisely; included because the President asked for it directly, not
+  because it cleared some automatic bar.
+- **What stayed out, and why**: the usual hard exclusions (credentials,
+  Financial Books, individual members' Study Hours/Community Service
+  spreadsheets) plus, this pass — `Pledge Committee Contact Info.docx`
+  (real names/phone/email); `Copy of Final - Beyond the 6 - Resume.docx`
+  (someone's actual resume); every duplicate/superseded copy across the
+  three near-identical Official Documents subtrees and the old dated
+  Pledgeship Forms/contracts under "Old documents" (redundant/stale, not a
+  privacy call — those old ones turned out to be blank templates too when
+  checked); and every `.pptx`/`.mp4` (out of format scope — no slide/video
+  transcription pipeline exists here). The xlsx form templates (Chapter
+  Standard Forms, Roster templates, Pledgeship Forms spreadsheets) were
+  also left out this pass: confirmed genuinely blank (no real names in
+  their `sharedStrings.xml`) but almost entirely field-label content with
+  little prose for RAG to actually answer questions from — not worth the
+  added xlsx-extraction complexity yet. Fine to add later if a real
+  question needs one.
+- **One real extraction failure, found and fixed**: `Crafting Your
+  Resume.pdf` extracted to nothing but page-number footers (`-- 1 of 22
+  --`, etc.) — its actual content was apparently rendered as graphics
+  rather than selectable text (a polished slide-deck export, most likely),
+  which `pdf-parse` can't read. Caught by auditing every chunk's word count
+  after ingest, not by chance — removed the file rather than ship a
+  citation that points at zero real content. Worth re-running that same
+  audit (`grep`-style scan for suspiciously short/page-marker-only chunks)
+  after adding any future presentation-style PDF.
+- **Retrieval quality note**: a few very short, single-chunk documents
+  (e.g. `Pledgeship Calendar Example.pdf`, tabular rather than prose) don't
+  always win top-4 against more narrative documents for a generic query —
+  MiniLM is a small model and tabular content embeds less distinctively
+  than prose. ~~Not a bug, just a limit of this free/local embedding
+  model~~ — fixed by the embedding model swap below (Pledgeship Calendar
+  now ranks #2 for the same query it used to miss entirely).
+
+**Widget upgrade pass (Aug 2026)** — streaming, markdown rendering,
+clickable sources, feedback, and a question log, all in one pass at the
+President's request. Also caught two real personal-data leaks along the
+way (see below) — worth internalizing the lesson, not just the fix.
+
+- **Streaming answers** (`lib/rag/prompt.ts streamAnswer()`,
+  `app/api/chapter-assistant/route.ts`) — Groq's `stream: true` SSE
+  response is unwrapped down to plain text deltas server-side, then piped
+  through as a `ReadableStream` `Response` body. Wire format is
+  deliberately simple rather than real SSE: the very first line is one
+  JSON object (`{sources, interactionId}` — both known right after
+  retrieval, before generation even starts), then every byte after that
+  first newline is raw answer text as it's generated.
+  `components/ChapterAssistantWidget.tsx` reads the body with
+  `response.body.getReader()`, buffers up to that first newline once, then
+  appends everything after straight into the message being displayed.
+  Errors that happen *before* Groq's response starts (missing key, rate
+  limit, model error) still come back as a normal JSON error with the
+  right status code — only a genuinely-started 200 commits to streaming —
+  so `GroqRateLimitError` handling didn't need to change at all.
+- **Markdown rendering** (`react-markdown` + `remark-gfm`, new
+  dependencies) — the system prompt now explicitly tells the model
+  Markdown is supported (tables especially; the community-service-hours
+  answer naturally wants one). Custom `components` map in the widget
+  since there's no `@tailwindcss/typography` plugin installed — just
+  enough styling for what the prompt actually asks for (lists, bold,
+  headings-as-bold, tables, inline code, links).
+- **Auto-scroll, actually correct now**: replaced the old one-shot
+  `finally`-block scroll with a `useEffect` keyed on the whole `messages`
+  array, so it re-fires on every streamed chunk (each one is a `setMessages`
+  call) as well as on send — previously it only scrolled once, after the
+  full non-streamed response landed.
+- **Clickable sources**: `rag/source_docs/` moved to
+  `public/rag-source-docs/` — served as a plain static asset (no API
+  route needed), but **still session-gated**: `proxy.ts`'s matcher
+  protects everything except `login`/`signup`/`api/auth`/`api/cron`/
+  `_next/*`, which includes arbitrary `public/` paths too (verified with a
+  real unauthenticated `curl` — 307 to `/login`, not a bypass). Citations
+  in the widget now link straight to the actual PDF/docx. `lib/rag/prompt.ts`
+  returns `Source = {name, path}` instead of a bare display-name string so
+  the widget has something to link to.
+- **Feedback + question log** (`ChapterAssistantInteraction` model, new
+  migration `add_chapter_assistant_log`) — one row per question, created
+  right after retrieval (`answer: ""` placeholder) so there's an id to
+  attach a rating to before streaming even finishes, then updated with the
+  full answer once the stream ends. 👍/👎 buttons in the widget call
+  `PATCH /api/chapter-assistant/feedback/[id]` (only the asker or the
+  President may rate a given row). `/chapter-assistant-log`
+  (`app/(app)/chapter-assistant-log/page.tsx`) is a plain read-only table
+  of the last 100 questions — open to every logged-in member, not on the
+  sidebar (reached via a link in the widget itself), since it's a
+  diagnostic view rather than a module. `topScore` (best retrieval
+  similarity for that question) is stored as a rough "does the corpus
+  actually cover this" signal for whoever's reading the log — deliberately
+  *not* turned into an automatic threshold/flag in code, since BGE's raw
+  score range shifted after the embedding model swap below (a totally
+  unrelated control question now scores ~0.43, not ~0.1 like MiniLM) —
+  eyeball it relative to other rows, don't trust an absolute number.
+- **Embedding model swap: MiniLM → `Xenova/bge-small-en-v1.5`**
+  (`lib/rag/embed.ts`) — noticeably better ranking on the exact cases
+  MiniLM struggled with (pledgeship calendar, officer descriptions, the
+  specific misconduct letter beating the generic org list). BGE is trained
+  *asymmetrically* — queries need an instruction prefix
+  (`"Represent this sentence for searching relevant passages: "`) prepended
+  for good retrieval accuracy, documents don't — so `embed.ts` now exports
+  separate `embedQuery()` (retriever.ts) and `embedDocument()`/
+  `embedDocumentBatch()` (rag-ingest.ts) rather than one generic
+  `embedText()`. Also switched pooling from `"mean"` to `"cls"` — BGE
+  models are trained on the `[CLS]` token's representation, not a mean
+  pool. Re-ran `rag:ingest` against the full corpus after the swap; the
+  model cache in `rag/models/` had to be cleared and re-downloaded (it's
+  keyed by directory, not model id).
+- **xlsx ingestion, and two real personal-data catches** (`lib/rag/xlsx.ts`,
+  new) — a from-scratch `.xlsx`-as-zip-of-XML text extractor (same
+  "read via JSZip" habit as `lib/xlsxPatch.ts`, just reading instead of
+  surgically editing), since no xlsx library was already a dependency.
+  Every sheet's cells get joined into row-lines; the sheet name is forced
+  as every resulting chunk's `section` since `chunk.ts`'s ARTICLE/Section
+  heading-detection has no chance against pure spreadsheet text.
+  **Before adding any xlsx to the corpus, each one was actually opened and
+  checked — not just judged by filename — and it's a good thing**:
+  `Officer & Active Roster Template.xlsx`, despite its name, turned out to
+  be **filled with the real, current officers' names and personal chapter
+  email addresses** (President, VP, etc.) — excluded. `Copy of Meet the
+  Clubs Reimbursement.xlsx` turned out to be an **actual past event's
+  filled expense report** (real purchases, real dollar amounts), not a
+  blank template — excluded as financial data, same bucket as the
+  Financial Books. Both would have been added on filename alone ("Template",
+  "Copy of..."). Only genuinely-blank ones made it in: the combined
+  Chapter Standard Forms workbook (12 sheets, B1-B3/C3-C6 checklists),
+  Chapter Roster Template, a real blank SON Expense Budget template
+  (renamed from "Copy of SON Expense Budget.xlsx" for clarity), and the
+  Pledgeship induction/initiation forms spreadsheet (confirmed blank via
+  its `sharedStrings.xml` containing zero real names before it was added).
+  `rag-ingest.ts` also now flags any file that yields under 15 words of
+  extracted text as suspect in its own output — the same failure mode that
+  caught `Crafting Your Resume.pdf` last pass, now checked automatically
+  instead of by a manual audit script.
+- **Unrelated build break, found and fixed in passing**: `npm run build`
+  failed on an unrelated pre-existing TypeScript error in
+  `RosterClient.tsx` (`STATUS_BADGE_CLASSES` missing the `GENERAL` status
+  some other change had added to `lib/roster.ts`) — added the missing
+  entry so the build (and this work) could actually be verified.
 
 **Self-service signup + President-sent invites** (Aug 2026) — a sister no
 longer needs the President to set her initial password from Manage

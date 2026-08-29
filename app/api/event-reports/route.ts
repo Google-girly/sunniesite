@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseEventReportInput } from "@/lib/eventReports";
 import { prisma } from "@/lib/prisma";
-import { getCurrentMember } from "@/lib/session";
+import { requireApiAccess } from "@/lib/session";
 
 export async function GET() {
   const reports = await prisma.eventReport.findMany({
@@ -12,10 +12,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const member = await getCurrentMember();
-  if (!member) {
-    return NextResponse.json({ error: "Not logged in." }, { status: 401 });
-  }
+  const access = await requireApiAccess("event-reports");
+  if ("error" in access) return access.error;
+  const { member } = access;
 
   const body = await request.json().catch(() => null);
   const parsed = parseEventReportInput(body);

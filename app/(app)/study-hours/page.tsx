@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
-import { ownsModule } from "@/lib/permissions";
+import { canAccessModule, ownsModule } from "@/lib/permissions";
+import { NotAuthorized } from "@/components/NotAuthorized";
 import { StudyHoursClient } from "./StudyHoursClient";
 
 // Server component: reads every Active/Inactive member plus her logged
@@ -15,6 +16,9 @@ import { StudyHoursClient } from "./StudyHoursClient";
 export default async function StudyHoursPage() {
   const viewer = await getCurrentMember();
   if (!viewer) redirect("/login");
+  if (!canAccessModule(viewer, "study-hours")) {
+    return <NotAuthorized moduleTitle="Study Hours" positions={["Vice President"]} />;
+  }
   const canSeeEveryone = ownsModule(viewer, "study-hours");
 
   const members = await prisma.member.findMany({

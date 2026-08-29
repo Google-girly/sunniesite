@@ -49,7 +49,8 @@ export type ModuleKey =
   | "study-hours"
   | "meetings-reports"
   | "standards-forms"
-  | "event-reports";
+  | "event-reports"
+  | "letters";
 
 // See MODULES.md's "Positions & Permissions" entry for the reasoning
 // behind each of these — a few are genuine judgment calls (no "VP of
@@ -87,6 +88,11 @@ export const MODULE_ACCESS: Record<ModuleKey, ModuleAccessRule> = {
   },
   "standards-forms": { pattern: "open" },
   "event-reports": { pattern: "open-submit" },
+  // Any logged-in member can create/download her own letters
+  // (open-submit); no extra `positions`, so only the President
+  // (ownsModule's always-true case) can see everyone's — see
+  // app/api/letters/route.ts and MODULES.md.
+  letters: { pattern: "open-submit" },
 };
 
 export function holdsPosition(
@@ -101,8 +107,17 @@ export function isPresident(member: Pick<Member, "role"> | null | undefined): bo
   return holdsPosition(member, "President");
 }
 
+// Holds ANY officer position at all (Aug 2026 — Meeting Minutes' editing
+// page is officer-only: "I only want this page to be accessable to
+// officers"). Deliberately not the same thing as ownsModule/
+// canAccessModule below, which are per-module — this is a standalone
+// "is she an officer at all" check.
+export function isOfficer(member: Pick<Member, "role"> | null | undefined): boolean {
+  return parseRoles(member?.role ?? null).length > 0;
+}
+
 // Who can approve/deny a self-signup (Aug 2026 — see
-// app/(app)/pending-signups and app/api/officers/pending). Not tied to
+// components/PendingSignupsPanel.tsx and app/api/officers/pending). Not tied to
 // a Chapter Standards module the way MODULE_ACCESS above is, so it's
 // its own check rather than living in that table — President's request
 // verbatim: "prez, coms, or vp."
@@ -122,9 +137,27 @@ export function ownsModule(member: Pick<Member, "role"> | null | undefined, modu
   return positions.some((p) => holdsPosition(member, p));
 }
 
-/** Can this member open the module's page/API at all? False only for "locked" modules she doesn't own. */
-export function canAccessModule(member: Pick<Member, "role"> | null | undefined, moduleKey: ModuleKey): boolean {
+// A GENERAL-status member who holds no officer position at all (Aug
+// 2026 — "sisters who just want accounts to keep up with the chapter
+// but not be active... they should be able to see meeting minutes, the
+// calendar and be able to submit letters"). Deliberately narrow: an
+// officer who happens to be marked GENERAL for some odd reason keeps
+// her normal position-based access — this only strips access from
+// someone who is *both* GENERAL and holds no position.
+const OBSERVER_ALLOWED_MODULES: ModuleKey[] = ["calendar", "letters"];
+
+export function isGeneralOnlyMember(member: Pick<Member, "role" | "status"> | null | undefined): boolean {
   if (!member) return false;
+  return member.status === "GENERAL" && !isOfficer(member);
+}
+
+/** Can this member open the module's page/API at all? False for "locked" modules she doesn't own, and for everything outside OBSERVER_ALLOWED_MODULES if she's a GENERAL-status, no-position member. */
+export function canAccessModule(
+  member: Pick<Member, "role" | "status"> | null | undefined,
+  moduleKey: ModuleKey
+): boolean {
+  if (!member) return false;
+  if (isGeneralOnlyMember(member) && !OBSERVER_ALLOWED_MODULES.includes(moduleKey)) return false;
   const pattern = MODULE_ACCESS[moduleKey]?.pattern ?? "open";
   if (pattern !== "locked") return true;
   return ownsModule(member, moduleKey);

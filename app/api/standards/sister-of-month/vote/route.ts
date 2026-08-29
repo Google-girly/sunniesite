@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
-import { currentVotingPeriod } from "@/lib/sisterOfMonthVoting";
+import { resolveCurrentVotingPeriod } from "@/lib/sisterOfMonthVoting";
 
 // The "general consensus" ballot — every Active member gets one vote,
 // for any Active sister, tallied live. Self-service by design (not
 // gated to whoever owns Sisterhood): the whole point is the general
 // membership deciding, not one officer. See lib/sisterOfMonthVoting.ts
-// for how the voting period is derived and MODULES.md for the fuller
-// design writeup.
+// for how the voting period/deadline is derived and MODULES.md for the
+// fuller design writeup.
 export async function GET() {
   const viewer = await getCurrentMember();
   if (!viewer) return NextResponse.json({ error: "Not logged in." }, { status: 401 });
 
-  const period = currentVotingPeriod();
+  const period = await resolveCurrentVotingPeriod();
   if (!period) {
     return NextResponse.json({ open: false, period: null });
   }
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Only Active members can vote." }, { status: 403 });
   }
 
-  const period = currentVotingPeriod();
+  const period = await resolveCurrentVotingPeriod();
   if (!period) {
     return NextResponse.json({ error: "There's no ballot open right now." }, { status: 400 });
   }
