@@ -78,12 +78,17 @@ function addDaysIso(iso: string, days: number): string {
 }
 
 function baseUrl(): string {
-  // Set this to the app's real deployed URL (e.g.
-  // "https://son-theta.vercel.app") — see .env.example. Falls back to a
-  // placeholder rather than throwing, so a misconfigured deploy still
-  // sends the reminder text/attachment, just with a dead link instead
-  // of silently failing the whole thing.
-  return process.env.APP_BASE_URL?.replace(/\/$/, "") || "https://your-app.vercel.app";
+  // Prefer an explicitly configured APP_BASE_URL (a real custom domain,
+  // e.g. "https://son-theta.vercel.app" — see .env.example). If that's
+  // not set, fall back to VERCEL_URL, which Vercel auto-injects for
+  // every deployment with no setup needed on our end (Aug 2026 — was a
+  // hardcoded "https://your-app.vercel.app" placeholder here, a genuine
+  // dead link if APP_BASE_URL was ever left unset — this can't go dead
+  // the same way since Vercel always provides its own URL). Only true
+  // local dev with neither set falls through to a placeholder.
+  if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
 }
 
 function money(n: number): string {
@@ -113,8 +118,9 @@ export async function buildMeetingEmailContent(
   const subjectPrefix = opts.isTest ? "[TEST] " : "";
   const subject = `${subjectPrefix}${label} — ${formatMeetingDate(meeting.date)}`;
 
-  const minutesLine =
-    "Attached (and linked below) are this week's draft minutes — whatever's been filled in so far — please review before you come.";
+  // Aug 2026 — "I just want it to say please review before the meeting
+  // {enter meeting date here}, see you all tomorrow!"
+  const minutesLine = `Please review before the meeting on ${formatMeetingDate(meeting.date)}, see you all tomorrow!`;
   // Links to the Minutes list (open to every logged-in member) rather
   // than a specific meeting's own page — that page is officer-only.
   const minutesLink = `${baseUrl()}/meetings-reports/minutes`;

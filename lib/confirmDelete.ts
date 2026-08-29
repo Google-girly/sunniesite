@@ -13,6 +13,15 @@ const DELETE_PASSWORD = "1996";
 /** Prompts for the delete password with `message` as context. True only if it matches. */
 export function confirmDelete(message: string): boolean {
   const input = window.prompt(`${message}\n\nEnter the delete password to confirm.`);
-  if (input === null) return false;
-  return input === DELETE_PASSWORD;
+  if (input === null) return false; // actually cancelled — no need to say anything
+  if (input !== DELETE_PASSWORD) {
+    // Aug 2026 fix — this used to return false here with zero feedback,
+    // indistinguishable from hitting Cancel. "I removed a letter of
+    // excuse and it still sent why" turned out to be exactly this: a
+    // wrong/mistyped password silently no-ops the whole delete, so it
+    // looks like it worked when nothing was actually removed.
+    window.alert("Wrong password — nothing was removed.");
+    return false;
+  }
+  return true;
 }
