@@ -77,20 +77,6 @@ function addDaysIso(iso: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function baseUrl(): string {
-  // Prefer an explicitly configured APP_BASE_URL (a real custom domain,
-  // e.g. "https://son-theta.vercel.app" — see .env.example). If that's
-  // not set, fall back to VERCEL_URL, which Vercel auto-injects for
-  // every deployment with no setup needed on our end (Aug 2026 — was a
-  // hardcoded "https://your-app.vercel.app" placeholder here, a genuine
-  // dead link if APP_BASE_URL was ever left unset — this can't go dead
-  // the same way since Vercel always provides its own URL). Only true
-  // local dev with neither set falls through to a placeholder.
-  if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL.replace(/\/$/, "");
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-}
-
 function money(n: number): string {
   return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
@@ -121,9 +107,6 @@ export async function buildMeetingEmailContent(
   // Aug 2026 — "I just want it to say please review before the meeting
   // {enter meeting date here}, see you all tomorrow!"
   const minutesLine = `Please review before the meeting on ${formatMeetingDate(meeting.date)}, see you all tomorrow!`;
-  // Links to the Minutes list (open to every logged-in member) rather
-  // than a specific meeting's own page — that page is officer-only.
-  const minutesLink = `${baseUrl()}/meetings-reports/minutes`;
 
   const pendingBudgets: PendingBudget[] = (
     await prisma.budget.findMany({
@@ -170,7 +153,6 @@ export async function buildMeetingEmailContent(
     `${label}: ${when}.`,
     "",
     minutesLine,
-    minutesLink,
     ...(budgetLines.length > 0
       ? ["", "Tentative budgets up for approval at this meeting:", ...budgetLines.map((l) => `- ${l}`)]
       : []),
@@ -187,7 +169,6 @@ export async function buildMeetingEmailContent(
   const html = `
     <p><strong>${label}</strong>: ${when}.</p>
     <p>${minutesLine}</p>
-    <p><a href="${minutesLink}">${minutesLink}</a></p>
     ${
       budgetLines.length > 0
         ? `<p>Tentative budgets up for approval at this meeting:</p><ul>${budgetLines
