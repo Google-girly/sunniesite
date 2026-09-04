@@ -91,8 +91,11 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
   { code: "E.1", section: "New Member Education", title: "Pledge Mother Contracts", level: "Obligatory", kind: "verified", note: "Verified by the National VP of Undergraduate Affairs." },
   { code: "E.2", section: "New Member Education", title: "New Member Retreat", level: "Obligatory", kind: "verified", note: "Verified by the National VP of Parliament." },
   { code: "E.3", section: "New Member Education", title: "Pledgeship Review Workshop", level: "Required", kind: "linked", href: "/event-reports", statusKey: "eventReport:E.3" },
-  { code: "E.4", section: "New Member Education", title: "New Pledge Class Induction", level: "Required", kind: "manual", note: "National induction paperwork (Template Library has a blank copy) — no live module tracks this since Pledgeship was removed." },
-  { code: "E.5", section: "New Member Education", title: "New Member Initiation", level: "Required", kind: "manual", note: "National initiation paperwork (Template Library has a blank copy) — no live module tracks this since Pledgeship was removed." },
+  // E.4/E.5 (Sept 2026) — the 2026-2027 Chapter Standards Checklist lists
+  // both as "(Verified by Undergrad)," same wording as E.1/E.2 above, not
+  // a self-attest item — switched from "manual" to "verified" to match.
+  { code: "E.4", section: "New Member Education", title: "New Pledge Class Induction", level: "Required", kind: "verified", note: "Verified by the National VP of Undergraduate Affairs — Template Library has a blank copy of the induction paperwork." },
+  { code: "E.5", section: "New Member Education", title: "New Member Initiation", level: "Required", kind: "verified", note: "Verified by the National VP of Undergraduate Affairs — Template Library has a blank copy of the initiation paperwork." },
   { code: "E.6", section: "New Member Education", title: "Post Pledgeship Workshops", level: "Required", kind: "linked", href: "/event-reports", statusKey: "eventReport:E.6" },
 
   // --- F. Leadership ---
