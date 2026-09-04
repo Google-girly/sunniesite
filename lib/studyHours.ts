@@ -14,9 +14,9 @@ export const WEEKLY_COMPLETION_THRESHOLD = 0.8; // 80% of members must complete 
 // Study Hours tracking itself only started this week (Aug 2026 — "the
 // study hours start this week with the 24th being the first day").
 // Chapter Standards' requirement predates that, but nobody was logging
-// sessions before now, so counting the term's earlier weeks (Fall
-// starts Aug 1 — see currentTermRange below) as "not completed" against
-// every member from day one would be penalizing weeks that were never
+// sessions before now, so counting the term's earlier weeks (Fall 2026
+// starts Aug 23 — see TERMS below) as "not completed" against every
+// member from day one would be penalizing weeks that were never
 // actually being tracked. calculateWeeklyCompletion clamps to this date
 // even if the term's own range starts earlier.
 export const STUDY_HOURS_TRACKING_START = "2026-08-24";
@@ -99,11 +99,46 @@ export function totalHours(entries: StudyHourEntryLike[]): number {
   return entries.reduce((sum, e) => sum + e.hours, 0);
 }
 
-// A rough current-term date range, matching lib/communityService.ts's
-// currentTerm() month cutoffs — a starting guess the Vice President can
-// always override (the Study Hours export form takes explicit term
-// start/end dates), not a source of truth the app enforces anywhere.
+export interface Term {
+  label: string;
+  start: string; // ISO
+  end: string; // ISO
+}
+
+// Actual Fall/Spring semester dates, entered by hand as each term's
+// academic calendar is set — real semester boundaries shift a little
+// every year, so there's no formula worth deriving them from. Add the
+// next semester here once it's known (President/VP/VP of Communications
+// can then pick it from the term dropdown on Study Hours and Standards
+// Forms — see lib/permissions.ts canSelectTerm). Everyone else, and any
+// date that falls outside every term listed here (summer, or a future
+// semester nobody's entered yet), falls back to the month-based guess in
+// currentTermRange/currentTermLabel below.
+export const TERMS: Term[] = [
+  { label: "Fall 2026", start: "2026-08-23", end: "2026-12-17" },
+  { label: "Spring 2027", start: "2027-01-25", end: "2027-05-21" },
+];
+
+export function listTerms(): Term[] {
+  return TERMS;
+}
+
+export function findTerm(iso: string): Term | undefined {
+  return TERMS.find((t) => iso >= t.start && iso <= t.end);
+}
+
+export function termByLabel(label: string): Term | undefined {
+  return TERMS.find((t) => t.label === label);
+}
+
+// The term `date` falls in, preferring the real dates in TERMS above; a
+// rough month-based guess (matching lib/communityService.ts's
+// currentTerm() cutoffs) covers anything outside every listed term —
+// not a source of truth the app enforces anywhere.
 export function currentTermRange(date: Date = new Date()): { start: string; end: string } {
+  const known = findTerm(toIsoDateUTC(date));
+  if (known) return { start: known.start, end: known.end };
+
   const month = date.getUTCMonth() + 1; // 1-12
   const year = date.getUTCFullYear();
   if (month <= 5) return { start: `${year}-01-01`, end: `${year}-05-31` };
@@ -112,6 +147,9 @@ export function currentTermRange(date: Date = new Date()): { start: string; end:
 }
 
 export function currentTermLabel(date: Date = new Date()): string {
+  const known = findTerm(toIsoDateUTC(date));
+  if (known) return known.label;
+
   const month = date.getUTCMonth() + 1;
   const year = date.getUTCFullYear();
   if (month <= 5) return `Spring ${year}`;

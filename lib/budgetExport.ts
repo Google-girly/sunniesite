@@ -2,8 +2,16 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import JSZip from "jszip";
 import type { Budget, BudgetLineItem, BudgetVersion } from "@/app/generated/prisma/client";
-import { calculateBudgetTotals, type BudgetStage } from "@/lib/budgets";
-import { type CellEdit, patchCells, readEntry, resolveSheetPath, forceFullCalcOnLoad } from "@/lib/xlsxPatch";
+import { calculateBudgetTotals, lineItemTotal, type BudgetStage } from "@/lib/budgets";
+import {
+  type CellEdit,
+  type FormulaCacheEdit,
+  patchCells,
+  patchFormulaCaches,
+  readEntry,
+  resolveSheetPath,
+  forceFullCalcOnLoad,
+} from "@/lib/xlsxPatch";
 
 type VersionWithItems = BudgetVersion & { lineItems: BudgetLineItem[] };
 
@@ -30,9 +38,10 @@ const MAX_LINE_ITEMS = 37;
 // Tentative has one manual "Tax:" dollar amount and no per-item Taxable
 // column; Final computes tax per line item via a formula that reads the
 // sales tax rate from INSTRUCTIONS!G6, which is why we write the rate
-// there for Final exports. Untouched formula cells (Subtotal, Total,
-// Total Spent, and — on Final — Tax) are left alone and recalculate when
-// the file is opened in Excel/Sheets.
+// there for Final exports. Formula cells (Subtotal, Total, Total Spent,
+// and — on Final — Tax) keep their formulas, but their cached results are
+// also computed here and written in, rather than trusted to Excel's
+// on-open recalc — see patchFormulaCache() in lib/xlsxPatch.ts for why.
 //
 // One more fix beyond cell values: see forcePageFitToOnePage() below —
 // the template's own page setup has a stale embedded printer reference
@@ -122,15 +131,30 @@ async function applyStageEdits(
 
   // Line items (rows 7-43). Each row's A:C is one merged "Item" cell;
   // only the top-left (A) needs a value. G (Tentative) / H (Final) are
-  // formulas — leave them so Excel recalculates Total $ Spent itself.
+  // formulas, so they're left as formulas — but their *cached* result
+  // is also computed and written below (see formulaEdits) rather than
+  // trusted to Excel's on-open recalc, which not every Excel build
+  // honors (see patchFormulaCache's comment in lib/xlsxPatch.ts).
   const items = version.lineItems.slice(0, MAX_LINE_ITEMS);
+  const totals = calculateBudgetTotals(items, version.salesTaxRate);
+  const formulaEdits: FormulaCacheEdit[] = [];
   items.forEach((item, i) => {
     const row = 7 + i;
     edits.push({ ref: `A${row}`, value: item.item });
     edits.push({ ref: `D${row}`, value: item.quantity });
     edits.push({ ref: `E${row}`, value: item.price });
-    if (stage === "FINAL") {
+    if (stage === "TENTATIVE") {
+      // "Total $ Spent" per line: D*E.
+      formulaEdits.push({ ref: `G${row}`, value: round2(lineItemTotal(item)) });
+    } else {
       edits.push({ ref: `F${row}`, value: item.taxable ? "Yes" : "No" });
+      // "Total $ Spent" per line: D*E.
+      formulaEdits.push({ ref: `H${row}`, value: round2(lineItemTotal(item)) });
+      // Per-line tax: IF(taxable, D*E*rate, "").
+      formulaEdits.push({
+        ref: `G${row}`,
+        value: item.taxable ? round2(lineItemTotal(item) * version.salesTaxRate) : "",
+      });
     }
   });
 
@@ -140,13 +164,17 @@ async function applyStageEdits(
     // the app does everywhere else (lib/budgets.ts) and write the number.
     // (G48's "Income" cell is deliberately left alone — the app doesn't
     // track that anymore, see lib/budgets.ts.)
-    const { tax } = calculateBudgetTotals(items, version.salesTaxRate);
-    edits.push({ ref: "G46", value: round2(tax) });
+    edits.push({ ref: "G46", value: round2(totals.tax) });
     edits.push({ ref: "G53", value: version.checkNumber });
     edits.push({ ref: "G55", value: version.checkAmount });
+    formulaEdits.push({ ref: "G45", value: round2(totals.subtotal) }); // Subtotal
+    formulaEdits.push({ ref: "G47", value: round2(totals.total) }); // Total
   } else {
     edits.push({ ref: "H53", value: version.checkNumber });
     edits.push({ ref: "H55", value: version.checkAmount });
+    formulaEdits.push({ ref: "H45", value: round2(totals.subtotal) }); // Subtotal
+    formulaEdits.push({ ref: "H46", value: round2(totals.tax) }); // Tax
+    formulaEdits.push({ ref: "H47", value: round2(totals.total) }); // Total
 
     // Final computes each line's tax via a formula that reads the sales
     // tax rate from INSTRUCTIONS!G6, so that's where the rate goes.
@@ -160,6 +188,7 @@ async function applyStageEdits(
 
   let sheetXml = await readEntry(zip, sheetPath);
   sheetXml = patchCells(sheetXml, edits);
+  sheetXml = patchFormulaCaches(sheetXml, formulaEdits);
   sheetXml = forcePageFitToOnePage(sheetXml);
   zip.file(sheetPath, sheetXml);
 }

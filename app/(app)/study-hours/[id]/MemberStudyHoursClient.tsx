@@ -7,9 +7,11 @@ import {
   calculateWeeklyCompletion,
   currentTermRange,
   formatStudyDate,
+  termByLabel,
   totalHours,
   weekOfMonth,
   WEEKLY_HOURS_REQUIRED,
+  type Term,
 } from "@/lib/studyHours";
 import { todayIso } from "@/lib/meetings";
 import { confirmDelete } from "@/lib/confirmDelete";
@@ -116,8 +118,19 @@ function EntryFields({
   );
 }
 
-export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHours }) {
+export function MemberStudyHoursClient({
+  member,
+  terms,
+  defaultTermLabel,
+  canPickTerm,
+}: {
+  member: MemberWithStudyHours;
+  terms: Term[];
+  defaultTermLabel: string;
+  canPickTerm: boolean;
+}) {
   const [entries, setEntries] = useState<StudyHourEntry[]>(member.studyHours);
+  const [selectedTermLabel, setSelectedTermLabel] = useState(defaultTermLabel);
 
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [addForm, setAddForm] = useState<EntryFormValues>(emptyEntryForm());
@@ -130,7 +143,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const term = currentTermRange();
+  const term = termByLabel(selectedTermLabel) ?? currentTermRange();
   const completion = calculateWeeklyCompletion(entries, term.start, term.end);
   const total = totalHours(entries);
 
@@ -237,6 +250,26 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
         ← All Members
       </Link>
 
+      {canPickTerm && (
+        <div className="mt-2 flex items-center gap-2">
+          <label htmlFor="term" className="text-sm font-medium text-stone-600">
+            Term
+          </label>
+          <select
+            id="term"
+            value={selectedTermLabel}
+            onChange={(e) => setSelectedTermLabel(e.target.value)}
+            className="rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+          >
+            {terms.map((t) => (
+              <option key={t.label} value={t.label}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-stone-900">{member.name}</h1>
@@ -265,7 +298,7 @@ export function MemberStudyHoursClient({ member }: { member: MemberWithStudyHour
         </div>
       </div>
       <p className="mt-1 text-xs text-stone-400">
-        {WEEKLY_HOURS_REQUIRED} hours/week required, current term ({term.start} – {term.end}).
+        {WEEKLY_HOURS_REQUIRED} hours/week required, {selectedTermLabel} ({term.start} – {term.end}).
       </p>
 
       <div className="mt-6 flex items-center justify-between">

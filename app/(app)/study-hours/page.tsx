@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
-import { canAccessModule, ownsModule } from "@/lib/permissions";
+import { canAccessModule, canSelectTerm, ownsModule } from "@/lib/permissions";
+import { currentTermLabel, listTerms } from "@/lib/studyHours";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { StudyHoursClient } from "./StudyHoursClient";
 
@@ -39,7 +40,13 @@ export default async function StudyHoursPage() {
       )}
 
       <div className="mt-6">
-        <StudyHoursClient initialMembers={members} canExport={canSeeEveryone} />
+        <StudyHoursClient
+          initialMembers={members}
+          canExport={canSeeEveryone}
+          terms={listTerms()}
+          defaultTermLabel={currentTermLabel()}
+          canPickTerm={canSelectTerm(viewer)}
+        />
       </div>
     </div>
   );

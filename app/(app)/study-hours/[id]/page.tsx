@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
-import { canManageRecord } from "@/lib/permissions";
+import { canManageRecord, canSelectTerm } from "@/lib/permissions";
+import { currentTermLabel, listTerms } from "@/lib/studyHours";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { MemberStudyHoursClient } from "./MemberStudyHoursClient";
 
@@ -24,5 +25,12 @@ export default async function MemberStudyHoursPage({
   });
   if (!member) notFound();
 
-  return <MemberStudyHoursClient member={member} />;
+  return (
+    <MemberStudyHoursClient
+      member={member}
+      terms={listTerms()}
+      defaultTermLabel={currentTermLabel()}
+      canPickTerm={canSelectTerm(viewer)}
+    />
+  );
 }

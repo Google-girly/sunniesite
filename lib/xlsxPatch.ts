@@ -60,6 +60,54 @@ export function patchCells(xml: string, edits: CellEdit[]): string {
   return edits.reduce((acc, { ref, value }) => patchCell(acc, ref, value), xml);
 }
 
+export type FormulaCacheEdit = { ref: string; value: number | "" };
+
+// Updates a formula cell's *cached* <v> result in place, leaving its <f>
+// formula untouched — unlike patchCell, which would delete the formula
+// entirely. Excel is supposed to recalculate every formula on open
+// because forceFullCalcOnLoad() below sets fullCalcOnLoad="1", but that
+// isn't reliable in practice (e.g. a browser-downloaded file opened in
+// Windows Excel's Protected View, or an app-wide manual-calculation
+// setting some users have) — when the recalc doesn't happen, whatever
+// stale value the template shipped with (usually 0, since the template
+// itself has no data) is what's shown instead. Baking the real answer in
+// here means the workbook displays correctly the instant it's opened,
+// with or without a recalc; if Excel *does* recalculate, it'll compute
+// the same number from the same formula and cells anyway.
+//
+// `value: ""` covers a formula whose result is the empty string (e.g.
+// Final Budget's per-row tax formula, IF(taxable, ..., "")) — Excel
+// caches that as a t="str" cell with an empty <v>, not a numeric one.
+export function patchFormulaCache(xml: string, ref: string, value: number | ""): string {
+  // The <f> tag's own attrs must use the same "\s+name="value"" repeated
+  // pattern as the <c> tag's, not a blanket [^>]*: a blanket match also
+  // swallows the trailing "/" of a self-closing shared-formula cell like
+  // <f t="shared" si="0"/> (every row after the first in a shared-formula
+  // block, e.g. Total $ Spent rows 8-43), which then forces the /> vs
+  // >...</f> alternation down the wrong branch and sends [\s\S]*? hunting
+  // for the next </f> anywhere later in the sheet — silently overwriting
+  // everything up to and including some unrelated cell.
+  const cellRe = new RegExp(
+    `<c r="${ref}"((?:\\s+[\\w:.-]+="[^"]*")*)>(<f\\b(?:\\s+[\\w:.-]+="[^"]*")*(?:/>|>[\\s\\S]*?</f>))(?:<v(?:\\s[^>]*)?(?:/>|>[\\s\\S]*?</v>))?</c>`
+  );
+  const match = cellRe.exec(xml);
+  if (!match) {
+    throw new Error(`Template is missing expected formula cell ${ref}.`);
+  }
+
+  const attrs = match[1].replace(/\s+t="[^"]*"/, "");
+  const fElement = match[2];
+  const typeAttr = value === "" ? ' t="str"' : "";
+  const vElement = value === "" ? "<v></v>" : `<v>${value}</v>`;
+  const replacement = `<c r="${ref}"${attrs}${typeAttr}>${fElement}${vElement}</c>`;
+
+  return xml.slice(0, match.index) + replacement + xml.slice(match.index + match[0].length);
+}
+
+export function patchFormulaCaches(xml: string, edits: FormulaCacheEdit[]): string {
+  return edits.reduce((acc, { ref, value }) => patchFormulaCache(acc, ref, value), xml);
+}
+
 // True if cell REF currently holds a real value (a <v>...</v> or an
 // inline/shared string with content) — used to find the first "blank"
 // row in a table that already has some rows filled in by hand, so an

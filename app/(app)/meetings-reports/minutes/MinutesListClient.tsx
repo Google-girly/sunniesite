@@ -7,7 +7,10 @@ import { formatMeetingDate, OFFICER_POSITIONS } from "@/lib/meetingMinutes";
 import { formatTime12h, nextOccurrence, todayIso } from "@/lib/meetings";
 import { confirmDelete } from "@/lib/confirmDelete";
 
-type MeetingWithReports = Meeting & { officerReports: OfficerReport[] };
+type MeetingWithReports = Meeting & {
+  officerReports: OfficerReport[];
+  finalMinutes: { id: string; fileName: string } | null;
+};
 
 async function parseError(res: Response): Promise<string> {
   const data = await res.json().catch(() => null);
@@ -153,7 +156,7 @@ export function MinutesListClient({
         <table className="min-w-full divide-y divide-stone-200 text-sm">
           <thead className="bg-stone-50">
             <tr>
-              {["Date", "Time", "Reports Submitted", ""].map((h) => (
+              {["Date", "Time", "Reports Submitted", "Finished Minutes", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500"
@@ -166,7 +169,7 @@ export function MinutesListClient({
           <tbody className="divide-y divide-stone-100">
             {meetings.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-stone-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-stone-400">
                   No meetings yet.
                 </td>
               </tr>
@@ -179,6 +182,18 @@ export function MinutesListClient({
                 <td className="px-4 py-2.5 text-stone-600">{m.time || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-600">
                   {m.officerReports.length} / {OFFICER_POSITIONS.length}
+                </td>
+                <td className="px-4 py-2.5 text-stone-600">
+                  {m.finalMinutes ? (
+                    <a
+                      href={`/api/meeting-minutes/meetings/${m.id}/final-minutes`}
+                      className="font-medium text-burgundy-600 hover:text-burgundy-800 hover:underline"
+                    >
+                      Download
+                    </a>
+                  ) : (
+                    <span className="text-stone-400">Not posted yet</span>
+                  )}
                 </td>
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
                   <Link

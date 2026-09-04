@@ -148,6 +148,19 @@ export function canEditPositions(member: Pick<Member, "role"> | null | undefined
   );
 }
 
+// Who can switch which semester's data Study Hours and Standards Forms
+// are showing, via the term dropdown (Sep 2026 — same "prez, coms, or
+// vp" trio as canApproveSignups/canEditPositions above; see lib/
+// studyHours.ts TERMS). Everyone else just sees whatever term today's
+// date falls into.
+export function canSelectTerm(member: Pick<Member, "role"> | null | undefined): boolean {
+  return (
+    isPresident(member) ||
+    holdsPosition(member, "Vice President") ||
+    holdsPosition(member, "Vice President of Communications")
+  );
+}
+
 /** Does this member own/manage the module — i.e. bypass self-service row scoping, gate open-submit's sensitive actions, or unlock a locked module? */
 export function ownsModule(member: Pick<Member, "role"> | null | undefined, moduleKey: ModuleKey): boolean {
   if (isPresident(member)) return true;

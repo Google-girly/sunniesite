@@ -2,13 +2,14 @@ import { redirect } from "next/navigation";
 import { TemplateLibrarySection } from "@/components/TemplateLibrarySection";
 import { CPR_FIRST_AID_MIN_CERTIFIED } from "@/lib/standardsForms";
 import { currentAcademicYear } from "@/lib/standardsForms";
-import { currentTermLabel, currentTermRange } from "@/lib/studyHours";
+import { currentTermLabel, currentTermRange, listTerms, termByLabel } from "@/lib/studyHours";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
-import { canAccessModule } from "@/lib/permissions";
+import { canAccessModule, canSelectTerm } from "@/lib/permissions";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { ChapterStandardsChecklistClient } from "./ChapterStandardsChecklistClient";
 import { ChecklistDocumentsSection } from "./ChecklistDocumentsSection";
+import { TermPicker } from "./TermPicker";
 
 // Official Standards Forms — as of Aug 2026, a pure checklist over
 // every Chapter Standards credit (Sections A-I), not a data-entry page.
@@ -18,15 +19,27 @@ import { ChecklistDocumentsSection } from "./ChecklistDocumentsSection";
 // Fines & Member Accounts, Roster) — this page just reads that data
 // back and shows it as a hint. See lib/chapterStandardsChecklist.ts for
 // the full item list and MODULES.md for why this got split up.
-export default async function StandardsFormsPage() {
+export default async function StandardsFormsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ term?: string }>;
+}) {
   const viewer = await getCurrentMember();
   if (!viewer) redirect("/login");
   if (!canAccessModule(viewer, "standards-forms")) {
     return <NotAuthorized moduleTitle="Official Standards Forms" positions={[]} />;
   }
 
-  const term = currentTermLabel();
-  const { start, end } = currentTermRange();
+  // Only President/VP/VP of Communications can actually steer this via
+  // the ?term= param (see TermPicker, only rendered for them below) —
+  // everyone else is locked to the current term even if they type the
+  // param in by hand.
+  const canPickTerm = canSelectTerm(viewer);
+  const requestedTerm = canPickTerm ? (await searchParams).term : undefined;
+  const selectedTerm = (requestedTerm && termByLabel(requestedTerm)) || undefined;
+
+  const term = selectedTerm?.label ?? currentTermLabel();
+  const { start, end } = selectedTerm ?? currentTermRange();
   const academicYear = currentAcademicYear();
   const currentYear = new Date().getFullYear();
 
@@ -127,6 +140,12 @@ export default async function StandardsFormsPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-stone-900">Official Standards Forms</h1>
+
+      {canPickTerm ? (
+        <TermPicker terms={listTerms()} selected={term} />
+      ) : (
+        <p className="mt-1 text-sm text-stone-500">Term: {term}</p>
+      )}
 
       <div className="mt-6 space-y-4">
         <TemplateLibrarySection />

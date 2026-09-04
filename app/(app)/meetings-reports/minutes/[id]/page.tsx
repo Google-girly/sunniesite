@@ -41,6 +41,22 @@ export default async function MeetingMinutesPage({
     select: { id: true, meetingId: true, label: true, fileName: true, mimeType: true, uploadedByName: true, uploadedByMemberId: true, createdAt: true },
   });
 
+  // fileData deliberately omitted — the page only needs to know whether
+  // something's uploaded and who/when, not the blob itself. Downloading
+  // it goes through its own route (final-minutes/route.ts).
+  const finalMinutes = await prisma.meetingFinalMinutes.findUnique({
+    where: { meetingId: id },
+    select: {
+      id: true,
+      fileName: true,
+      mimeType: true,
+      uploadedByName: true,
+      uploadedByMemberId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
   return (
     <MeetingMinutesClient
       meeting={meeting}
@@ -49,6 +65,13 @@ export default async function MeetingMinutesPage({
       viewerPositions={parseRoles(viewer.role)}
       viewerOwnsModule={ownsModule(viewer, "meetings-reports")}
       initialAttachments={attachments.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
+      initialFinalMinutes={
+        finalMinutes && {
+          ...finalMinutes,
+          createdAt: finalMinutes.createdAt.toISOString(),
+          updatedAt: finalMinutes.updatedAt.toISOString(),
+        }
+      }
     />
   );
 }

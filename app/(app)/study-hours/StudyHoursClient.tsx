@@ -6,9 +6,11 @@ import type { Member, StudyHourEntry } from "@/app/generated/prisma/client";
 import {
   calculateWeeklyCompletion,
   currentTermRange,
+  termByLabel,
   totalHours,
   weekOfMonth,
   WEEKLY_COMPLETION_THRESHOLD,
+  type Term,
 } from "@/lib/studyHours";
 import { todayIso } from "@/lib/meetings";
 
@@ -64,9 +66,15 @@ function ProgressBar({ value, required }: { value: number; required: number }) {
 export function StudyHoursClient({
   initialMembers,
   canExport,
+  terms,
+  defaultTermLabel,
+  canPickTerm,
 }: {
   initialMembers: MemberWithStudyHours[];
   canExport: boolean;
+  terms: Term[];
+  defaultTermLabel: string;
+  canPickTerm: boolean;
 }) {
   const [members, setMembers] = useState<MemberWithStudyHours[]>(sortByName(initialMembers));
 
@@ -75,7 +83,14 @@ export function StudyHoursClient({
   const [logError, setLogError] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
 
-  const term = currentTermRange();
+  // President/VP/VP of Communications can look at a term other than
+  // whatever today's date falls into (lib/permissions.ts canSelectTerm);
+  // everyone else is locked to defaultTermLabel. Falls back to the
+  // month-based currentTermRange() guess if the picked label somehow
+  // isn't in the TERMS table (shouldn't happen — the dropdown only ever
+  // offers labels from that same table).
+  const [selectedTermLabel, setSelectedTermLabel] = useState(defaultTermLabel);
+  const term = termByLabel(selectedTermLabel) ?? currentTermRange();
   const withCompletion = members.map((m) => ({
     member: m,
     completion: calculateWeeklyCompletion(m.studyHours, term.start, term.end),
@@ -143,6 +158,28 @@ export function StudyHoursClient({
 
   return (
     <div>
+      {canPickTerm ? (
+        <div className="mb-4 flex items-center gap-2">
+          <label htmlFor="term" className="text-sm font-medium text-stone-600">
+            Term
+          </label>
+          <select
+            id="term"
+            value={selectedTermLabel}
+            onChange={(e) => setSelectedTermLabel(e.target.value)}
+            className="rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+          >
+            {terms.map((t) => (
+              <option key={t.label} value={t.label}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <p className="mb-4 text-sm text-stone-500">Term: {selectedTermLabel}</p>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-stone-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
@@ -171,7 +208,11 @@ export function StudyHoursClient({
                 Export Hour Logs
               </a>
               <a
-                href="/api/study-hours/export/report"
+                href={`/api/study-hours/export/report?${new URLSearchParams({
+                  term: selectedTermLabel,
+                  start: term.start,
+                  end: term.end,
+                })}`}
                 className="rounded-md border border-stone-300 px-3 py-1.5 text-center text-sm font-medium text-stone-700 hover:bg-stone-50"
               >
                 Export Chapter Standards Report

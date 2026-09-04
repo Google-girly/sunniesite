@@ -13,6 +13,7 @@ import {
 } from "@/lib/meetingNotes";
 import { confirmDelete } from "@/lib/confirmDelete";
 import { MeetingAttachmentsSection, type MeetingAttachmentRow } from "./MeetingAttachmentsSection";
+import { FinalMinutesSection, type FinalMinutesMeta } from "./FinalMinutesSection";
 
 type MeetingNoteWithAuthor = MeetingNote & { author: Member | null };
 type MeetingWithReports = Meeting & { officerReports: OfficerReport[]; notes: MeetingNoteWithAuthor[] };
@@ -424,6 +425,7 @@ export function MeetingMinutesClient({
   viewerPositions,
   viewerOwnsModule,
   initialAttachments,
+  initialFinalMinutes,
 }: {
   meeting: MeetingWithReports;
   members: MemberLite[];
@@ -433,6 +435,7 @@ export function MeetingMinutesClient({
   /** Vice President of Communications, Historian, or President — can edit/remove anyone's Officer Report or Meeting Note. */
   viewerOwnsModule: boolean;
   initialAttachments: MeetingAttachmentRow[];
+  initialFinalMinutes: FinalMinutesMeta | null;
 }) {
   const [reports, setReports] = useState(meeting.officerReports);
   const [notes, setNotes] = useState(meeting.notes);
@@ -481,6 +484,15 @@ export function MeetingMinutesClient({
         currently on Probation or Suspension, the minutes must also be sent to the National Board
         at National.Sunnies@gmail.com.
       </p>
+
+      <div className="mt-6">
+        <FinalMinutesSection
+          meetingId={meeting.id}
+          viewerId={viewerId}
+          viewerOwnsModule={viewerOwnsModule}
+          initial={initialFinalMinutes}
+        />
+      </div>
 
       <div className="mt-6">
         <QuorumSection meeting={meeting} canEdit={viewerOwnsModule} onSaved={() => {}} />

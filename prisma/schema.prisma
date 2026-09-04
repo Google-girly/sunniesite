@@ -91,6 +91,7 @@ model Member {
   chapterAssistantAsks     ChapterAssistantInteraction[]
   checklistDocuments       ChecklistDocument[]
   meetingAttachments       MeetingAttachment[]
+  meetingFinalMinutesUploads MeetingFinalMinutes[]
 }
 
 // --- Fines / Member Accounts module -------------------------------------
@@ -360,6 +361,7 @@ model Meeting {
   officerReports OfficerReport[]
   notes          MeetingNote[]
   attachments    MeetingAttachment[]
+  finalMinutes   MeetingFinalMinutes?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -386,6 +388,34 @@ model MeetingAttachment {
   uploadedByMember   Member?  @relation(fields: [uploadedByMemberId], references: [id], onDelete: SetNull)
   uploadedByName     String
   createdAt          DateTime @default(now())
+}
+
+// The one finished/final minutes document for a meeting (Sept 2026 —
+// "add a place where I can upload the finished meeting minutes so they
+// can be seen by anyone on the website"). Distinct from
+// MeetingAttachment above (a running list of flyers/handouts that ride
+// along on the meeting email): this is the single canonical file — the
+// docx exported from the Meeting Minutes editing page (see
+// lib/meetingMinutesExport.ts), then hand-filled with Roll Call,
+// motions, and Meeting Adjourned — that stands as the actual record of
+// what happened. One row per meeting (@unique meetingId); uploading
+// again replaces it via upsert rather than piling up versions. Kept as
+// its own table, not columns on Meeting, so the (everyone-visible)
+// Meeting Minutes list page can list meetings without ever pulling this
+// row's base64 blob along for the ride — see
+// app/api/meeting-minutes/meetings/[id]/final-minutes/route.ts.
+model MeetingFinalMinutes {
+  id                 String   @id @default(cuid())
+  meetingId          String   @unique
+  meeting            Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  fileName           String
+  mimeType           String
+  fileData           String // base64 data URL
+  uploadedByMemberId String?
+  uploadedByMember   Member?  @relation(fields: [uploadedByMemberId], references: [id], onDelete: SetNull)
+  uploadedByName     String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 // One officer's written report for one Meeting. Upserts on
