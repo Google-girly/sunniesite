@@ -2,39 +2,35 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import JSZip from "jszip";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
-import { currentTerm } from "@/lib/communityService";
 import { formatCurrency } from "@/lib/fines";
 import { OFFICER_REPORT_TEMPLATE_LABELS } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 import { findRoleHolderNames } from "@/lib/roster";
 import { escapeXmlText, readEntry } from "@/lib/xlsxPatch";
-import {
-  fillEmptyParensAfter,
-  fillTableCellsAfterHeader,
-  insertParagraphsAfter,
-  insertRunAfterLabel,
-  replaceRunText,
-} from "@/lib/docxPatch";
+import { fillEmptyParensAfter, insertParagraphsAfter, insertRunAfterLabel, replaceRunText } from "@/lib/docxPatch";
 import { nextRelationshipId } from "@/lib/docxLetterhead";
 
 const TEMPLATE_PATH = path.join(process.cwd(), "lib/templates/meeting-minutes-template.docx");
 
-// The Active Roster table has exactly 4 rows, each Name | Email — a
-// real capacity limit of the physical template, same situation as every
-// other fixed-size table/row-block this app fills in. Only the first 4
-// Active members (alphabetically) get a row; anyone past that isn't
-// listed here, same as any other fixed-size template block in this app.
-export const ACTIVE_ROSTER_ROW_CAPACITY = 4;
-
-// Every officer heading in "Minutes Template.docx" is its own paragraph
-// (list level 1 of numId=1 — renders as "A. President ()", "B. Vice
-// President ()", ...) split into (at least) two runs: a label run and a
-// separate, differently-colored "()" placeholder run right after it —
-// see lib/meetingMinutes.ts for the exact label text per position,
-// which reads noticeably differently from lib/positions.ts
-// OFFICER_POSITIONS in several spots ("VP of Communications," "Cultura &
-// Sisterhood," no "Commissioner of" prefix on several positions).
+// Every officer heading in the template is its own paragraph (list
+// level 1 of NOTES_NUM_ID — renders as "A. President ()", "B. Vice
+// President ()", ...) split into two runs: a label run and a separate
+// "()" placeholder run right after it — see lib/meetingMinutes.ts for
+// the exact label text per position.
 const HEADING_ANCHORS: Record<OfficerPosition, string> = OFFICER_REPORT_TEMPLATE_LABELS;
+
+// Sept 2026 — the template was rebuilt directly from National's actual
+// current master docx (see lib/meetingMinutes.ts's own comment), which
+// threads its own headings/approval rows through one native numbered
+// list (numId=3) with no restart behavior this app can rely on for
+// nesting an officer's report or a Meeting Note under a heading. Rather
+// than reverse-engineer that list, every heading this file touches
+// (officer positions, Action Items, Old Business, Reminders,
+// Announcements) was switched in the template itself to its own
+// self-contained list — numId 101, a straight port of the old bundled
+// template's abstractNum 0 (upperRoman/upperLetter/decimal levels,
+// exactly what buildListParagraphXml below assumes).
+const NOTES_NUM_ID = 101;
 
 const GEORGIA_RPR = `<w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/>`;
 const HYPERLINK_RPR = `<w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/><w:color w:val="0563C1"/><w:u w:val="single"/>`;
@@ -118,14 +114,14 @@ function buildListParagraphXml(text: string, ilvl: number, rels: RelsState): str
     .map((line, i) => (i > 0 ? `<w:r><w:rPr>${GEORGIA_RPR}</w:rPr><w:br/></w:r>` : "") + buildLineRunsXml(line, rels))
     .join("");
   return (
-    `<w:p><w:pPr><w:pageBreakBefore w:val="0"/><w:numPr><w:ilvl w:val="${ilvl}"/><w:numId w:val="1"/></w:numPr>` +
+    `<w:p><w:pPr><w:pageBreakBefore w:val="0"/><w:numPr><w:ilvl w:val="${ilvl}"/><w:numId w:val="${NOTES_NUM_ID}"/></w:numPr>` +
     `<w:ind w:left="${indentTwips}" w:hanging="360"/>` +
     `<w:rPr>${GEORGIA_RPR}</w:rPr></w:pPr>` +
     `${runInner}</w:p>`
   );
 }
 
-// Fills the real Minutes template's Date and Meeting Call to Order
+// Fills the real Minutes template's Date and Meeting Called to Order
 // fields, every officer heading's current holder + submitted report,
 // and (Aug 2026) whatever's been added under Action Items/Old Business/
 // Reminders/Announcements (see lib/meetingNotes.ts) — each inserted one
@@ -157,7 +153,7 @@ export async function buildMeetingMinutesDocx(
     const timeRun = `<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/><w:rtl w:val="0"/></w:rPr><w:t xml:space="preserve">${escapeXmlText(
       meeting.time
     )}</w:t></w:r>`;
-    xml = insertRunAfterLabel(xml, "Meeting Call to Order: ", timeRun);
+    xml = insertRunAfterLabel(xml, "Meeting Called to Order: ", timeRun);
   }
 
   // Quorum/attendance line (Sept 2026) — see the Meeting model's own
@@ -176,31 +172,6 @@ export async function buildMeetingMinutesDocx(
     const valueRun = `<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/></w:rPr><w:t xml:space="preserve">${value}</w:t></w:r>`;
     xml = insertRunAfterLabel(xml, label, valueRun);
   }
-
-  // Active Roster table — "Fall 2023" -> the term this meeting actually
-  // falls in, and its (fixed, 4-row) capacity filled with current Active
-  // members, alphabetically by name. Each row is Name | Email — first
-  // pass (stride=2) fills only the Name cells, leaving the Email cells
-  // as still-empty runs; second pass (default stride=1) then fills
-  // every *remaining* empty run in that same table, which by then is
-  // exactly the Email column, no offset parameter needed.
-  const term = currentTerm(parseIsoDateLocal(meeting.date));
-  xml = replaceRunText(xml, "Active Roster Fall 2023", `Active Roster ${term}`);
-  const activeMembers = members
-    .filter((m) => m.status === "ACTIVE")
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, ACTIVE_ROSTER_ROW_CAPACITY);
-  xml = fillTableCellsAfterHeader(
-    xml,
-    `Active Roster ${term}`,
-    activeMembers.map((m) => m.name),
-    2
-  );
-  xml = fillTableCellsAfterHeader(
-    xml,
-    `Active Roster ${term}`,
-    activeMembers.map((m) => m.email ?? "")
-  );
 
   const reportsByPosition = new Map(reports.map((r) => [r.position, r.report]));
 
@@ -288,12 +259,13 @@ function formatDateForDoc(iso: string): string {
   return `${Number(month)}/${Number(day)}/${year}`;
 }
 
-// currentTerm() reads month/year off a plain JS Date via its *local*
-// getMonth()/getFullYear() — constructing from the ISO string directly
-// (`new Date("2026-09-01")`) parses as UTC midnight, which can land on
-// the wrong local calendar day (and therefore the wrong term) depending
-// on the server's timezone. Building the Date from the same YYYY/MM/DD
-// components instead keeps it aligned with what the string actually says.
+// Constructing straight from the ISO string (`new Date("2026-09-01")`)
+// parses as UTC midnight, which can land on the wrong local calendar day
+// depending on the server's timezone. Building the Date from the same
+// YYYY/MM/DD components instead keeps it aligned with what the string
+// actually says — used by lib/meetingMinutesAutoAdd.ts, whose own
+// date/time comparisons need to agree with what a human reading the
+// meeting's own date field would expect.
 export function parseIsoDateLocal(iso: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   if (!match) return new Date(iso);

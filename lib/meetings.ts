@@ -99,7 +99,7 @@ export function nextMeetingDate(
 
 // "19:00" -> "7:00 PM" — MeetingSchedule stores time as 24h "HH:MM"
 // (display-only, doesn't affect date math); Meeting Minutes wants it in
-// the same 12-hour format the real template's "Meeting Call to Order"
+// the same 12-hour format the real template's "Meeting Called to Order"
 // field already uses.
 export function formatTime12h(hhmm: string): string {
   const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
