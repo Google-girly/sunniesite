@@ -301,8 +301,8 @@ model MeetingSchedule {
 
   active Boolean @default(true) // lets a series be paused without deleting its history
 
-  meetings      Meeting[]
-  reminderLogs  MeetingReminderLog[]
+  meetings     Meeting[]
+  reminderLogs MeetingReminderLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -342,6 +342,20 @@ model Meeting {
   time       String? // e.g. "6:00 PM" — display only, matches the template's own header format
   scheduleId String?
   schedule   MeetingSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  // Quorum/attendance snapshot (Sept 2026) — added to match the new
+  // National "Total Members: ___ Quorum Eligible: ___ Quorum Required:
+  // ___ Members in Attendance: ___" header line (Example Forms-Templates/
+  // Meeting Agenda_Minutes - MO.DAY.YEAR.docx, in Organizational
+  // Structure/), which the app's own bundled template (and this model)
+  // didn't have before. All optional and module-owner-entered, same as
+  // date/time — a one-off/imported meeting may never get these filled
+  // in, and that's fine. See lib/meetingMinutesExport.ts for where they
+  // land on the exported docx.
+  totalMembers        Int?
+  quorumEligible      Int?
+  quorumRequired      Int?
+  membersInAttendance Int?
 
   officerReports OfficerReport[]
   notes          MeetingNote[]
@@ -818,9 +832,9 @@ model LeadershipPosition {
 // the type list/validation and lib/letterExport.ts for the docx build
 // (reuses lib/docxLetterhead.ts, same as the Chapter Standards letters).
 model Letter {
-  id                 String   @id @default(cuid())
-  type               String // see lib/letters.ts LETTER_TYPES — "Other" pairs with typeOther below
-  typeOther          String? // free text when type === "Other"
+  id                String   @id @default(cuid())
+  type              String // see lib/letters.ts LETTER_TYPES — "Other" pairs with typeOther below
+  typeOther         String? // free text when type === "Other"
   // Aug 2026 — "make the letterhead be able to have drafts... keep those
   // isolated to the person." A draft is visible only to whoever created
   // it (not even the President, unlike a finished letter — see
@@ -828,14 +842,14 @@ model Letter {
   // meeting's minutes, either of which flips this back to false. See
   // lib/letters.ts parseLetterInput's isDraft branch for what's actually
   // required to save one.
-  isDraft            Boolean  @default(false)
-  purpose            String // what it's for / who it's addressed to — printed as the letter's body
-  recipientName      String?
-  date               String // ISO "YYYY-MM-DD" — the date printed on the letter
-  createdByMemberId  String?
-  createdByMember    Member?  @relation(fields: [createdByMemberId], references: [id], onDelete: SetNull)
-  createdByName      String // snapshot — survives the member being removed later
-  createdAt          DateTime @default(now())
+  isDraft           Boolean  @default(false)
+  purpose           String // what it's for / who it's addressed to — printed as the letter's body
+  recipientName     String?
+  date              String // ISO "YYYY-MM-DD" — the date printed on the letter
+  createdByMemberId String?
+  createdByMember   Member?  @relation(fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  createdByName     String // snapshot — survives the member being removed later
+  createdAt         DateTime @default(now())
 
   // Aug 2026 — "Add to Next Meeting Minutes" button (Letter of Excuse /
   // Active Member Request), see lib/meetingMinutesAutoAdd.ts. Set once
@@ -883,7 +897,7 @@ model ChapterAssistantInteraction {
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   question String
-  answer   String @default("")
+  answer   String  @default("")
   sources  String // JSON-encoded Source[] — see lib/rag/prompt.ts
   topScore Float? // best retrieval cosine similarity across the chunks used
   feedback String? // "up" | "down" | null (not yet rated) — set once, via PATCH
@@ -918,14 +932,14 @@ model ChecklistOverride {
 // is — MemberSignature.imageData, EventReport.signatureImage — as a
 // base64 data URL directly in the row.
 model ChecklistDocument {
-  id               String   @id @default(cuid())
-  code             String // a CHECKLIST_ITEMS code (e.g. "A.1"), or "General" for anything else
-  label            String // what this document actually is, e.g. "Club charter copy"
-  fileName         String
-  mimeType         String
-  fileData         String // base64 data URL
+  id                 String   @id @default(cuid())
+  code               String // a CHECKLIST_ITEMS code (e.g. "A.1"), or "General" for anything else
+  label              String // what this document actually is, e.g. "Club charter copy"
+  fileName           String
+  mimeType           String
+  fileData           String // base64 data URL
   uploadedByMemberId String?
-  uploadedByMember Member?  @relation(fields: [uploadedByMemberId], references: [id], onDelete: SetNull)
-  uploadedByName   String
-  createdAt        DateTime @default(now())
+  uploadedByMember   Member?  @relation(fields: [uploadedByMemberId], references: [id], onDelete: SetNull)
+  uploadedByName     String
+  createdAt          DateTime @default(now())
 }

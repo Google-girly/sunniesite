@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { calculateChapterBalance } from "@/lib/chapterBalance";
 import { buildMeetingMinutesDocx, meetingMinutesFilename } from "@/lib/meetingMinutesExport";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
@@ -27,7 +28,27 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
   const members = await prisma.member.findMany({ select: { name: true, role: true, status: true, email: true } });
 
-  const bytes = await buildMeetingMinutesDocx(meeting, meeting.officerReports, members, meeting.notes);
+  // Chapter Balance (Sept 2026) — same starting-balance + deposits -
+  // approved-Final-Budgets math as the Financial Books export (see
+  // lib/chapterBalance.ts), fetched fresh on every export so the
+  // Treasurer's report always shows the real current number rather than
+  // whatever it was when the meeting was created.
+  const [budgets, fundEntries, startingBalances] = await Promise.all([
+    prisma.budget.findMany({
+      include: { versions: { where: { stage: "FINAL" }, include: { lineItems: true } } },
+    }),
+    prisma.chapterFundEntry.findMany(),
+    prisma.chapterStartingBalance.findMany({ orderBy: { year: "desc" } }),
+  ]);
+  const finalBudgets = budgets
+    .filter((b) => b.versions.length > 0)
+    .map((b) => ({ budget: b, version: b.versions[0] }));
+  const chapterBalance =
+    startingBalances[0] || fundEntries.length > 0 || finalBudgets.length > 0
+      ? calculateChapterBalance(finalBudgets, fundEntries, startingBalances[0] ?? null)
+      : null;
+
+  const bytes = await buildMeetingMinutesDocx(meeting, meeting.officerReports, members, meeting.notes, chapterBalance);
   const file = new Uint8Array(bytes.length);
   file.set(bytes);
 

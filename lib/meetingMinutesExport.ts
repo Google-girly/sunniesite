@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import JSZip from "jszip";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
 import { currentTerm } from "@/lib/communityService";
+import { formatCurrency } from "@/lib/fines";
 import { OFFICER_REPORT_TEMPLATE_LABELS } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 import { findRoleHolderNames } from "@/lib/roster";
@@ -137,7 +138,9 @@ export async function buildMeetingMinutesDocx(
   meeting: Meeting,
   reports: OfficerReport[],
   members: Pick<Member, "name" | "role" | "status" | "email">[],
-  notes: Pick<MeetingNote, "category" | "text">[] = []
+  notes: Pick<MeetingNote, "category" | "text">[] = [],
+  /** From lib/chapterBalance.ts calculateChapterBalance() — computed by the caller (route has the Prisma access this pure builder deliberately doesn't), null when there's nothing on file yet (no Starting Balance set) to auto-fill from. See the "Chapter Balance: " line below. */
+  chapterBalance: number | null = null
 ): Promise<Uint8Array> {
   const templateBuffer = await fs.readFile(TEMPLATE_PATH);
   const zip = await JSZip.loadAsync(templateBuffer);
@@ -155,6 +158,23 @@ export async function buildMeetingMinutesDocx(
       meeting.time
     )}</w:t></w:r>`;
     xml = insertRunAfterLabel(xml, "Meeting Call to Order: ", timeRun);
+  }
+
+  // Quorum/attendance line (Sept 2026) — see the Meeting model's own
+  // comment in schema.prisma. Each of the 4 labels is its own run in the
+  // template (added by a one-off patch to
+  // lib/templates/meeting-minutes-template.docx), so each fills
+  // independently — a meeting can have some of these set and not others.
+  const quorumFields: [number | null, string][] = [
+    [meeting.totalMembers, "Total Members: "],
+    [meeting.quorumEligible, "   Quorum Eligible: "],
+    [meeting.quorumRequired, "   Quorum Required: "],
+    [meeting.membersInAttendance, "   Members in Attendance: "],
+  ];
+  for (const [value, label] of quorumFields) {
+    if (value === null || value === undefined) continue;
+    const valueRun = `<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/></w:rPr><w:t xml:space="preserve">${value}</w:t></w:r>`;
+    xml = insertRunAfterLabel(xml, label, valueRun);
   }
 
   // Active Roster table — "Fall 2023" -> the term this meeting actually
@@ -201,6 +221,20 @@ export async function buildMeetingMinutesDocx(
     if (holders) {
       xml = fillEmptyParensAfter(xml, anchor, holders);
     }
+  }
+
+  // Chapter Balance (Sept 2026) — auto-computed, not typed in by the
+  // Treasurer: same "Chapter Balance: ___" line new to the National
+  // template (added right after the Treasurer heading by a one-off patch
+  // to the bundled template), filled from real Chapter Finances data
+  // instead of a manual entry so it can't drift out of date. Left blank
+  // if nothing's on file yet (no Starting Balance set) rather than
+  // printing a misleading $0.00.
+  if (chapterBalance !== null) {
+    const balanceRun = `<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:cs="Georgia" w:eastAsia="Georgia" w:hAnsi="Georgia"/></w:rPr><w:t xml:space="preserve">${escapeXmlText(
+      formatCurrency(chapterBalance)
+    )}</w:t></w:r>`;
+    xml = insertRunAfterLabel(xml, "Chapter Balance: ", balanceRun);
   }
 
   // Action Items / Old Business / Reminders / Announcements — each

@@ -717,6 +717,61 @@ the permissions work above, most independent of each other:
       names to fill in instead of staying blank — sourced from the
       filled-in example found in the other Minutes template while
       scoping this feature.
+      **Quorum tracking + Auditor (Sept 2026)** — the earlier call above
+      to use the simpler root template over "the fancier one ... with
+      attendance/quorum tracking" got revisited: the chapter's new
+      `Organizational Structure/Example Forms-Templates/Meeting
+      Agenda_Minutes - MO.DAY.YEAR.docx` — now the actual current
+      top-level template, not the old Positions Binders alternate — folds
+      quorum tracking into the *default* required format, not an optional
+      fancier one. Added `totalMembers`/`quorumEligible`/`quorumRequired`/
+      `membersInAttendance` (all `Int?`) to `Meeting`
+      (migration `add_meeting_quorum_fields`), a module-owner-only
+      "Quorum & Attendance" panel on `/meetings-reports/minutes/[id]`
+      (`QuorumSection` in `MeetingMinutesClient.tsx`, `PATCH
+      /api/meeting-minutes/meetings/[id]`), and a matching "Total Members:
+      ___ Quorum Eligible: ___ Quorum Required: ___ Members in Attendance:
+      ___" line hand-inserted into the bundled
+      `meeting-minutes-template.docx` right after "Other Attendees:" (same
+      one-time direct-XML-edit approach as the Risk Management row/typo
+      fixes above — see `lib/meetingMinutesExport.ts` for where the four
+      values get filled in, each independently optional). Also added
+      **Auditor** to `OFFICER_POSITIONS` (`lib/positions.ts`) — missing
+      from the app entirely, but confirmed real: both the new Officer &
+      Active Roster Template and this new Minutes template list it as a
+      distinct position, and the bundled template's own officer-email
+      directory already had `sonthetachapter.auditor@gmail.com` sitting
+      unused. Hand-added a matching "Auditor ()" heading paragraph to the
+      template (right after VP of Communications, matching the new
+      template's placement) so its report has somewhere to insert into.
+      Auditor carries no special `lib/permissions.ts` access yet, same as
+      Historian/Pledge Mother. Distribution timing (agenda 48h before,
+      minutes 48h after) and the requirement to CC National Board at
+      Probation/Suspension are surfaced as a static reminder banner on the
+      minutes page — not modeled as data, since the app has no
+      chapter-wide Probation/Suspension status to key off of
+      (`ProbationRecord` is per-member, a different thing entirely).
+      **Chapter Balance auto-fill (Sept 2026)** — "auto add the chapter's
+      balance to the treasurer's report where it asks": the new
+      template's "Chapter Balance: ___" line (right after the Treasurer
+      heading, same one-time template edit as Auditor's) is now filled in
+      automatically on every export, not typed by hand. `lib/
+      chapterBalance.ts` (`calculateChapterBalance()`) is the shared math
+      — most recent year's `ChapterStartingBalance`, plus every
+      `ChapterFundEntry` deposit, minus every *approved* Final Budget's
+      total (`isApprovedVersion`, same "still in limbo" filter Chapter
+      Finances and the Financial Books export already use) — computed in
+      plain JS since, unlike the Financial Books `.xlsx` export, a `.docx`
+      has no formula engine to lean on for a running balance. The export
+      route (`GET /api/meeting-minutes/export/[id]`) fetches Budgets/
+      ChapterFundEntry/ChapterStartingBalance fresh on every request so
+      the number's always current, not a snapshot from whenever the
+      meeting was created; `buildMeetingMinutesDocx()` itself stays a pure
+      function (no direct Prisma access, matching how it already receives
+      `meeting`/`reports`/`members`/`notes`) and just takes the computed
+      number, leaving the field blank rather than printing "$0.00" when
+      there's genuinely nothing on file yet (no Starting Balance, no fund
+      entries, no approved budgets at all).
 - [x] **Official Standards Forms** — `app/(app)/standards-forms`
       **Reorganized Aug 2026** from a data-entry page into a pure
       checklist — the user's own framing: "a place where all of our
@@ -1305,6 +1360,47 @@ way (see below) — worth internalizing the lesson, not just the fix.
   `RosterClient.tsx` (`STATUS_BADGE_CLASSES` missing the `GENERAL` status
   some other change had added to `lib/roster.ts`) — added the missing
   entry so the build (and this work) could actually be verified.
+
+**Corpus refresh from `Organizational Structure/` (Sept 2026)** — the
+chapter dropped a new, newer-dated export of the same source Drive
+folder this corpus was originally built from (`Official Documents -
+Updated by JR 8.27.26/`, vs. the `8.24.26` one the original 12-doc
+ingest used) directly into the repo, at the President's request to treat
+it as the current source of truth for chapter standards/rules going
+forward. Diffed every file by checksum against what was already indexed
+rather than assuming "newer folder = replace everything":
+- **5 governing PDFs were genuinely superseded** (checked by content
+  diff, not just the date in the filename) and replaced: Chapter Bylaws,
+  Chapter Standards, Chapter Traditions, Code of Ethics, National Bylaws,
+  all now the 08-2026 approvals. The Chapter Standards diff in
+  particular confirmed a real terminology change already reflected in
+  this app's own checklist copy (`lib/chapterStandardsChecklist.ts`)
+  ahead of the source doc catching up in the repo: §G.6 Expense Reports'
+  signer changed from "Chapter Auditor" to "Chapter Treasurer."
+  Everything else with a matching filename (Standing Rules, both
+  Traditions docs at the national level, the AAC doc, the Undergrad
+  Expansion Process, Standardized Pledgeship) was byte-identical —
+  nothing to do there.
+- **A real privacy leak, caught by diffing instead of trusting the
+  "confirmed blank" note from the original ingest**: the indexed
+  `pledgeship/Pledge Mom Contract.pdf` turned out to be an actually
+  *filled-in and dated* copy — a real signed contract, sitting in an
+  LLM-queryable index — not the blank template it was supposed to be.
+  Replaced with the genuinely blank version from the new folder.
+- **Added**: the master `Chapter Standards Checklist_ 2026-2027.docx`
+  (wasn't indexed at all before, despite being the single most relevant
+  document for exactly the questions this widget gets asked) and
+  `Officer & Active Roster Template.xlsx` (confirmed blank first, same
+  bar as everything else in `reference/`) to `rag-source-docs/reference/`.
+  Renamed `pledgeship/Pledgeship Forms Rev. Winter_Spring 2026.xlsx` to
+  match the new `Pledgeship Forms Rev. 2026.xlsx` (the chapter's now
+  fully on the semester system — the new Chapter Standards Checklist
+  itself leads with a Semester System track ahead of the Quarter one).
+  Re-ran `npm run rag:ingest` after (71 docs, 303 chunks, no
+  suspiciously-low-yield warnings).
+- Two small files (`Email Etiquette.docx`, `Section B - Academic - How
+  Tos.docx`) had different checksums but byte-identical extracted text
+  once converted — just a re-save, not a real change — so left alone.
 
 **Self-service signup + President-sent invites** (Aug 2026) — a sister no
 longer needs the President to set her initial password from Manage

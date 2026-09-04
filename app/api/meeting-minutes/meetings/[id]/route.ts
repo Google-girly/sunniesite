@@ -16,7 +16,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const data: { date?: string; time?: string | null } = {};
+  const data: {
+    date?: string;
+    time?: string | null;
+    totalMembers?: number | null;
+    quorumEligible?: number | null;
+    quorumRequired?: number | null;
+    membersInAttendance?: number | null;
+  } = {};
   if (typeof body.date === "string") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date.trim())) {
       return NextResponse.json({ error: "A valid date is required." }, { status: 400 });
@@ -24,6 +31,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     data.date = body.date.trim();
   }
   if (typeof body.time === "string") data.time = body.time.trim() || null;
+
+  // Quorum/attendance snapshot (Sept 2026) — see the Meeting model's own
+  // comment in schema.prisma. Each is independently optional; `null`
+  // clears a field that's already set (e.g. correcting a typo'd count).
+  for (const key of ["totalMembers", "quorumEligible", "quorumRequired", "membersInAttendance"] as const) {
+    if (!(key in body)) continue;
+    const raw = body[key];
+    if (raw === null || raw === "") {
+      data[key] = null;
+    } else if (typeof raw === "number" && Number.isInteger(raw) && raw >= 0) {
+      data[key] = raw;
+    } else {
+      return NextResponse.json({ error: `${key} must be a non-negative whole number.` }, { status: 400 });
+    }
+  }
 
   try {
     const meeting = await prisma.meeting.update({ where: { id }, data });

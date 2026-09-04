@@ -218,6 +218,105 @@ function OfficerReportRow({
   );
 }
 
+// Quorum/attendance snapshot (Sept 2026) — see the Meeting model's own
+// comment in schema.prisma and lib/meetingMinutesExport.ts for where
+// these land on the exported docx. Module-owner-only, same PATCH gate as
+// the API route (requireModuleOwnerApi) — not per-officer like Officer
+// Reports, since this is one shared count for the whole meeting rather
+// than something split by position.
+const QUORUM_FIELDS = [
+  ["totalMembers", "Total Members"],
+  ["quorumEligible", "Quorum Eligible"],
+  ["quorumRequired", "Quorum Required"],
+  ["membersInAttendance", "Members in Attendance"],
+] as const;
+type QuorumFieldKey = (typeof QUORUM_FIELDS)[number][0];
+
+function QuorumSection({
+  meeting,
+  canEdit,
+  onSaved,
+}: {
+  meeting: Pick<Meeting, "id" | "totalMembers" | "quorumEligible" | "quorumRequired" | "membersInAttendance">;
+  canEdit: boolean;
+  onSaved: (fields: Record<QuorumFieldKey, number | null>) => void;
+}) {
+  const [values, setValues] = useState<Record<QuorumFieldKey, string>>({
+    totalMembers: meeting.totalMembers?.toString() ?? "",
+    quorumEligible: meeting.quorumEligible?.toString() ?? "",
+    quorumRequired: meeting.quorumRequired?.toString() ?? "",
+    membersInAttendance: meeting.membersInAttendance?.toString() ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    const body: Record<string, number | null> = {};
+    for (const [key] of QUORUM_FIELDS) {
+      const raw = values[key].trim();
+      body[key] = raw === "" ? null : Number(raw);
+    }
+    const res = await fetch(`/api/meeting-minutes/meetings/${meeting.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setError(await parseError(res));
+      return;
+    }
+    onSaved(body as Record<QuorumFieldKey, number | null>);
+    setSaved(true);
+  }
+
+  return (
+    <div className="rounded-lg border border-stone-200 bg-white p-4">
+      <h3 className="text-sm font-semibold text-stone-900">Quorum &amp; Attendance</h3>
+      <p className="mt-1 text-xs text-stone-500">
+        Fills the header line the real Meeting Agenda/Minutes template requires — Total Members,
+        Quorum Eligible, Quorum Required, and Members in Attendance.
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {QUORUM_FIELDS.map(([key, label]) => (
+          <label key={key} className="text-xs font-medium text-stone-600">
+            {label}
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={values[key]}
+              disabled={!canEdit}
+              onChange={(e) => {
+                setValues((prev) => ({ ...prev, [key]: e.target.value }));
+                setSaved(false);
+              }}
+              className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400 disabled:bg-stone-50 disabled:text-stone-500"
+            />
+          </label>
+        ))}
+      </div>
+      {canEdit && (
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-md bg-burgundy-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+          {saved && !error && <span className="text-sm text-green-600">Saved.</span>}
+          {error && <span className="text-sm text-red-600">{error}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MeetingNoteSection({
   meetingId,
   category,
@@ -374,6 +473,17 @@ export function MeetingMinutesClient({
             Export Minutes
           </a>
         </div>
+      </div>
+
+      <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+        Per the National meeting minutes template: distribute the agenda at least 48 hours before
+        the meeting and the finished minutes no later than 48 hours after. If the Chapter is
+        currently on Probation or Suspension, the minutes must also be sent to the National Board
+        at National.Sunnies@gmail.com.
+      </p>
+
+      <div className="mt-6">
+        <QuorumSection meeting={meeting} canEdit={viewerOwnsModule} onSaved={() => {}} />
       </div>
 
       <div className="mt-6">

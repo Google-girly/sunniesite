@@ -9,6 +9,7 @@ export const OFFICER_POSITIONS = [
   "Sergeant-At-Arms",
   "Treasurer",
   "Vice President of Communications",
+  "Auditor",
   "Risk Management Officer",
   "Commissioner of Cultura and Sisterhood",
   "Commissioner of Community Service",
