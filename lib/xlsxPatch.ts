@@ -108,6 +108,45 @@ export function patchFormulaCaches(xml: string, edits: FormulaCacheEdit[]): stri
   return edits.reduce((acc, { ref, value }) => patchFormulaCache(acc, ref, value), xml);
 }
 
+// Finds cell REF (whatever it is — a plain value cell or a formula
+// cell's cached result) and returns its numeric <v>, or null if it has
+// none (blank, text, or an empty-string formula result). Used to read
+// "whatever's really there" — a hand-entered figure, a value another
+// export pass just wrote, or a formula's already-correct cached result —
+// without caring which of those it is. See lib/financialBooksRecalc.ts.
+export function readCellNumber(xml: string, ref: string): number | null {
+  const cellRe = new RegExp(`<c r="${ref}"(?:\\s+[\\w:.-]+="[^"]*")*\\s*(?:/>|>([\\s\\S]*?)</c>)`);
+  const inner = cellRe.exec(xml)?.[1];
+  if (!inner) return null;
+  const v = /<v>([^<]*)<\/v>/.exec(inner);
+  if (!v) return null;
+  const n = Number(v[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+// True if cell REF carries a formula (<f>...) at all — a master cell
+// with its own formula text, or a shared-formula continuation with just
+// a bare <f t="shared" si="N"/>. Used to find where a run of shared
+// formulas (e.g. a running-balance column) stops being pre-filled by the
+// template, without hardcoding how far that run goes.
+export function cellHasFormula(xml: string, ref: string): boolean {
+  const cellRe = new RegExp(`<c r="${ref}"(?:\\s+[\\w:.-]+="[^"]*")*\\s*(?:/>|>([\\s\\S]*?)</c>)`);
+  const inner = cellRe.exec(xml)?.[1];
+  return !!inner && /<f[ >/]/.test(inner);
+}
+
+// Every cell in the sheet that carries its own formula *text* (not a
+// bare shared-formula continuation, which has none of its own — see
+// cellHasFormula) — ref, the <f> tag's raw attributes (e.g. a shared
+// formula's `ref="G8:G30"` range), and the formula text itself. Used to
+// discover a formula's actual shape/range from the template rather than
+// hardcoding it, so a future template edit throws instead of silently
+// computing the wrong cached value — see lib/financialBooksRecalc.ts.
+export function formulaCells(xml: string): { ref: string; attrs: string; body: string }[] {
+  const re = /<c r="([A-Z]+\d+)"(?:\s+[\w:.-]+="[^"]*")*><f((?:\s+[\w:.-]+="[^"]*")*)>([\s\S]*?)<\/f>/g;
+  return [...xml.matchAll(re)].map((m) => ({ ref: m[1], attrs: m[2], body: m[3] }));
+}
+
 // True if cell REF currently holds a real value (a <v>...</v> or an
 // inline/shared string with content) — used to find the first "blank"
 // row in a table that already has some rows filled in by hand, so an

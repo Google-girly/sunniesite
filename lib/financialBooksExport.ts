@@ -12,6 +12,11 @@ import {
   resolveSheetPath,
   forceFullCalcOnLoad,
 } from "@/lib/xlsxPatch";
+import {
+  recalcCheckbookFormulas,
+  recalcIncStmtFormulas,
+  recalcSummaryFormulas,
+} from "@/lib/financialBooksRecalc";
 
 type VersionWithItems = BudgetVersion & { lineItems: BudgetLineItem[] };
 export type FinalBudgetEntry = { budget: Budget; version: VersionWithItems };
@@ -178,7 +183,20 @@ export async function buildFinancialBooksWorkbook(
     checkbookRow++;
   }
 
+  // Recompute the cross-sheet formula chain (Checkbook -> IncStmt ->
+  // Summary) and bake the real results into each formula cell's cached
+  // <v>, rather than trusting Excel's on-open recalc to fill them in —
+  // see the top comment in lib/financialBooksRecalc.ts for why.
+  checkbookXml = recalcCheckbookFormulas(checkbookXml);
   zip.file(checkbookPath, checkbookXml);
+
+  const incStmtPath = await resolveSheetPath(zip, "IncStmt");
+  const incStmtXml = recalcIncStmtFormulas(await readEntry(zip, incStmtPath), checkbookXml);
+  zip.file(incStmtPath, incStmtXml);
+
+  const summaryPath = await resolveSheetPath(zip, "Summary");
+  const summaryXml = recalcSummaryFormulas(await readEntry(zip, summaryPath), incStmtXml);
+  zip.file(summaryPath, summaryXml);
 
   const workbookXml = await readEntry(zip, "xl/workbook.xml");
   zip.file("xl/workbook.xml", forceFullCalcOnLoad(workbookXml));
