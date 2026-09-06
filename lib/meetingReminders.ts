@@ -254,6 +254,21 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
       include: { officerReports: true, notes: true },
     });
 
+    // Sept 2026 — "Cancel Meeting" (lib/meetingCancel.ts) moves this
+    // meeting's own content onto a later one but leaves the row itself
+    // on the calendar; nothing here should still send a "tomorrow"
+    // reminder for a meeting that isn't actually happening.
+    if (thisMeeting?.cancelled) {
+      results.push({
+        scheduleId: schedule.id,
+        label: schedule.label,
+        meetingDate: tomorrow,
+        sent: false,
+        reason: "meeting cancelled",
+      });
+      continue;
+    }
+
     const label = schedule.label || "Chapter Meeting";
     let subject: string;
     let html: string;

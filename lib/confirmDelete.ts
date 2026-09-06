@@ -25,3 +25,19 @@ export function confirmDelete(message: string): boolean {
   }
   return true;
 }
+
+// Sept 2026 — Cancel Meeting isn't a delete (the record stays, its
+// content just moves to the next meeting), so it shouldn't say
+// "removed" or ask for the *delete* password by name — but it's still
+// consequential enough (real reports/notes/attachments get reassigned
+// off of it) to deserve the same speed bump as an actual delete, not a
+// bare window.confirm. Same password, neutral wording.
+export function confirmAction(message: string): boolean {
+  const input = window.prompt(`${message}\n\nEnter the confirmation password.`);
+  if (input === null) return false;
+  if (input !== DELETE_PASSWORD) {
+    window.alert("Wrong password — nothing was changed.");
+    return false;
+  }
+  return true;
+}

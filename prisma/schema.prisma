@@ -358,6 +358,19 @@ model Meeting {
   quorumRequired      Int?
   membersInAttendance Int?
 
+  // Sept 2026 — "add something where I can cancel a meeting and
+  // anything that is in this weeks meeting minutes, goes to the next."
+  // The record stays (so a cancelled date doesn't just vanish from the
+  // list, and the reminder cron has something to check against) rather
+  // than being deleted — see lib/meetingCancel.ts for the actual
+  // cancel-and-move-forward logic, which reassigns every Officer
+  // Report/Meeting Note/Attachment/pending Budget/Letter off of this
+  // meeting onto the next one before flipping this flag. Quorum/
+  // attendance above and any already-uploaded MeetingFinalMinutes stay
+  // put — both are specific to whatever actually happened at *this*
+  // meeting, and a cancelled one never happened.
+  cancelled Boolean @default(false)
+
   officerReports OfficerReport[]
   notes          MeetingNote[]
   attachments    MeetingAttachment[]

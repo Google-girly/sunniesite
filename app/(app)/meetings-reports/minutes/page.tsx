@@ -25,11 +25,13 @@ export default async function MinutesPage() {
       <h1 className="text-2xl font-semibold text-stone-900">Meeting Minutes</h1>
       <p className="mt-1 text-sm text-stone-500">
         One record per actual meeting date. Opening a meeting to edit its officer reports is
-        officer-only. &quot;Export&quot; below gives anyone the auto-filled draft — date/time, each
-        position&apos;s current holder(s) from Roster, and the current Active Roster, with roll
-        call, motions, and Meeting Adjourned still blank for an officer to fill in by hand. Once
-        that&apos;s done, &quot;Finished Minutes&quot; is the officer-uploaded, completed file — open
-        to everyone to view or download as soon as it&apos;s posted.
+        officer-only. &quot;Export&quot; below gives anyone the auto-filled draft — date/time and
+        each position&apos;s current holder(s) from Roster, with roll call, motions, and Adjournment
+        still blank for an officer to fill in by hand. Once that&apos;s done, &quot;Finished
+        Minutes&quot; is the officer-uploaded, completed file — open to everyone to view or download
+        as soon as it&apos;s posted. If a meeting doesn&apos;t end up happening, &quot;Cancel
+        Meeting&quot; moves its officer reports, notes, attachments, and any pending budgets/letters
+        onto the next meeting instead of losing them.
       </p>
 
       <div className="mt-6">

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Meeting, MeetingSchedule, OfficerReport } from "@/app/generated/prisma/client";
 import { formatMeetingDate, OFFICER_POSITIONS } from "@/lib/meetingMinutes";
 import { formatTime12h, nextOccurrence, todayIso } from "@/lib/meetings";
-import { confirmDelete } from "@/lib/confirmDelete";
+import { confirmDelete, confirmAction } from "@/lib/confirmDelete";
 
 type MeetingWithReports = Meeting & {
   officerReports: OfficerReport[];
@@ -44,7 +45,21 @@ export function MinutesListClient({
   initialMeetings: MeetingWithReports[];
   schedules: MeetingSchedule[];
 }) {
+  const router = useRouter();
   const [meetings, setMeetings] = useState(initialMeetings);
+  // Cancelling moves content off of this meeting and onto another one —
+  // router.refresh() (see handleCancel below) re-runs the server
+  // component and hands down a fresh `initialMeetings`, but a Client
+  // Component's own useState doesn't pick that up on its own. Syncing
+  // that during render (React's own documented alternative to an
+  // effect for "reset state when a prop changes") rather than in a
+  // useEffect avoids an extra render pass — every other mutation here
+  // still just splices `meetings` directly, no round trip needed.
+  const [prevInitialMeetings, setPrevInitialMeetings] = useState(initialMeetings);
+  if (initialMeetings !== prevInitialMeetings) {
+    setPrevInitialMeetings(initialMeetings);
+    setMeetings(initialMeetings);
+  }
   const [showAdd, setShowAdd] = useState(false);
   const defaults = nextScheduledMeeting(schedules, todayIso());
   const [date, setDate] = useState(defaults.date);
@@ -52,6 +67,7 @@ export function MinutesListClient({
   const [scheduleId, setScheduleId] = useState(defaults.scheduleId);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -82,6 +98,36 @@ export function MinutesListClient({
     const res = await fetch(`/api/meeting-minutes/meetings/${id}`, { method: "DELETE" });
     if (res.ok) setMeetings((prev) => prev.filter((m) => m.id !== id));
     else alert(await parseError(res));
+  }
+
+  // Sept 2026 — "add something where I can cancel a meeting and
+  // anything that is in this week's meeting minutes goes to the next."
+  // Finds the same "next meeting" the server will (soonest non-
+  // cancelled meeting after this one) just to name it in the confirm
+  // prompt — the server re-derives and enforces this itself either way.
+  function nextMeetingFor(meeting: MeetingWithReports): MeetingWithReports | undefined {
+    return meetings
+      .filter((m) => !m.cancelled && m.id !== meeting.id && m.date > meeting.date)
+      .sort((a, b) => a.date.localeCompare(b.date))[0];
+  }
+
+  async function handleCancel(meeting: MeetingWithReports) {
+    const target = nextMeetingFor(meeting);
+    const message = target
+      ? `Cancel the meeting on ${formatMeetingDate(meeting.date)}? Its officer reports, notes, attachments, and any pending budgets/letters will move to the meeting on ${formatMeetingDate(target.date)}.`
+      : `Cancel the meeting on ${formatMeetingDate(meeting.date)}? There's no upcoming meeting yet to move its minutes to — add one first, then cancel this one.`;
+    if (!confirmAction(message)) return;
+    setCancellingId(meeting.id);
+    const res = await fetch(`/api/meeting-minutes/meetings/${meeting.id}/cancel`, { method: "POST" });
+    setCancellingId(null);
+    if (res.ok) {
+      // Content moved off of this meeting and onto another one — easier
+      // (and safer than reconciling two rows' worth of nested counts by
+      // hand) to just re-fetch the page's server data.
+      router.refresh();
+    } else {
+      alert(await parseError(res));
+    }
   }
 
   return (
@@ -175,9 +221,16 @@ export function MinutesListClient({
               </tr>
             )}
             {meetings.map((m) => (
-              <tr key={m.id}>
+              <tr key={m.id} className={m.cancelled ? "opacity-60" : undefined}>
                 <td className="px-4 py-2.5 font-medium text-stone-900">
-                  {formatMeetingDate(m.date)}
+                  <span className={m.cancelled ? "line-through" : undefined}>
+                    {formatMeetingDate(m.date)}
+                  </span>
+                  {m.cancelled && (
+                    <span className="ml-2 rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                      Cancelled
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2.5 text-stone-600">{m.time || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-600">
@@ -208,6 +261,15 @@ export function MinutesListClient({
                   >
                     Export
                   </a>
+                  {!m.cancelled && (
+                    <button
+                      onClick={() => handleCancel(m)}
+                      disabled={cancellingId === m.id}
+                      className="ml-3 text-sm font-medium text-stone-400 hover:text-amber-600 disabled:opacity-50"
+                    >
+                      {cancellingId === m.id ? "Cancelling..." : "Cancel Meeting"}
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDelete(m.id)}
                     className="ml-3 text-sm font-medium text-stone-400 hover:text-red-600"

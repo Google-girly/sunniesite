@@ -478,6 +478,14 @@ export function MeetingMinutesClient({
         </div>
       </div>
 
+      {meeting.cancelled && (
+        <p className="mt-4 rounded-lg border border-stone-300 bg-stone-100 px-4 py-3 text-sm text-stone-700">
+          This meeting was cancelled — its officer reports, notes, attachments, and any pending
+          budgets/letters were moved to the next meeting. Quorum/attendance below is left as-is
+          since it never happened.
+        </p>
+      )}
+
       <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
         Per the National meeting minutes template: distribute the agenda at least 48 hours before
         the meeting and the finished minutes no later than 48 hours after. If the Chapter is
