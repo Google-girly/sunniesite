@@ -19,14 +19,19 @@ const nextConfig: NextConfig = {
     // compiled addon, invisible to any JS-level static analysis — so
     // without this the deployed function has the addon but not the
     // shared library it needs, and fails at runtime with "cannot open
-    // shared object file" (seen in production, Aug 2026). Only linux/**
-    // (both x64 and arm64, since Vercel's actual build architecture isn't
-    // worth hard-coding a bet on) — the darwin/win32 binaries Vercel never
-    // runs would add ~155MB of dead weight to the function for nothing.
+    // shared object file" (seen in production, Aug 2026). Only linux/x64
+    // — Vercel Functions run on x86_64, so arm64 (~18MB) and the
+    // darwin/win32 binaries (~155MB) would be dead weight in every
+    // deployment, counted against Deployment Storage for nothing.
     "/api/chapter-assistant": [
       "./rag/models/**/*",
       "./rag/index.json",
-      "./node_modules/onnxruntime-node/bin/napi-v6/linux/**/*",
+      "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*",
+    ],
+  },
+  outputFileTracingExcludes: {
+    "/api/chapter-assistant": [
+      "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**/*",
     ],
   },
 };
