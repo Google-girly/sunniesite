@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Budget, BudgetLineItem, BudgetVersion } from "@/app/generated/prisma/client";
 import { BUDGET_LOG_STATUSES, calculateBudgetTotals, formatEventDate, isApprovedVersion } from "@/lib/budgets";
@@ -38,6 +39,7 @@ function StatusBadge({ status }: { status: string | null }) {
 }
 
 export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithFinal[] }) {
+  const router = useRouter();
   const [budgets, setBudgets] = useState<BudgetWithFinal[]>(initialBudgets);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approveError, setApproveError] = useState<string | null>(null);
@@ -79,6 +81,7 @@ export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithF
           : b
       )
     );
+    router.refresh(); // approved spend feeds the page's Chapter Balance card
   }
 
   function DisplayRow({ row, editableStatus }: { row: Row; editableStatus: boolean }) {
