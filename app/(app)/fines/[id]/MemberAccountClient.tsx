@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { AccountEntry, Member } from "@/app/generated/prisma/client";
 import { formatEventDate, REIMBURSEMENT_METHODS } from "@/lib/budgets";
 import {
@@ -254,6 +254,14 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // "Clear" on an unpaid fine — either Paid (marked paid + deposited into
+  // the chapter account, see app/api/fines/entries/[id]/pay) or Removed
+  // (just deleted, same as Remove).
+  const [clearingId, setClearingId] = useState<string | null>(null);
+  const [clearDate, setClearDate] = useState(todayIso());
+  const [clearError, setClearError] = useState<string | null>(null);
+  const [markingPaid, setMarkingPaid] = useState(false);
+
   const balance = calculateBalance(entries);
 
   function sortByDate(list: AccountEntry[]): AccountEntry[] {
@@ -350,6 +358,34 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
     const updated: AccountEntry = await res.json();
     setEntries((prev) => sortByDate(prev.map((e) => (e.id === id ? updated : e))));
     setEditingId(null);
+  }
+
+  function startClear(entry: AccountEntry) {
+    setClearingId(entry.id);
+    setClearDate(todayIso());
+    setClearError(null);
+  }
+
+  async function handleMarkPaid(entry: AccountEntry) {
+    if (!clearDate) {
+      setClearError("Date is required.");
+      return;
+    }
+    setMarkingPaid(true);
+    setClearError(null);
+    const res = await fetch(`/api/fines/entries/${entry.id}/pay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: clearDate }),
+    });
+    setMarkingPaid(false);
+    if (!res.ok) {
+      setClearError(await parseError(res));
+      return;
+    }
+    const updated: AccountEntry = await res.json();
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? updated : e)));
+    setClearingId(null);
   }
 
   async function handleDelete(entry: AccountEntry) {
@@ -472,8 +508,12 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
                 );
               }
 
+              const isPaid = Boolean(entry.paidAt);
+              const canClear = type === "FINE" && !isPaid;
+
               return (
-                <tr key={entry.id}>
+                <Fragment key={entry.id}>
+                <tr>
                   <td className="px-4 py-2.5 whitespace-nowrap text-stone-600">
                     {formatEventDate(entry.date)}
                   </td>
@@ -483,18 +523,31 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
                     >
                       {ENTRY_TYPE_LABELS[type]}
                     </span>
+                    {isPaid && (
+                      <span className="ml-1.5 inline-block whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                        Paid {formatEventDate(entry.paidAt)}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-stone-900">{entry.description}</td>
                   <td className="px-4 py-2.5 text-stone-500">{entry.notes || "—"}</td>
                   <td
                     className={`px-4 py-2.5 whitespace-nowrap font-medium ${
-                      isChargeType(type) ? "text-burgundy-600" : "text-green-600"
+                      isPaid ? "text-stone-400 line-through" : isChargeType(type) ? "text-burgundy-600" : "text-green-600"
                     }`}
                   >
                     {isChargeType(type) ? "+" : "–"}
                     {formatCurrency(entry.amount)}
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap text-right">
+                    {canClear && (
+                      <button
+                        onClick={() => (clearingId === entry.id ? setClearingId(null) : startClear(entry))}
+                        className="mr-3 text-sm font-medium text-green-700 hover:text-green-900"
+                      >
+                        Clear
+                      </button>
+                    )}
                     <button
                       onClick={() => startEdit(entry)}
                       className="text-sm font-medium text-burgundy-600 hover:text-burgundy-800"
@@ -510,6 +563,48 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
                     </button>
                   </td>
                 </tr>
+                {clearingId === entry.id && (
+                  <tr>
+                    <td colSpan={6} className="bg-green-50/40 px-4 py-3">
+                      <div className="flex flex-wrap items-end gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-stone-600">Date paid</label>
+                          <input
+                            type="date"
+                            value={clearDate}
+                            onChange={(e) => setClearDate(e.target.value)}
+                            className="mt-1 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleMarkPaid(entry)}
+                          disabled={markingPaid}
+                          className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {markingPaid ? "Saving..." : "Paid — add to chapter balance"}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await handleDelete(entry);
+                            setClearingId(null);
+                          }}
+                          disabled={deletingId === entry.id}
+                          className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                        >
+                          Removed — just delete it
+                        </button>
+                        <button
+                          onClick={() => setClearingId(null)}
+                          className="px-2 py-1.5 text-sm font-medium text-stone-500 hover:text-stone-700"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      {clearError && <p className="mt-2 text-sm text-red-600">{clearError}</p>}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>

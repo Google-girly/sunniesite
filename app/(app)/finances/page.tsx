@@ -1,3 +1,5 @@
+import { calculateChapterBalance } from "@/lib/chapterBalance";
+import { formatCurrency } from "@/lib/fines";
 import { prisma } from "@/lib/prisma";
 import { requirePageAccess } from "@/lib/session";
 import { NotAuthorized } from "@/components/NotAuthorized";
@@ -28,6 +30,14 @@ export default async function FinancesPage() {
     prisma.chapterFundEntry.findMany({ orderBy: { date: "desc" } }),
   ]);
 
+  // Same starting-balance + deposits - approved-Final-Budgets math the
+  // meeting minutes export uses (lib/chapterBalance.ts). The client
+  // sections router.refresh() after every change so this stays current.
+  const finalBudgets = budgets
+    .filter((b) => b.versions.length > 0)
+    .map((b) => ({ budget: b, version: b.versions[0] }));
+  const chapterBalance = calculateChapterBalance(finalBudgets, fundEntries, startingBalances[0] ?? null);
+
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
@@ -47,6 +57,18 @@ export default async function FinancesPage() {
         Final Budget above — safe to click anytime, it never touches the
         sheet&apos;s existing rows or duplicates one on repeat downloads.
       </p>
+
+      <div className="mt-6 rounded-lg border border-stone-200 bg-white p-4 sm:max-w-xs">
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Current Chapter Balance</p>
+        <p className={`mt-1 text-2xl font-semibold ${chapterBalance < 0 ? "text-red-600" : "text-stone-900"}`}>
+          {formatCurrency(chapterBalance)}
+        </p>
+        <p className="mt-1 text-xs text-stone-400">
+          {startingBalances[0]
+            ? `${startingBalances[0].year} starting balance + funds added − approved Final Budgets`
+            : "No starting balance set yet — funds added − approved Final Budgets"}
+        </p>
+      </div>
 
       <div className="mt-6">
         <FinancesClient initialBudgets={budgets} />

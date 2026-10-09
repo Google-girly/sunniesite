@@ -137,13 +137,17 @@ export function isChargeType(type: EntryType): boolean {
 export interface AccountEntryLike {
   type: string;
   amount: number;
+  paidAt?: string | null;
 }
 
 // Positive balance = money owed to the Chapter; zero or negative = paid
 // up (negative meaning a credit surplus sits on file, per Article X).
+// A fine cleared as paid (`paidAt` set) no longer counts — its money
+// went to the chapter account as a fund entry instead.
 export function calculateBalance(entries: AccountEntryLike[]): number {
   return entries.reduce((sum, entry) => {
     if (!isEntryType(entry.type)) return sum;
+    if (entry.paidAt) return sum;
     return sum + (isChargeType(entry.type) ? entry.amount : -entry.amount);
   }, 0);
 }

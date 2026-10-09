@@ -118,6 +118,14 @@ model AccountEntry {
   fineCode String?
   notes    String?
 
+  // Oct 2026 — set (ISO "YYYY-MM-DD") when a FINE is cleared as *paid*
+  // from the member's account page: the fine stays on file for the
+  // record but stops counting toward her balance (lib/fines.ts
+  // calculateBalance), and the money is logged as a Fines (102)
+  // ChapterFundEntry so it lands in the chapter balance. A fine cleared
+  // as *removed* is just deleted instead — no money changed hands.
+  paidAt String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
