@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Member } from "@/app/generated/prisma/client";
-import { MODULES } from "@/lib/modules";
+import { MODULE_GROUPS, MODULES } from "@/lib/modules";
 import { canAccessModule, canEditPositions, type ModuleKey } from "@/lib/permissions";
 import { parseRoles } from "@/lib/roster";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -59,17 +59,25 @@ export function Sidebar({ member }: { member: Member }) {
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         <NavLink href="/" label="Dashboard" />
 
-        <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">
-          Modules
-        </p>
-        {visibleModules.map((mod) => (
-          <NavLink
-            key={mod.key}
-            href={mod.href}
-            label={mod.title}
-            badge={mod.status === "planned" ? "Soon" : undefined}
-          />
-        ))}
+        {MODULE_GROUPS.map((group) => {
+          const groupModules = visibleModules.filter((mod) => mod.group === group);
+          if (groupModules.length === 0) return null;
+          return (
+            <div key={group} className="space-y-1">
+              <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-400">
+                {group}
+              </p>
+              {groupModules.map((mod) => (
+                <NavLink
+                  key={mod.key}
+                  href={mod.href}
+                  label={mod.title}
+                  badge={mod.status === "planned" ? "Soon" : undefined}
+                />
+              ))}
+            </div>
+          );
+        })}
 
         {/* Manage Officers & Logins (Aug 2026 — was President-only):
             President, Vice President, or Vice President of
