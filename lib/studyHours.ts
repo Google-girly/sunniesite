@@ -8,6 +8,8 @@
 // individual sessions (Location/Date/Time In/Time Out/Total Time) — the
 // weekly rollup used for reporting is computed here, not entered.
 
+import { todayIso } from "@/lib/meetings";
+
 export const WEEKLY_HOURS_REQUIRED = 6;
 export const WEEKLY_COMPLETION_THRESHOLD = 0.8; // 80% of members must complete every week
 
@@ -65,19 +67,38 @@ export interface WeeklyCompletion {
   percentage: number; // 0-100, rounded to whole percent
 }
 
+// The Sunday that closes the most recent *finished* week before `iso`'s
+// week — i.e. the day before that week's Monday.
+function lastFinishedWeekEnd(iso: string): string {
+  const date = parseIsoDateUTC(weekStart(iso));
+  date.setUTCDate(date.getUTCDate() - 1);
+  return toIsoDateUTC(date);
+}
+
 // Given a member's logged sessions and a term's [start, end] date range,
 // how many of the term's weeks did she log >= 6 hours in? Entries
 // outside the range are ignored, so a term boundary doesn't have to line
 // up with when logging actually started/stopped.
+//
+// Oct 2026 fix — only weeks that have already *finished* (as of `today`)
+// count. This used to divide by every week through the end of the term,
+// future weeks included, so even a sister who'd hit 6 hours every single
+// week so far read as "Behind" until ~80% of the term had passed. The
+// current week doesn't count until it's over, so nobody is marked
+// behind mid-week. With no finished weeks yet, she's at 100% — she
+// hasn't missed anything.
 export function calculateWeeklyCompletion(
   entries: StudyHourEntryLike[],
   termStart: string,
-  termEnd: string
+  termEnd: string,
+  today: string = todayIso()
 ): WeeklyCompletion {
   // Clamp to when tracking actually started — see
   // STUDY_HOURS_TRACKING_START above.
   const effectiveStart = termStart < STUDY_HOURS_TRACKING_START ? STUDY_HOURS_TRACKING_START : termStart;
-  const weeks = weeksInRange(effectiveStart, termEnd);
+  const finishedEnd = lastFinishedWeekEnd(today);
+  const effectiveEnd = termEnd < finishedEnd ? termEnd : finishedEnd;
+  const weeks = effectiveEnd < effectiveStart ? [] : weeksInRange(effectiveStart, effectiveEnd);
   const totalsByWeek = new Map<string, number>();
   for (const entry of entries) {
     if (entry.date < effectiveStart || entry.date > termEnd) continue;
@@ -91,7 +112,7 @@ export function calculateWeeklyCompletion(
   return {
     weeksInTerm,
     weeksCompleted,
-    percentage: weeksInTerm > 0 ? Math.round((weeksCompleted / weeksInTerm) * 100) : 0,
+    percentage: weeksInTerm > 0 ? Math.round((weeksCompleted / weeksInTerm) * 100) : 100,
   };
 }
 
