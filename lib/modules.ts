@@ -6,6 +6,11 @@
 
 export type ModuleStatus = "active" | "planned";
 
+// Sidebar sections, in display order. Each module lists under its
+// group in the same order it appears in MODULES below.
+export const MODULE_GROUPS = ["Money", "Members", "Meetings & Events", "Standards"] as const;
+export type ModuleGroup = (typeof MODULE_GROUPS)[number];
+
 export interface ModuleDef {
   /** Unique key, also used as the route folder name under app/(app)/. */
   key: string;
@@ -13,6 +18,7 @@ export interface ModuleDef {
   href: string;
   description: string;
   status: ModuleStatus;
+  group: ModuleGroup;
 }
 
 export const MODULES: ModuleDef[] = [
@@ -22,6 +28,7 @@ export const MODULES: ModuleDef[] = [
     href: "/calendar",
     description: "The chapter's shared Google Calendar — every event in one place.",
     status: "active",
+    group: "Meetings & Events",
   },
   {
     key: "roster",
@@ -29,6 +36,7 @@ export const MODULES: ModuleDef[] = [
     href: "/roster",
     description: "Officers, actives, and their status/crossing term.",
     status: "active",
+    group: "Members",
   },
   {
     key: "budgets",
@@ -36,6 +44,7 @@ export const MODULES: ModuleDef[] = [
     href: "/budgets",
     description: "Event budgets, line items, and reimbursement totals.",
     status: "active",
+    group: "Money",
   },
   {
     key: "finances",
@@ -43,6 +52,7 @@ export const MODULES: ModuleDef[] = [
     href: "/finances",
     description: "Live rollup of every approved event's Final Budget spend.",
     status: "active",
+    group: "Money",
   },
   {
     key: "fines",
@@ -50,6 +60,7 @@ export const MODULES: ModuleDef[] = [
     href: "/fines",
     description: "Per-member running balance: dues, fines, payments, and fundraising credits.",
     status: "active",
+    group: "Money",
   },
   {
     key: "community-service",
@@ -57,6 +68,7 @@ export const MODULES: ModuleDef[] = [
     href: "/community-service",
     description: "Hour logging, Make-Up tracking, and Chapter Standards reporting.",
     status: "active",
+    group: "Members",
   },
   {
     key: "academics",
@@ -64,6 +76,7 @@ export const MODULES: ModuleDef[] = [
     href: "/academics",
     description: "GPA, Mentorship, Alpha Order, and Professional Development — Chapter Standards §B.",
     status: "active",
+    group: "Members",
   },
   {
     key: "sisterhood",
@@ -71,6 +84,7 @@ export const MODULES: ModuleDef[] = [
     href: "/sisterhood",
     description: "Probation, Meeting Attendance, Sister of the Month, CPR/First Aid — Chapter Standards §D.",
     status: "active",
+    group: "Members",
   },
   {
     key: "leadership",
@@ -78,6 +92,7 @@ export const MODULES: ModuleDef[] = [
     href: "/leadership",
     description: "Chapter Advisor, Officer Transitions, Strategic Plan, Leadership Positions.",
     status: "active",
+    group: "Standards",
   },
   {
     key: "study-hours",
@@ -85,6 +100,7 @@ export const MODULES: ModuleDef[] = [
     href: "/study-hours",
     description: "Weekly library study hour logging, tracked against Chapter Standards §B.4/§B.6.",
     status: "active",
+    group: "Members",
   },
   {
     key: "meetings-reports",
@@ -92,6 +108,7 @@ export const MODULES: ModuleDef[] = [
     href: "/meetings-reports",
     description: "Recurring meeting schedule, plus officer reports auto-filled onto minutes.",
     status: "active",
+    group: "Meetings & Events",
   },
   {
     key: "standards-forms",
@@ -99,6 +116,7 @@ export const MODULES: ModuleDef[] = [
     href: "/standards-forms",
     description: "Checklist of every Chapter Standards credit — links out to where each one is tracked.",
     status: "active",
+    group: "Standards",
   },
   {
     key: "event-reports",
@@ -106,6 +124,7 @@ export const MODULES: ModuleDef[] = [
     href: "/event-reports",
     description: "Log events against Chapter Standards credits and sign off with a drawn signature.",
     status: "active",
+    group: "Meetings & Events",
   },
   {
     key: "letters",
@@ -113,5 +132,6 @@ export const MODULES: ModuleDef[] = [
     href: "/letters",
     description: "Generate a letter on the chapter's real letterhead — Letter of Excuse, Active Member Request, or anything else.",
     status: "active",
+    group: "Meetings & Events",
   },
 ];
