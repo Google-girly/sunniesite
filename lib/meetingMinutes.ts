@@ -50,3 +50,33 @@ export function formatMeetingDate(value: string | null): string {
   const date = new Date(Number(year), Number(month) - 1, Number(day));
   return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
+
+// Oct 2026 — "for my prez report I want to say Chapter Standards we have
+// completed and then underneath list/tab what we need." An officer
+// report is one numbered item per line; a line indented with a Tab (or
+// 2 spaces) becomes a sub-item under the line above it, one level deeper
+// per Tab. Shared by the on-screen view (MeetingMinutesClient) and the
+// docx export (lib/meetingMinutesExport.ts) so both nest identically.
+// Depth is capped at 2 and can only go one level deeper than the line
+// before it, so a stray indent on the first line can't orphan anything.
+export const MAX_REPORT_DEPTH = 2;
+
+export interface ReportLine {
+  text: string;
+  depth: number;
+}
+
+export function parseReportLines(report: string): ReportLine[] {
+  const lines: ReportLine[] = [];
+  for (const raw of report.split("\n")) {
+    const text = raw.trim();
+    if (!text) continue; // blank lines don't consume a number
+    const leading = /^[ \t]*/.exec(raw)![0];
+    const tabs = (leading.match(/\t/g) ?? []).length;
+    const spaces = leading.length - tabs;
+    const requested = tabs + Math.floor(spaces / 2);
+    const maxAllowed = lines.length === 0 ? 0 : lines[lines.length - 1].depth + 1;
+    lines.push({ text, depth: Math.min(requested, maxAllowed, MAX_REPORT_DEPTH) });
+  }
+  return lines;
+}

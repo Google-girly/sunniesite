@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
-import { formatMeetingDate } from "@/lib/meetingMinutes";
+import { formatMeetingDate, parseReportLines } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 import { findRoleHolderNames } from "@/lib/roster";
 import {
@@ -62,19 +62,71 @@ function linkify(text: string): React.ReactNode {
 // which does the same thing for the exported docx, so what's shown here
 // matches what actually exports). Blank lines don't consume a number.
 // A single-line report just renders plain — nothing to number.
+//
+// Oct 2026 — Tab-indented lines nest under the line above (see
+// lib/meetingMinutes.ts parseReportLines), labeled the way the exported
+// docx's own list levels number them: "1." then "a)" then "(1)".
+function reportLabel(depth: number, n: number): string {
+  if (depth === 0) return `${n}.`;
+  if (depth === 1) return `${String.fromCharCode(96 + ((n - 1) % 26) + 1)})`;
+  return `(${n})`;
+}
+
 function numberedLinkify(text: string): React.ReactNode {
-  const lines = text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (lines.length <= 1) return linkify(text);
+  const lines = parseReportLines(text);
+  if (lines.length <= 1) return linkify(text.trim());
+  const counters = [0, 0, 0];
   return (
-    <ol className="list-decimal space-y-1 pl-5">
-      {lines.map((line, i) => (
-        <li key={i}>{linkify(line)}</li>
-      ))}
-    </ol>
+    <div className="space-y-1 whitespace-normal">
+      {lines.map((line, i) => {
+        counters[line.depth] += 1;
+        for (let d = line.depth + 1; d < counters.length; d++) counters[d] = 0;
+        return (
+          <div key={i} className="flex gap-1.5" style={{ paddingLeft: `${line.depth * 1.5}rem` }}>
+            <span className="shrink-0 text-stone-500">{reportLabel(line.depth, counters[line.depth])}</span>
+            <span>{linkify(line.text)}</span>
+          </div>
+        );
+      })}
+    </div>
   );
+}
+
+// Tab / Shift+Tab in the report box indents / outdents the current
+// line(s) instead of moving focus out of the box — the way you'd make
+// a sub-item in Word or Google Docs.
+function handleReportIndentKey(
+  e: React.KeyboardEvent<HTMLTextAreaElement>,
+  setText: (value: string) => void
+) {
+  if (e.key !== "Tab") return;
+  e.preventDefault();
+  const el = e.currentTarget;
+  const { value, selectionStart, selectionEnd } = el;
+  const blockStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
+  const nextBreak = value.indexOf("\n", selectionEnd);
+  const blockEnd = nextBreak === -1 ? value.length : nextBreak;
+  const block = value.slice(blockStart, blockEnd).split("\n");
+  let firstDelta = 0;
+  let totalDelta = 0;
+  const changed = block.map((line, i) => {
+    let next: string;
+    if (e.shiftKey) {
+      next = line.startsWith("\t") ? line.slice(1) : line.replace(/^ {1,2}/, "");
+    } else {
+      next = `\t${line}`;
+    }
+    const delta = next.length - line.length;
+    if (i === 0) firstDelta = delta;
+    totalDelta += delta;
+    return next;
+  });
+  const newValue = value.slice(0, blockStart) + changed.join("\n") + value.slice(blockEnd);
+  setText(newValue);
+  requestAnimationFrame(() => {
+    el.selectionStart = Math.max(blockStart, selectionStart + firstDelta);
+    el.selectionEnd = Math.max(blockStart, selectionEnd + totalDelta);
+  });
 }
 
 function OfficerReportRow({
@@ -158,9 +210,15 @@ function OfficerReportRow({
               setText(e.target.value);
               setSaved(false);
             }}
+            onKeyDown={(e) =>
+              handleReportIndentKey(e, (value) => {
+                setText(value);
+                setSaved(false);
+              })
+            }
             rows={3}
             autoFocus={Boolean(existing)}
-            placeholder="Report for this meeting..."
+            placeholder="Report for this meeting... (Tab indents a line under the one above)"
             className="mt-2 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
           />
           <div className="mt-2 flex items-center gap-3">
@@ -520,6 +578,26 @@ export function MeetingMinutesClient({
         {reports.length} / {OFFICER_POSITIONS.length} reports submitted overall. You can only see
         and edit the report(s) for your own position{viewerOwnsModule ? " — as Secretary/President, you can see and edit everyone's" : ""}.
       </p>
+
+      <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+        <p className="font-medium text-stone-800">How report formatting works</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-5">
+          <li>Each new line becomes its own numbered item (1., 2., 3.) in the minutes.</li>
+          <li>
+            Press <kbd className="rounded border border-stone-300 bg-white px-1 text-xs">Tab</kbd> at the start of a
+            line to tuck it under the line above as a sub-item (a), b), c)). Tab again for one more level ((1), (2)).
+          </li>
+          <li>
+            <kbd className="rounded border border-stone-300 bg-white px-1 text-xs">Shift</kbd> +{" "}
+            <kbd className="rounded border border-stone-300 bg-white px-1 text-xs">Tab</kbd> moves a line back out.
+            Blank lines are skipped, and links become clickable.
+          </li>
+        </ul>
+        <pre className="mt-2 rounded-md border border-stone-200 bg-white px-3 py-2 font-sans text-xs text-stone-700">{`1. Chapter Standards we have completed
+     a) GPA report
+     b) CPR certification
+2. Recruitment update`}</pre>
+      </div>
 
       <div className="mt-4 space-y-4">
         {visiblePositions.map((position) => (

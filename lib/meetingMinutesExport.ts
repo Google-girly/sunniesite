@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import JSZip from "jszip";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
 import { formatCurrency } from "@/lib/fines";
-import { OFFICER_REPORT_TEMPLATE_LABELS } from "@/lib/meetingMinutes";
+import { OFFICER_REPORT_TEMPLATE_LABELS, parseReportLines } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 import { findRoleHolderNames } from "@/lib/roster";
 import { escapeXmlText, readEntry } from "@/lib/xlsxPatch";
@@ -91,13 +91,14 @@ function buildLineRunsXml(line: string, rels: RelsState): string {
 // auto-numbering counts up "1., 2., 3., ..." per line, rather than one
 // numbered item containing every line glued together with manual line
 // breaks (blank lines are dropped rather than each eating a number).
+//
+// Oct 2026 — Tab-indented lines nest under the line above (see
+// lib/meetingMinutes.ts parseReportLines): depth 1 -> ilvl 3 ("a)"),
+// depth 2 -> ilvl 4 ("(1)"), the template's own next levels down.
 function buildReportParagraphXml(text: string, rels: RelsState): string {
-  const lines = text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = parseReportLines(text);
   if (lines.length === 0) return buildListParagraphXml(text, 2, rels);
-  return lines.map((line) => buildListParagraphXml(line, 2, rels)).join("");
+  return lines.map((line) => buildListParagraphXml(line.text, 2 + line.depth, rels)).join("");
 }
 
 // Same shape as buildReportParagraphXml, generalized to any list level
