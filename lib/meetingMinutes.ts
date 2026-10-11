@@ -57,9 +57,12 @@ export function formatMeetingDate(value: string | null): string {
 // 2 spaces) becomes a sub-item under the line above it, one level deeper
 // per Tab. Shared by the on-screen view (MeetingMinutesClient) and the
 // docx export (lib/meetingMinutesExport.ts) so both nest identically.
-// Depth is capped at 2 and can only go one level deeper than the line
-// before it, so a stray indent on the first line can't orphan anything.
-export const MAX_REPORT_DEPTH = 2;
+// Depth is capped at 4 (sub-sub-sub-items, on request — "subsections of
+// subsections and subsections of those") and can only go one level
+// deeper than the line before it, so a stray indent on the first line
+// can't orphan anything. The template defines deeper levels still, but
+// past ilvl 6 the indent leaves too little of the page to write on.
+export const MAX_REPORT_DEPTH = 4;
 
 export interface ReportLine {
   text: string;
