@@ -7,6 +7,7 @@ import type { Meeting, MeetingSchedule, OfficerReport } from "@/app/generated/pr
 import { formatMeetingDate, OFFICER_POSITIONS } from "@/lib/meetingMinutes";
 import { formatTime12h, nextOccurrence, todayIso } from "@/lib/meetings";
 import { confirmDelete, confirmAction } from "@/lib/confirmDelete";
+import { FinishedMinutesPreview } from "./FinishedMinutesPreview";
 
 type MeetingWithReports = Meeting & {
   officerReports: OfficerReport[];
@@ -45,6 +46,7 @@ export function MinutesListClient({
   initialMeetings: MeetingWithReports[];
   schedules: MeetingSchedule[];
 }) {
+  const [previewing, setPreviewing] = useState<{ meetingId: string; fileName: string } | null>(null);
   const router = useRouter();
   const [meetings, setMeetings] = useState(initialMeetings);
   // Cancelling moves content off of this meeting and onto another one —
@@ -238,12 +240,20 @@ export function MinutesListClient({
                 </td>
                 <td className="px-4 py-2.5 text-stone-600">
                   {m.finalMinutes ? (
-                    <a
-                      href={`/api/meeting-minutes/meetings/${m.id}/final-minutes`}
-                      className="font-medium text-burgundy-600 hover:text-burgundy-800 hover:underline"
-                    >
-                      Download
-                    </a>
+                    <span className="whitespace-nowrap">
+                      <button
+                        onClick={() => setPreviewing({ meetingId: m.id, fileName: m.finalMinutes!.fileName })}
+                        className="font-medium text-burgundy-600 hover:text-burgundy-800 hover:underline"
+                      >
+                        Preview
+                      </button>
+                      <a
+                        href={`/api/meeting-minutes/meetings/${m.id}/final-minutes`}
+                        className="ml-3 font-medium text-stone-500 hover:text-stone-800 hover:underline"
+                      >
+                        Download
+                      </a>
+                    </span>
                   ) : (
                     <span className="text-stone-400">Not posted yet</span>
                   )}
@@ -282,6 +292,14 @@ export function MinutesListClient({
           </tbody>
         </table>
       </div>
+
+      {previewing && (
+        <FinishedMinutesPreview
+          meetingId={previewing.meetingId}
+          fileName={previewing.fileName}
+          onClose={() => setPreviewing(null)}
+        />
+      )}
     </div>
   );
 }
