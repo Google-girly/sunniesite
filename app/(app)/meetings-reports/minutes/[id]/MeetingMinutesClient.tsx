@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
-import { formatMeetingDate, parseReportLines } from "@/lib/meetingMinutes";
+import { formatMeetingDate, MAX_REPORT_DEPTH, parseReportLines } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 import { findRoleHolderNames } from "@/lib/roster";
 import {
@@ -65,17 +65,42 @@ function linkify(text: string): React.ReactNode {
 //
 // Oct 2026 — Tab-indented lines nest under the line above (see
 // lib/meetingMinutes.ts parseReportLines), labeled the way the exported
-// docx's own list levels number them: "1." then "a)" then "(1)".
+// docx's own list levels number them: "1.", "a)", "(1)", "(a)", "(i)".
+function toLetter(n: number): string {
+  return String.fromCharCode(96 + ((n - 1) % 26) + 1);
+}
+
+function toRoman(n: number): string {
+  const numerals: [number, string][] = [[10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]];
+  let out = "";
+  for (const [value, numeral] of numerals) {
+    while (n >= value) {
+      out += numeral;
+      n -= value;
+    }
+  }
+  return out;
+}
+
 function reportLabel(depth: number, n: number): string {
-  if (depth === 0) return `${n}.`;
-  if (depth === 1) return `${String.fromCharCode(96 + ((n - 1) % 26) + 1)})`;
-  return `(${n})`;
+  switch (depth) {
+    case 0:
+      return `${n}.`;
+    case 1:
+      return `${toLetter(n)})`;
+    case 2:
+      return `(${n})`;
+    case 3:
+      return `(${toLetter(n)})`;
+    default:
+      return `(${toRoman(n)})`;
+  }
 }
 
 function numberedLinkify(text: string): React.ReactNode {
   const lines = parseReportLines(text);
   if (lines.length <= 1) return linkify(text.trim());
-  const counters = [0, 0, 0];
+  const counters = Array<number>(MAX_REPORT_DEPTH + 1).fill(0);
   return (
     <div className="space-y-1 whitespace-normal">
       {lines.map((line, i) => {
@@ -585,7 +610,8 @@ export function MeetingMinutesClient({
           <li>Each new line becomes its own numbered item (1., 2., 3.) in the minutes.</li>
           <li>
             Press <kbd className="rounded border border-stone-300 bg-white px-1 text-xs">Tab</kbd> at the start of a
-            line to tuck it under the line above as a sub-item (a), b), c)). Tab again for one more level ((1), (2)).
+            line to tuck it under the line above as a sub-item (a), b), c)). Press Tab again to go a level deeper — up
+            to four levels: a) → (1) → (a) → (i).
           </li>
           <li>
             <kbd className="rounded border border-stone-300 bg-white px-1 text-xs">Shift</kbd> +{" "}
@@ -594,7 +620,10 @@ export function MeetingMinutesClient({
           </li>
         </ul>
         <pre className="mt-2 rounded-md border border-stone-200 bg-white px-3 py-2 font-sans text-xs text-stone-700">{`1. Chapter Standards we have completed
-     a) GPA report
+     a) Academics
+          (1) GPA report
+               (a) Fall grades
+                    (i) Due Nov 1
      b) CPR certification
 2. Recruitment update`}</pre>
       </div>

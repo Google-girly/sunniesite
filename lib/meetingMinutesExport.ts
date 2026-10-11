@@ -94,7 +94,8 @@ function buildLineRunsXml(line: string, rels: RelsState): string {
 //
 // Oct 2026 — Tab-indented lines nest under the line above (see
 // lib/meetingMinutes.ts parseReportLines): depth 1 -> ilvl 3 ("a)"),
-// depth 2 -> ilvl 4 ("(1)"), the template's own next levels down.
+// 2 -> ilvl 4 ("(1)"), 3 -> ilvl 5 ("(a)"), 4 -> ilvl 6 ("(i)") — the
+// template's own next levels down.
 function buildReportParagraphXml(text: string, rels: RelsState): string {
   const lines = parseReportLines(text);
   if (lines.length === 0) return buildListParagraphXml(text, 2, rels);
