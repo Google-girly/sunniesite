@@ -978,7 +978,7 @@ export function VersionDetailClient({
         )}
       </div>
 
-      {/* Treasurer / Auditor section */}
+      {/* Treasurer section */}
       <details className="mt-6 rounded-lg border border-stone-200 bg-white">
         <summary className="cursor-pointer select-none px-5 py-3 text-sm font-medium text-stone-700">
           NVP Finance / Comptroller Use Only

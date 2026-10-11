@@ -15,9 +15,9 @@
 // labels are now National's own full titles ("Commissioner of...,"
 // "Vice President of Communications," "Sergeant-at-Arms") instead of
 // the app's old shortened versions — see that docx directly if this
-// ever needs re-deriving. `Auditor` (also Sept 2026) was added the same
-// way, after the master turned out to already list it as a real,
-// distinct position the app's old bundled list was missing.
+// ever needs re-deriving. `Auditor` (Sept 2026) was added the same way,
+// then removed again in Oct 2026 on request — position, label, and its
+// heading in the bundled template are all gone.
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 
 export const OFFICER_REPORT_TEMPLATE_LABELS: Record<OfficerPosition, string> = {
@@ -26,7 +26,6 @@ export const OFFICER_REPORT_TEMPLATE_LABELS: Record<OfficerPosition, string> = {
   "Sergeant-At-Arms": "Sergeant-at-Arms ",
   Treasurer: "Treasurer ",
   "Vice President of Communications": "Vice President of Communications ",
-  Auditor: "Auditor ",
   "Risk Management Officer": "Risk Management ",
   "Commissioner of Cultura and Sisterhood": "Commissioner of Cultura and Sisterhood ",
   "Commissioner of Community Service": "Commissioner of Community Service ",

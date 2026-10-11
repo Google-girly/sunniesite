@@ -203,7 +203,7 @@ model Budget {
 // SON Expense Budget.xlsx — literally "Tentative Budget" and "Final
 // Budget", two sheets in one workbook per event): a chair submits a
 // tentative budget before the event, then a final expenditure report
-// after it, and the Treasurer/Auditor fills in the approval section once
+// after it, and the Treasurer fills in the approval section once
 // it's reviewed. A `Budget` has at most one of each — see the `@@unique`
 // below.
 //
