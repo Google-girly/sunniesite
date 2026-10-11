@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { MAX_DOCUMENT_BYTES } from "@/lib/meetingFinalMinutes";
 import { confirmDelete } from "@/lib/confirmDelete";
+import { FinishedMinutesPreview } from "../FinishedMinutesPreview";
 
 export interface FinalMinutesMeta {
   id: string;
@@ -53,6 +54,7 @@ export function FinalMinutesSection({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleChoose(e: React.ChangeEvent<HTMLInputElement>) {
@@ -115,7 +117,16 @@ export function FinalMinutesSection({
             {current.fileName}
           </a>{" "}
           <span className="text-stone-400">— uploaded by {current.uploadedByName}</span>
+          <button
+            onClick={() => setPreviewing(true)}
+            className="ml-3 rounded-md border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
+          >
+            Preview
+          </button>
         </p>
+      )}
+      {current && previewing && (
+        <FinishedMinutesPreview meetingId={meetingId} fileName={current.fileName} onClose={() => setPreviewing(false)} />
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
