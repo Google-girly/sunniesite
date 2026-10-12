@@ -4,19 +4,13 @@
 // nowhere near the scale where that needs a real vector index.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { prisma } from "@/lib/prisma";
 import { embedQuery } from "./embed";
-import { minutesLabel } from "./minutesIndex";
 
 export interface RetrievedChunk {
   sourceFile: string;
   section: string | null;
   content: string;
   score: number;
-  /** Display name when it isn't derived from sourceFile — set for meeting minutes. */
-  label?: string;
-  /** Link when the source isn't a file under public/rag-source-docs/ — set for meeting minutes. */
-  href?: string;
 }
 
 interface IndexedChunk {
@@ -52,37 +46,15 @@ function dot(a: number[], b: number[]): number {
   return sum;
 }
 
-// Oct 2026 — finished meeting minutes (lib/rag/minutesIndex.ts) live in
-// the database rather than rag/index.json, since they change every week;
-// read fresh per question and ranked in the same pool as the documents.
-async function loadMinutesChunks() {
-  return prisma.meetingMinutesChunk
-    .findMany({ select: { meetingId: true, meetingDate: true, content: true, embedding: true } })
-    .catch((err) => {
-      console.error("chapter-assistant: failed to load meeting minutes chunks:", err);
-      return [];
-    });
-}
-
 export async function retrieve(query: string, topK = 5): Promise<RetrievedChunk[]> {
-  const [index, minutes, queryEmbedding] = await Promise.all([loadIndex(), loadMinutesChunks(), embedQuery(query)]);
+  const [index, queryEmbedding] = await Promise.all([loadIndex(), embedQuery(query)]);
 
-  const scored: RetrievedChunk[] = index.chunks.map((chunk) => ({
+  const scored = index.chunks.map((chunk) => ({
     sourceFile: chunk.sourceFile,
     section: chunk.section,
     content: chunk.content,
     score: dot(chunk.embedding, queryEmbedding),
   }));
-  for (const chunk of minutes) {
-    scored.push({
-      sourceFile: `meeting-minutes/${chunk.meetingId}`,
-      section: null,
-      content: chunk.content,
-      score: dot(chunk.embedding, queryEmbedding),
-      label: minutesLabel(chunk.meetingDate),
-      href: `/api/meeting-minutes/meetings/${chunk.meetingId}/final-minutes`,
-    });
-  }
 
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, topK);

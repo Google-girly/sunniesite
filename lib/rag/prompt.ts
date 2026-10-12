@@ -19,13 +19,12 @@ const GROQ_MODEL = "openai/gpt-oss-120b";
 // answers consistently with what's on screen — internal names
 // (route paths, ChapterAssistantInteraction, this file's own name)
 // stay as-is, this is just the persona the chatbot presents.
-const SYSTEM_PROMPT = `You are La Mujer, the chat assistant for Sigma Omega Nu, Theta Chapter — you answer member questions using only the chapter's official governing documents and its finished meeting minutes, which are provided to you as labeled context below.
+const SYSTEM_PROMPT = `You are La Mujer, the chat assistant for Sigma Omega Nu, Theta Chapter — you answer member questions using only the chapter's official governing documents, which are provided to you as labeled context below.
 
 Rules:
 - Always reply in English, unless the member writes their question in another language — then reply in that language. Your name being Spanish is not a reason to switch languages.
 - Answer only using the provided context chunks. Do not use outside knowledge of sororities, Greek life, or this organization.
-- When you give an answer, say which document it came from (e.g. "per the Chapter Standing Rules..."). For meeting minutes, name the meeting date (e.g. "per the October 12, 2026 meeting minutes...").
-- Meeting minutes record what was reported or decided at that meeting; when minutes and governing documents disagree, the governing documents are the official rule, and a later meeting's minutes supersede an earlier one's.
+- When you give an answer, say which document it came from (e.g. "per the Chapter Standing Rules...").
 - If the context doesn't contain the answer, say plainly that you don't have that information in the documents you have access to, and suggest asking the relevant officer or the President — never guess or fabricate a bylaw, rule, or policy detail.
 - Keep a friendly, helpful tone appropriate for sorority members and prospective members.
 - Format with Markdown where it helps readability (headings, bullet/numbered lists, tables, **bold**) — the chat widget renders it. Don't overdo it: a short answer doesn't need headings.`;
@@ -43,8 +42,6 @@ export interface ChatMessage {
 export interface Source {
   name: string;
   path: string;
-  /** Set when the source isn't under public/rag-source-docs/ (meeting minutes). */
-  href?: string;
 }
 
 // Thrown specifically on a 429 so app/api/chapter-assistant/route.ts can
@@ -60,7 +57,7 @@ function formatContext(chunks: RetrievedChunk[]): string {
   return chunks
     .map((chunk, i) => {
       const heading = chunk.section ? ` — ${chunk.section}` : "";
-      return `[Source ${i + 1}: ${chunk.label ?? displayName(chunk.sourceFile)}${heading}]\n${chunk.content}`;
+      return `[Source ${i + 1}: ${displayName(chunk.sourceFile)}${heading}]\n${chunk.content}`;
     })
     .join("\n\n");
 }
@@ -75,11 +72,7 @@ export function sourcesFromChunks(chunks: RetrievedChunk[]): Source[] {
   const seen = new Map<string, Source>();
   for (const chunk of chunks) {
     if (!seen.has(chunk.sourceFile)) {
-      seen.set(chunk.sourceFile, {
-        name: chunk.label ?? displayName(chunk.sourceFile),
-        path: chunk.sourceFile,
-        ...(chunk.href ? { href: chunk.href } : {}),
-      });
+      seen.set(chunk.sourceFile, { name: displayName(chunk.sourceFile), path: chunk.sourceFile });
     }
   }
   return [...seen.values()];
