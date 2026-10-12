@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
 import { retrieve } from "@/lib/rag/retriever";
+import { indexPendingMinutes } from "@/lib/rag/minutesIndex";
 import { streamAnswer, sourcesFromChunks, topScore, GroqRateLimitError, type ChatMessage } from "@/lib/rag/prompt";
 
 // Open to every logged-in member (same spirit as the "standards-forms"
@@ -67,6 +68,9 @@ export async function POST(request: Request) {
     // x-ratelimit-limit-tokens header, Aug 2026), and each chunk here
     // runs ~650-1050 tokens. Trimmed one chunk off top-k specifically to
     // leave more of that budget for the response itself.
+    // Picks up finished minutes uploaded/replaced since the last
+    // question (lib/rag/minutesIndex.ts) — never throws.
+    await indexPendingMinutes();
     const chunks = await retrieve(message, 4);
     const sources = sourcesFromChunks(chunks);
 
