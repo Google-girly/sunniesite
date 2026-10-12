@@ -17,7 +17,6 @@ import type { Components } from "react-markdown";
 interface Source {
   name: string;
   path: string;
-  href?: string; // meeting minutes link to their download route instead of public/rag-source-docs/
 }
 
 interface DisplayMessage {
@@ -248,7 +247,7 @@ export function ChapterAssistantWidget() {
                   {m.sources.map((s, si) => (
                     <span key={s.path}>
                       {si > 0 && ", "}
-                      <a href={s.href ?? sourceHref(s.path)} target="_blank" rel="noreferrer" className="underline hover:text-stone-700">
+                      <a href={sourceHref(s.path)} target="_blank" rel="noreferrer" className="underline hover:text-stone-700">
                         {s.name}
                       </a>
                     </span>

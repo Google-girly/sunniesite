@@ -71,26 +71,26 @@ model Member {
   makeUpProjects MakeUpProject[]
   studyHours     StudyHourEntry[]
 
-  gpaRecords                 GpaRecord[]
-  mentorshipsAsMentee        Mentorship[]                      @relation("MentorshipMentee")
-  mentorshipsAsMentor        Mentorship[]                      @relation("MentorshipMentor")
-  alphaOrderRecords          AlphaOrderRecord[]
-  professionalDevelopment    ProfessionalDevelopmentAttendee[]
-  probationRecords           ProbationRecord[]
-  sisterOfTheMonths          SisterOfTheMonth[]
-  sisterOfMonthVotesCast     SisterOfMonthVote[]               @relation("SisterOfMonthVoter")
-  sisterOfMonthNominations   SisterOfMonthVote[]               @relation("SisterOfMonthNominee")
-  certifications             CertificationRecord[]
-  eventReportsSigned         EventReport[]
-  eventReportsCreated        EventReport[]                     @relation("EventReportCreatedBy")
-  signature                  MemberSignature?
-  leadershipPositions        LeadershipPosition[]
-  letterSignoffs             LetterSignoff[]
-  meetingNotes               MeetingNote[]
-  letters                    Letter[]
-  chapterAssistantAsks       ChapterAssistantInteraction[]
-  checklistDocuments         ChecklistDocument[]
-  meetingAttachments         MeetingAttachment[]
+  gpaRecords               GpaRecord[]
+  mentorshipsAsMentee      Mentorship[]                      @relation("MentorshipMentee")
+  mentorshipsAsMentor      Mentorship[]                      @relation("MentorshipMentor")
+  alphaOrderRecords        AlphaOrderRecord[]
+  professionalDevelopment  ProfessionalDevelopmentAttendee[]
+  probationRecords         ProbationRecord[]
+  sisterOfTheMonths        SisterOfTheMonth[]
+  sisterOfMonthVotesCast   SisterOfMonthVote[]               @relation("SisterOfMonthVoter")
+  sisterOfMonthNominations SisterOfMonthVote[]               @relation("SisterOfMonthNominee")
+  certifications           CertificationRecord[]
+  eventReportsSigned       EventReport[]
+  eventReportsCreated      EventReport[]                     @relation("EventReportCreatedBy")
+  signature                MemberSignature?
+  leadershipPositions      LeadershipPosition[]
+  letterSignoffs           LetterSignoff[]
+  meetingNotes             MeetingNote[]
+  letters                  Letter[]
+  chapterAssistantAsks     ChapterAssistantInteraction[]
+  checklistDocuments       ChecklistDocument[]
+  meetingAttachments       MeetingAttachment[]
   meetingFinalMinutesUploads MeetingFinalMinutes[]
 }
 
@@ -437,31 +437,6 @@ model MeetingFinalMinutes {
   uploadedByName     String
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-
-  // Oct 2026 — Chapter Assistant can answer questions from finished
-  // minutes. Set when this file's text was last chunked + embedded into
-  // MeetingMinutesChunk (lib/rag/minutesIndex.ts); a re-upload bumps
-  // updatedAt past it, which marks it for re-indexing.
-  ragIndexedAt DateTime?
-  ragChunks    MeetingMinutesChunk[]
-}
-
-// One embedded chunk of a meeting's finished minutes, searched by the
-// Chapter Assistant alongside the static rag/index.json documents. Only
-// *finished* minutes are indexed — they're already readable by every
-// logged-in member, same as the assistant itself; draft officer reports
-// are position-restricted and deliberately never indexed.
-model MeetingMinutesChunk {
-  id             String              @id @default(cuid())
-  finalMinutesId String
-  finalMinutes   MeetingFinalMinutes @relation(fields: [finalMinutesId], references: [id], onDelete: Cascade)
-  meetingId      String
-  meetingDate    String // ISO "YYYY-MM-DD", for citing
-  content        String
-  embedding      Float[]
-  createdAt      DateTime            @default(now())
-
-  @@index([finalMinutesId])
 }
 
 // One officer's written report for one Meeting. Upserts on

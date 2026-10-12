@@ -33,25 +33,7 @@ function toParagraphs(rawText: string): string[] {
     .filter((p) => p.length > 0);
 }
 
-export interface ChunkSizes {
-  targetWords: number;
-  maxWords: number;
-  overlapWords: number;
-}
-
-// Oct 2026 — meeting minutes (lib/rag/minutesIndex.ts) pass smaller
-// sizes: a 650-word chunk runs past bge-small's 512-token input limit,
-// so everything after roughly the first 400 words of it never makes it
-// into the embedding — fine for long-form bylaws prose, but in minutes
-// that cut off most of the officer reports.
-export function chunkDocument(
-  rawText: string,
-  { targetWords, maxWords, overlapWords }: ChunkSizes = {
-    targetWords: TARGET_WORDS,
-    maxWords: MAX_WORDS,
-    overlapWords: OVERLAP_WORDS,
-  }
-): Chunk[] {
+export function chunkDocument(rawText: string): Chunk[] {
   const paragraphs = toParagraphs(rawText);
   const chunks: Chunk[] = [];
 
@@ -68,7 +50,7 @@ export function chunkDocument(
     if (newWordCount === 0) return;
     chunks.push({ section: currentSection, content: currentWords.join(" ") });
     // Carry the tail of this chunk forward as overlap for the next one.
-    currentWords = currentWords.slice(-overlapWords);
+    currentWords = currentWords.slice(-OVERLAP_WORDS);
     newWordCount = 0;
   };
 
@@ -83,13 +65,13 @@ export function chunkDocument(
     }
 
     const words = paragraph.split(/\s+/);
-    if (newWordCount > 0 && currentWords.length + words.length > maxWords) {
+    if (newWordCount > 0 && currentWords.length + words.length > MAX_WORDS) {
       flush();
       currentSection = pendingSection;
     }
     currentWords.push(...words);
     newWordCount += words.length;
-    if (newWordCount >= targetWords) {
+    if (newWordCount >= TARGET_WORDS) {
       flush();
       currentSection = pendingSection;
     }
