@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
-import { formatMeetingDate, MAX_REPORT_DEPTH, parseReportLines } from "@/lib/meetingMinutes";
+import { formatMeetingDate, labelReportLines } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 import { findRoleHolderNames } from "@/lib/roster";
 import {
@@ -66,53 +66,17 @@ function linkify(text: string): React.ReactNode {
 // Oct 2026 — Tab-indented lines nest under the line above (see
 // lib/meetingMinutes.ts parseReportLines), labeled the way the exported
 // docx's own list levels number them: "1.", "a)", "(1)", "(a)", "(i)".
-function toLetter(n: number): string {
-  return String.fromCharCode(96 + ((n - 1) % 26) + 1);
-}
-
-function toRoman(n: number): string {
-  const numerals: [number, string][] = [[10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]];
-  let out = "";
-  for (const [value, numeral] of numerals) {
-    while (n >= value) {
-      out += numeral;
-      n -= value;
-    }
-  }
-  return out;
-}
-
-function reportLabel(depth: number, n: number): string {
-  switch (depth) {
-    case 0:
-      return `${n}.`;
-    case 1:
-      return `${toLetter(n)})`;
-    case 2:
-      return `(${n})`;
-    case 3:
-      return `(${toLetter(n)})`;
-    default:
-      return `(${toRoman(n)})`;
-  }
-}
-
 function numberedLinkify(text: string): React.ReactNode {
-  const lines = parseReportLines(text);
+  const lines = labelReportLines(text);
   if (lines.length <= 1) return linkify(text.trim());
-  const counters = Array<number>(MAX_REPORT_DEPTH + 1).fill(0);
   return (
     <div className="space-y-1 whitespace-normal">
-      {lines.map((line, i) => {
-        counters[line.depth] += 1;
-        for (let d = line.depth + 1; d < counters.length; d++) counters[d] = 0;
-        return (
-          <div key={i} className="flex gap-1.5" style={{ paddingLeft: `${line.depth * 1.5}rem` }}>
-            <span className="shrink-0 text-stone-500">{reportLabel(line.depth, counters[line.depth])}</span>
-            <span>{linkify(line.text)}</span>
-          </div>
-        );
-      })}
+      {lines.map((line, i) => (
+        <div key={i} className="flex gap-1.5" style={{ paddingLeft: `${line.depth * 1.5}rem` }}>
+          <span className="shrink-0 text-stone-500">{line.label}</span>
+          <span>{linkify(line.text)}</span>
+        </div>
+      ))}
     </div>
   );
 }
