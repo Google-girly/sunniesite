@@ -14,8 +14,6 @@
 // the first question after an upload/replace pays a few seconds to
 // index it and nobody ever has to re-run `npm run rag:ingest` for
 // minutes.
-import { PDFParse } from "pdf-parse";
-import mammoth from "mammoth";
 import { prisma } from "@/lib/prisma";
 import { formatMeetingDate } from "@/lib/meetingMinutes";
 import { chunkDocument } from "./chunk";
@@ -33,17 +31,55 @@ const MINUTES_CHUNK_SIZES = { targetWords: 180, maxWords: 230, overlapWords: 30 
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
+// The PDF/Word libraries are imported here, lazily, rather than at the
+// top of the file: this module is loaded by the Chapter Assistant route
+// itself, so a library that fails to load on Vercel would otherwise take
+// the whole assistant down with it (it did — Oct 2026, right after the
+// first version imported pdf-parse at the top; pdf-parse depends on the
+// @napi-rs/canvas native addon, the same class of problem as the
+// onnxruntime .so in next.config.ts). Loaded here, a failure only skips
+// indexing that file.
+//
+// PDFs go through pdfjs-dist's legacy build directly (pdf-parse is a
+// wrapper around it, and scripts/rag-ingest.ts still uses pdf-parse
+// locally): it only *tries* the canvas addon inside its own try/catch,
+// and plain text extraction doesn't need it. Its worker is imported
+// statically and handed over via globalThis.pdfjsWorker so it runs
+// in-process — no separate worker file for Vercel's tracer to miss.
+async function extractPdfText(bytes: Buffer): Promise<string> {
+  // pdf.js builds a `new DOMMatrix()` the moment it loads, and in Node it
+  // only gets one from @napi-rs/canvas — without that addon, the import
+  // itself throws "DOMMatrix is not defined" (reproduced locally by
+  // hiding the addon). Text extraction never uses it (only page
+  // rendering does), so an empty stand-in is enough to let it load.
+  const g = globalThis as { DOMMatrix?: unknown; pdfjsWorker?: unknown };
+  g.DOMMatrix ??= class DOMMatrix {};
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  // @ts-expect-error -- pdfjs-dist ships no type declarations for its worker module
+  g.pdfjsWorker ??= await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes), isEvalSupported: false, disableFontFace: true })
+    .promise;
+  try {
+    const pages: string[] = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const content = await (await doc.getPage(n)).getTextContent();
+      pages.push(
+        content.items.map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "")).join("")
+      );
+    }
+    // A blank line between pages so chunkDocument's paragraph split
+    // still has boundaries to work with.
+    return pages.join("\n\n");
+  } finally {
+    await doc.destroy();
+  }
+}
+
 async function extractText(mimeType: string, fileName: string, bytes: Buffer): Promise<string | null> {
   const lower = fileName.toLowerCase();
-  if (mimeType === "application/pdf" || lower.endsWith(".pdf")) {
-    const parser = new PDFParse({ data: bytes });
-    try {
-      return (await parser.getText()).text;
-    } finally {
-      await parser.destroy();
-    }
-  }
+  if (mimeType === "application/pdf" || lower.endsWith(".pdf")) return extractPdfText(bytes);
   if (mimeType === DOCX_MIME || lower.endsWith(".docx")) {
+    const mammoth = (await import("mammoth")).default;
     return (await mammoth.extractRawText({ buffer: bytes })).value;
   }
   return null; // images, old .doc, etc. — nothing to index
