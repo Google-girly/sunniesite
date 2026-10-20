@@ -82,3 +82,54 @@ export function parseReportLines(report: string): ReportLine[] {
   }
   return lines;
 }
+
+// The label each nested report line gets — "1.", "a)", "(1)", "(a)",
+// "(i)" by depth, matching the template's own list levels. Used for the
+// on-screen view and written straight into the exported docx for
+// sub-items (see buildReportParagraphXml), so labels show up even in
+// viewers that skip Word's deeper auto-numbering.
+function toLetter(n: number): string {
+  return String.fromCharCode(96 + ((n - 1) % 26) + 1);
+}
+
+function toRoman(n: number): string {
+  const numerals: [number, string][] = [[10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]];
+  let out = "";
+  for (const [value, numeral] of numerals) {
+    while (n >= value) {
+      out += numeral;
+      n -= value;
+    }
+  }
+  return out;
+}
+
+function reportLabel(depth: number, n: number): string {
+  switch (depth) {
+    case 0:
+      return `${n}.`;
+    case 1:
+      return `${toLetter(n)})`;
+    case 2:
+      return `(${n})`;
+    case 3:
+      return `(${toLetter(n)})`;
+    default:
+      return `(${toRoman(n)})`;
+  }
+}
+
+export interface LabeledReportLine extends ReportLine {
+  label: string;
+}
+
+// parseReportLines plus each line's label — counters restart under each
+// new parent line.
+export function labelReportLines(report: string): LabeledReportLine[] {
+  const counters = Array<number>(MAX_REPORT_DEPTH + 1).fill(0);
+  return parseReportLines(report).map((line) => {
+    counters[line.depth] += 1;
+    for (let d = line.depth + 1; d < counters.length; d++) counters[d] = 0;
+    return { ...line, label: reportLabel(line.depth, counters[line.depth]) };
+  });
+}
