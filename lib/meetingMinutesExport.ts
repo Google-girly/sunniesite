@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import JSZip from "jszip";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
 import { formatCurrency } from "@/lib/fines";
-import { OFFICER_REPORT_TEMPLATE_LABELS, parseReportLines } from "@/lib/meetingMinutes";
+import { labelReportLines, OFFICER_REPORT_TEMPLATE_LABELS } from "@/lib/meetingMinutes";
 import { OFFICER_POSITIONS, type OfficerPosition } from "@/lib/positions";
 import { findRoleHolderNames } from "@/lib/roster";
 import { escapeXmlText, readEntry } from "@/lib/xlsxPatch";
@@ -93,13 +93,37 @@ function buildLineRunsXml(line: string, rels: RelsState): string {
 // breaks (blank lines are dropped rather than each eating a number).
 //
 // Oct 2026 — Tab-indented lines nest under the line above (see
-// lib/meetingMinutes.ts parseReportLines): depth 1 -> ilvl 3 ("a)"),
-// 2 -> ilvl 4 ("(1)"), 3 -> ilvl 5 ("(a)"), 4 -> ilvl 6 ("(i)") — the
-// template's own next levels down.
+// lib/meetingMinutes.ts labelReportLines), indented to the template's
+// own next list levels down (ilvl 3, 4, ...). Their labels ("a)",
+// "(1)", ...) are written in as text rather than left to Word's
+// auto-numbering — "the minutes just sent, but none of the indentations
+// are labeled": email/phone previewers commonly drop auto-numbers on
+// deeper list levels, while literal text shows everywhere.
 function buildReportParagraphXml(text: string, rels: RelsState): string {
-  const lines = parseReportLines(text);
+  const lines = labelReportLines(text);
   if (lines.length === 0) return buildListParagraphXml(text, 2, rels);
-  return lines.map((line) => buildListParagraphXml(line.text, 2 + line.depth, rels)).join("");
+  return lines
+    .map((line) =>
+      line.depth === 0
+        ? buildListParagraphXml(line.text, 2, rels)
+        : buildLabeledParagraphXml(line.label, line.text, 2 + line.depth, rels)
+    )
+    .join("");
+}
+
+// A sub-item paragraph indented like list level `ilvl`, with its label
+// typed in followed by a tab — with a hanging indent, Word's first tab
+// stop is the left indent, so the text lines up just like a real list.
+function buildLabeledParagraphXml(label: string, text: string, ilvl: number, rels: RelsState): string {
+  const indentTwips = 720 * (ilvl + 1);
+  return (
+    `<w:p><w:pPr><w:pageBreakBefore w:val="0"/>` +
+    `<w:ind w:left="${indentTwips}" w:hanging="360"/>` +
+    `<w:rPr>${GEORGIA_RPR}</w:rPr></w:pPr>` +
+    `<w:r><w:rPr>${GEORGIA_RPR}</w:rPr><w:t xml:space="preserve">${escapeXmlText(label)}</w:t></w:r>` +
+    `<w:r><w:rPr>${GEORGIA_RPR}</w:rPr><w:tab/></w:r>` +
+    `${buildLineRunsXml(text, rels)}</w:p>`
+  );
 }
 
 // Same shape as buildReportParagraphXml, generalized to any list level
