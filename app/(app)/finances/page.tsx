@@ -1,4 +1,4 @@
-import { calculateChapterBalance } from "@/lib/chapterBalance";
+import { calculateBalanceSplit, calculateChapterBalance } from "@/lib/chapterBalance";
 import { formatCurrency } from "@/lib/fines";
 import { prisma } from "@/lib/prisma";
 import { requirePageAccess } from "@/lib/session";
@@ -37,6 +37,7 @@ export default async function FinancesPage() {
     .filter((b) => b.versions.length > 0)
     .map((b) => ({ budget: b, version: b.versions[0] }));
   const chapterBalance = calculateChapterBalance(finalBudgets, fundEntries, startingBalances[0] ?? null);
+  const split = calculateBalanceSplit(finalBudgets, fundEntries, startingBalances[0] ?? null);
 
   return (
     <div>
@@ -58,16 +59,37 @@ export default async function FinancesPage() {
         sheet&apos;s existing rows or duplicates one on repeat downloads.
       </p>
 
-      <div className="mt-6 rounded-lg border border-stone-200 bg-white p-4 sm:max-w-xs">
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Current Chapter Balance</p>
-        <p className={`mt-1 text-2xl font-semibold ${chapterBalance < 0 ? "text-red-600" : "text-stone-900"}`}>
-          {formatCurrency(chapterBalance)}
-        </p>
-        <p className="mt-1 text-xs text-stone-400">
-          {startingBalances[0]
-            ? `${startingBalances[0].year} starting balance + funds added − approved Final Budgets`
-            : "No starting balance set yet — funds added − approved Final Budgets"}
-        </p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-stone-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Current Chapter Balance</p>
+          <p className={`mt-1 text-2xl font-semibold ${chapterBalance < 0 ? "text-red-600" : "text-stone-900"}`}>
+            {formatCurrency(chapterBalance)}
+          </p>
+          <p className="mt-1 text-xs text-stone-400">
+            {startingBalances[0]
+              ? `${startingBalances[0].year} starting balance + funds added − approved Final Budgets`
+              : "No starting balance set yet — funds added − approved Final Budgets"}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-stone-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Pledge Class Money</p>
+          <p className={`mt-1 text-2xl font-semibold ${split.pledge.balance < 0 ? "text-red-600" : "text-stone-900"}`}>
+            {formatCurrency(split.pledge.balance)}
+          </p>
+          <p className="mt-1 text-xs text-stone-400">
+            {formatCurrency(split.pledge.dues)} Pledge Class Dues (101) − {formatCurrency(split.pledge.spent)} spent on
+            Pledge Class Costs (201)
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-stone-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Regular Chapter Money</p>
+          <p className={`mt-1 text-2xl font-semibold ${split.regular.balance < 0 ? "text-red-600" : "text-stone-900"}`}>
+            {formatCurrency(split.regular.balance)}
+          </p>
+          <p className="mt-1 text-xs text-stone-400">Everything else in the chapter balance</p>
+        </div>
       </div>
 
       <div className="mt-6">
