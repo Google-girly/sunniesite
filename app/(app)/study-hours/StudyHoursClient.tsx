@@ -6,10 +6,14 @@ import type { Member, StudyHourEntry } from "@/app/generated/prisma/client";
 import {
   calculateWeeklyCompletion,
   currentTermRange,
+  formatWeekLabel,
+  missedWeeks,
   termByLabel,
   totalHours,
   weekOfMonth,
+  weeklyBreakdown,
   WEEKLY_COMPLETION_THRESHOLD,
+  WEEKLY_HOURS_REQUIRED,
   type Term,
 } from "@/lib/studyHours";
 import { todayIso } from "@/lib/meetings";
@@ -94,6 +98,7 @@ export function StudyHoursClient({
   const withCompletion = members.map((m) => ({
     member: m,
     completion: calculateWeeklyCompletion(m.studyHours, term.start, term.end),
+    missed: missedWeeks(weeklyBreakdown(m.studyHours, term.start, term.end)),
     total: totalHours(m.studyHours),
   }));
 
@@ -324,7 +329,7 @@ export function StudyHoursClient({
         <table className="min-w-full divide-y divide-stone-200 text-sm">
           <thead className="bg-stone-50">
             <tr>
-              {["Name", "Phone", "Status", "Weekly Completion", "Total Hours", ""].map((h) => (
+              {["Name", "Phone", "Status", "Weekly Completion", "Missing Weeks", "Total Hours", ""].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-stone-500"
@@ -337,13 +342,13 @@ export function StudyHoursClient({
           <tbody className="divide-y divide-stone-100">
             {withCompletion.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-stone-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
                   No Active/Inactive members on the roster yet.
                 </td>
               </tr>
             )}
 
-            {withCompletion.map(({ member, completion, total }) => (
+            {withCompletion.map(({ member, completion, missed, total }) => (
               <tr key={member.id}>
                 <td className="px-4 py-2.5 font-medium text-stone-900">{member.name}</td>
                 <td className="px-4 py-2.5 text-stone-600">{member.phone || "—"}</td>
@@ -360,6 +365,23 @@ export function StudyHoursClient({
                 </td>
                 <td className="px-4 py-2.5">
                   <ProgressBar value={completion.weeksCompleted} required={completion.weeksInTerm} />
+                </td>
+                <td className="px-4 py-2.5">
+                  {missed.length === 0 ? (
+                    <span className="text-xs text-stone-400">None</span>
+                  ) : (
+                    <div className="flex max-w-xs flex-wrap gap-1">
+                      {missed.map((w) => (
+                        <span
+                          key={w.start}
+                          title={`Week of ${formatWeekLabel(w.start)} – ${formatWeekLabel(w.end)}: ${w.hours}/${WEEKLY_HOURS_REQUIRED} hrs`}
+                          className="inline-block whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700"
+                        >
+                          {formatWeekLabel(w.start)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-2.5 text-stone-700">{total}</td>
                 <td className="px-4 py-2.5 whitespace-nowrap text-right">
