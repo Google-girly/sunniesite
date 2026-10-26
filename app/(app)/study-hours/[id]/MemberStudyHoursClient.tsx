@@ -7,9 +7,12 @@ import {
   calculateWeeklyCompletion,
   currentTermRange,
   formatStudyDate,
+  formatWeekLabel,
+  missedWeeks,
   termByLabel,
   totalHours,
   weekOfMonth,
+  weeklyBreakdown,
   WEEKLY_HOURS_REQUIRED,
   type Term,
 } from "@/lib/studyHours";
@@ -146,6 +149,8 @@ export function MemberStudyHoursClient({
   const term = termByLabel(selectedTermLabel) ?? currentTermRange();
   const completion = calculateWeeklyCompletion(entries, term.start, term.end);
   const total = totalHours(entries);
+  const weeks = weeklyBreakdown(entries, term.start, term.end);
+  const missed = missedWeeks(weeks);
 
   function sortByDate(list: StudyHourEntry[]): StudyHourEntry[] {
     return [...list].sort((a, b) => b.date.localeCompare(a.date));
@@ -300,6 +305,39 @@ export function MemberStudyHoursClient({
       <p className="mt-1 text-xs text-stone-400">
         {WEEKLY_HOURS_REQUIRED} hours/week required, {selectedTermLabel} ({term.start} – {term.end}).
       </p>
+
+      {weeks.length > 0 && (
+        <div className="mt-6 rounded-lg border border-stone-200 bg-white p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold text-stone-900">Week by Week</h2>
+            <p className={`text-xs font-medium ${missed.length > 0 ? "text-red-700" : "text-stone-500"}`}>
+              {missed.length === 0
+                ? "No missing weeks"
+                : `${missed.length} missing week${missed.length === 1 ? "" : "s"}`}
+            </p>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+            {weeks.map((w) => {
+              const tone = w.met
+                ? "border-green-200 bg-green-50 text-green-800"
+                : w.inProgress
+                  ? "border-stone-200 bg-stone-50 text-stone-600"
+                  : "border-red-200 bg-red-50 text-red-800";
+              return (
+                <div key={w.start} className={`rounded-md border px-3 py-2 ${tone}`}>
+                  <p className="text-xs font-medium">
+                    {formatWeekLabel(w.start)} – {formatWeekLabel(w.end)}
+                  </p>
+                  <p className="mt-0.5 text-sm font-semibold">
+                    {w.hours}/{WEEKLY_HOURS_REQUIRED} hrs
+                  </p>
+                  <p className="text-xs">{w.met ? "Met" : w.inProgress ? "In progress" : "Missing"}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm text-stone-500">

@@ -67,14 +67,6 @@ export interface WeeklyCompletion {
   percentage: number; // 0-100, rounded to whole percent
 }
 
-// The Sunday that closes the most recent *finished* week before `iso`'s
-// week — i.e. the day before that week's Monday.
-function lastFinishedWeekEnd(iso: string): string {
-  const date = parseIsoDateUTC(weekStart(iso));
-  date.setUTCDate(date.getUTCDate() - 1);
-  return toIsoDateUTC(date);
-}
-
 // Given a member's logged sessions and a term's [start, end] date range,
 // how many of the term's weeks did she log >= 6 hours in? Entries
 // outside the range are ignored, so a term boundary doesn't have to line
@@ -93,27 +85,70 @@ export function calculateWeeklyCompletion(
   termEnd: string,
   today: string = todayIso()
 ): WeeklyCompletion {
+  const finished = weeklyBreakdown(entries, termStart, termEnd, today).filter((w) => !w.inProgress);
+  const weeksCompleted = finished.filter((w) => w.met).length;
+  const weeksInTerm = finished.length;
+  return {
+    weeksInTerm,
+    weeksCompleted,
+    percentage: weeksInTerm > 0 ? Math.round((weeksCompleted / weeksInTerm) * 100) : 100,
+  };
+}
+
+export interface WeekSummary {
+  start: string; // Monday, ISO
+  end: string; // Sunday, ISO
+  hours: number;
+  met: boolean;
+  inProgress: boolean; // the current, not-yet-finished week
+}
+
+// Week-by-week view of the same math calculateWeeklyCompletion uses —
+// every tracked week of the term through the current one, so the UI can
+// show exactly *which* weeks a member missed rather than just a count.
+// The current week is included (flagged inProgress) so she can see how
+// close she is, but it never counts as missed until it's over.
+export function weeklyBreakdown(
+  entries: StudyHourEntryLike[],
+  termStart: string,
+  termEnd: string,
+  today: string = todayIso()
+): WeekSummary[] {
   // Clamp to when tracking actually started — see
   // STUDY_HOURS_TRACKING_START above.
   const effectiveStart = termStart < STUDY_HOURS_TRACKING_START ? STUDY_HOURS_TRACKING_START : termStart;
-  const finishedEnd = lastFinishedWeekEnd(today);
-  const effectiveEnd = termEnd < finishedEnd ? termEnd : finishedEnd;
-  const weeks = effectiveEnd < effectiveStart ? [] : weeksInRange(effectiveStart, effectiveEnd);
+  const effectiveEnd = termEnd < today ? termEnd : today;
+  if (effectiveEnd < effectiveStart) return [];
+  const currentWeek = weekStart(today);
   const totalsByWeek = new Map<string, number>();
   for (const entry of entries) {
     if (entry.date < effectiveStart || entry.date > termEnd) continue;
     const key = weekStart(entry.date);
     totalsByWeek.set(key, (totalsByWeek.get(key) ?? 0) + entry.hours);
   }
-  const weeksCompleted = weeks.filter(
-    (w) => (totalsByWeek.get(w) ?? 0) >= WEEKLY_HOURS_REQUIRED
-  ).length;
-  const weeksInTerm = weeks.length;
-  return {
-    weeksInTerm,
-    weeksCompleted,
-    percentage: weeksInTerm > 0 ? Math.round((weeksCompleted / weeksInTerm) * 100) : 100,
-  };
+  return weeksInRange(effectiveStart, effectiveEnd).map((start) => {
+    const end = parseIsoDateUTC(start);
+    end.setUTCDate(end.getUTCDate() + 6);
+    const hours = totalsByWeek.get(start) ?? 0;
+    return {
+      start,
+      end: toIsoDateUTC(end),
+      hours,
+      met: hours >= WEEKLY_HOURS_REQUIRED,
+      inProgress: start >= currentWeek,
+    };
+  });
+}
+
+// Weeks that are over and came in under the requirement.
+export function missedWeeks(weeks: WeekSummary[]): WeekSummary[] {
+  return weeks.filter((w) => !w.inProgress && !w.met);
+}
+
+// "Sep 14" — short label for a week, keyed by its Monday.
+export function formatWeekLabel(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function totalHours(entries: StudyHourEntryLike[]): number {
