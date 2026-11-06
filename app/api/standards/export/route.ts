@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { buildStandardsFormsWorkbook, standardsFormsExportFilename } from "@/lib/standardsFormsExport";
+import {
+  buildStandardsFormsWorkbook,
+  isStandardsExportSection,
+  standardsFormsExportFilename,
+  type StandardsExportSection,
+} from "@/lib/standardsFormsExport";
 import { currentTermLabel } from "@/lib/studyHours";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMember } from "@/lib/session";
@@ -10,7 +15,8 @@ import { ownsModule } from "@/lib/permissions";
 // Community Service; B4 and B6 export from Study Hours (see
 // lib/communityServiceExport.ts, lib/studyHoursExport.ts). `term` and
 // `year` are optional query params so a specific submission period can
-// be requested instead of always defaulting to "now".
+// be requested instead of always defaulting to "now". `section` (e.g.
+// "B5") is also optional and exports just that one section's sheet(s).
 export async function GET(request: Request) {
   const viewer = await getCurrentMember();
   if (!viewer) {
@@ -29,6 +35,14 @@ export async function GET(request: Request) {
   const term = url.searchParams.get("term")?.trim() || currentTermLabel();
   const yearParam = Number(url.searchParams.get("year"));
   const year = Number.isFinite(yearParam) && yearParam > 0 ? yearParam : new Date().getFullYear();
+  const sectionParam = url.searchParams.get("section")?.trim().toUpperCase() || undefined;
+  let section: StandardsExportSection | undefined;
+  if (sectionParam) {
+    if (!isStandardsExportSection(sectionParam)) {
+      return NextResponse.json({ error: `Unknown section "${sectionParam}".` }, { status: 400 });
+    }
+    section = sectionParam;
+  }
 
   const [
     gpaRecords,
@@ -66,6 +80,7 @@ export async function GET(request: Request) {
       ? sisterOfTheMonths
       : sisterOfTheMonths.map((r) => ({ ...r, member: null, memberId: null })),
     certificationRecords,
+    section,
   });
   const file = new Uint8Array(bytes.length);
   file.set(bytes);
@@ -73,7 +88,7 @@ export async function GET(request: Request) {
   return new NextResponse(new Blob([file]), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${standardsFormsExportFilename()}"`,
+      "Content-Disposition": `attachment; filename="${standardsFormsExportFilename(section)}"`,
     },
   });
 }

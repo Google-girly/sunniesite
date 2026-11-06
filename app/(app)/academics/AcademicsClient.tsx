@@ -711,12 +711,26 @@ export function AcademicsClient({
             />
           </div>
         </div>
-        <a
-          href={`/api/standards/export?term=${encodeURIComponent(term)}&year=${year}`}
-          className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
-        >
-          Export Full Standards Packet
-        </a>
+        <div className="flex flex-col items-end gap-2">
+          <a
+            href={`/api/standards/export?term=${encodeURIComponent(term)}&year=${year}`}
+            className="rounded-md bg-burgundy-600 px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-700"
+          >
+            Export Full Standards Packet
+          </a>
+          <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-stone-500">
+            <span>Export one section:</span>
+            {["B1", "B2", "B3", "B5"].map((code) => (
+              <a
+                key={code}
+                href={`/api/standards/export?section=${code}&term=${encodeURIComponent(term)}&year=${year}`}
+                className="rounded-md border border-stone-300 px-2 py-1 font-medium text-burgundy-600 hover:bg-stone-50 hover:text-burgundy-800"
+              >
+                {code}
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
 
       <GpaSection members={members} initial={initialGpaRecords} term={term} />

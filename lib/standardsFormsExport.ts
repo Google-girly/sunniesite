@@ -32,6 +32,16 @@ const CHAPTER = "Chapter: Theta";
 // Chapter Standards spreadsheet ("one sheet per term").
 const TABLE_ROWS = 21;
 
+// The sections this export knows how to fill. Passing one as
+// `StandardsFormsData.section` trims the workbook down to just that
+// section's sheet(s) — e.g. B5 alone for its own submission.
+export const STANDARDS_EXPORT_SECTIONS = ["B1", "B2", "B3", "B5", "D4", "D9", "D10", "D11"] as const;
+export type StandardsExportSection = (typeof STANDARDS_EXPORT_SECTIONS)[number];
+
+export function isStandardsExportSection(value: string): value is StandardsExportSection {
+  return (STANDARDS_EXPORT_SECTIONS as readonly string[]).includes(value);
+}
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -70,6 +80,7 @@ export interface StandardsFormsData {
   meetingAttendanceRecords: MeetingAttendanceRecord[];
   sisterOfTheMonths: SisterOfTheMonthWithMember[];
   certificationRecords: CertificationRecordWithMember[];
+  section?: StandardsExportSection; // omitted = the full packet
 }
 
 export async function buildStandardsFormsWorkbook(data: StandardsFormsData): Promise<Uint8Array> {
@@ -287,6 +298,16 @@ export async function buildStandardsFormsWorkbook(data: StandardsFormsData): Pro
     await removeSheet(zip, name);
   }
 
+  // Single-section export: drop every other section's sheet. B5's
+  // per-event clones ("Section B5 - <title>") stay; its blank base sheet
+  // goes too once there's at least one filled-in clone to replace it.
+  if (data.section) {
+    for (const code of STANDARDS_EXPORT_SECTIONS) {
+      if (code === data.section && !(code === "B5" && data.professionalDevelopmentEvents.length > 0)) continue;
+      await removeSheet(zip, `Section ${code}`);
+    }
+  }
+
   const workbookXml = await readEntry(zip, "xl/workbook.xml");
   zip.file("xl/workbook.xml", forceFullCalcOnLoad(workbookXml));
 
@@ -297,7 +318,7 @@ export async function buildStandardsFormsWorkbook(data: StandardsFormsData): Pro
   });
 }
 
-export function standardsFormsExportFilename(): string {
+export function standardsFormsExportFilename(section?: StandardsExportSection): string {
   const today = new Date().toISOString().slice(0, 10);
-  return `chapter-standards-forms-${today}.xlsx`;
+  return section ? `chapter-standards-${section}-${today}.xlsx` : `chapter-standards-forms-${today}.xlsx`;
 }
