@@ -25,7 +25,7 @@
 // MeetingReminderLog's unique (scheduleId, meetingDate) is still the
 // guard against sending the same meeting twice.
 import { prisma } from "@/lib/prisma";
-import { nextOccurrence, formatTime12h } from "@/lib/meetings";
+import { isPastEnd, nextOccurrence, formatTime12h } from "@/lib/meetings";
 import { chapterLocalToInstant, meetingDateTime, parseTimeOfDay } from "@/lib/meetingMinutesAutoAdd";
 import { formatMeetingDate } from "@/lib/meetingMinutes";
 import { buildMeetingMinutesDocx, meetingMinutesFilename } from "@/lib/meetingMinutesExport";
@@ -239,6 +239,7 @@ export async function sendDueMeetingReminders(now: Date = new Date()): Promise<R
   for (const schedule of schedules) {
     const first = nextOccurrence(schedule, today);
     for (const date of [first, nextOccurrence(schedule, addDaysIso(first, 1))]) {
+      if (isPastEnd(schedule, date)) continue; // the series has ended — no reminders past its end date
       const row = await prisma.meeting.findFirst({
         where: { scheduleId: schedule.id, date },
         select: { time: true },

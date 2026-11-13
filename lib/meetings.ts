@@ -23,6 +23,12 @@ export interface MeetingScheduleLike {
   dayOfWeek: number;
   intervalWeeks: number;
   anchorDate: string; // ISO "YYYY-MM-DD"
+  endDate?: string | null; // ISO "YYYY-MM-DD" — the series' last date, if set
+}
+
+/** True when `dateIso` falls after the series' end date (an ended series has no meetings past it). */
+export function isPastEnd(schedule: MeetingScheduleLike, dateIso: string): boolean {
+  return Boolean(schedule.endDate) && dateIso > schedule.endDate!;
 }
 
 // Safety cap on how many Meeting rows one endDate can auto-generate
@@ -92,8 +98,12 @@ export function nextMeetingDate(
   schedules: MeetingScheduleLike[],
   fromIso: string
 ): string | null {
-  if (schedules.length === 0) return null;
-  const dates = schedules.map((s) => nextOccurrence(s, fromIso));
+  // A series whose end date has passed contributes nothing.
+  const dates = schedules
+    .map((s) => ({ s, date: nextOccurrence(s, fromIso) }))
+    .filter(({ s, date }) => !isPastEnd(s, date))
+    .map(({ date }) => date);
+  if (dates.length === 0) return null;
   return dates.sort()[0]; // ISO date strings sort lexicographically = chronologically
 }
 

@@ -45,3 +45,54 @@ export async function fillMissingMeetings(schedule: GenerationSchedule): Promise
 
   return missing.length;
 }
+
+export interface PruneResult {
+  /** How many empty meetings after the end date were deleted. */
+  removed: number;
+  /** Dates of meetings after the end date that were kept because something is on them. */
+  keptDates: string[];
+}
+
+// The other half of the end date (Nov 2026 — "I put an end date of
+// 11/09/2026, so everything after that should not exist"): when a
+// series' end date moves earlier, meetings it had already generated
+// past the new end date are removed — but only empty ones. A meeting
+// with anything on it (an Officer Report, note, attachment, uploaded
+// final minutes, or a budget/letter auto-added to it) is kept and
+// reported back, so nobody's work silently disappears; those can be
+// moved off or removed by hand from the series page.
+export async function pruneMeetingsAfterEndDate(schedule: GenerationSchedule): Promise<PruneResult> {
+  if (!schedule.endDate) return { removed: 0, keptDates: [] };
+
+  const pastEnd = await prisma.meeting.findMany({
+    where: { scheduleId: schedule.id, date: { gt: schedule.endDate } },
+    select: {
+      id: true,
+      date: true,
+      finalMinutes: { select: { id: true } },
+      _count: { select: { officerReports: true, notes: true, attachments: true } },
+    },
+  });
+  if (pastEnd.length === 0) return { removed: 0, keptDates: [] };
+
+  const ids = pastEnd.map((m) => m.id);
+  const [budgets, letters] = await Promise.all([
+    prisma.budget.findMany({ where: { addedToMeetingId: { in: ids } }, select: { addedToMeetingId: true } }),
+    prisma.letter.findMany({ where: { addedToMeetingId: { in: ids } }, select: { addedToMeetingId: true } }),
+  ]);
+  const linked = new Set([...budgets, ...letters].map((r) => r.addedToMeetingId));
+
+  const hasContent = (m: (typeof pastEnd)[number]) =>
+    Boolean(m.finalMinutes) ||
+    m._count.officerReports > 0 ||
+    m._count.notes > 0 ||
+    m._count.attachments > 0 ||
+    linked.has(m.id);
+
+  const emptyIds = pastEnd.filter((m) => !hasContent(m)).map((m) => m.id);
+  const keptDates = pastEnd.filter(hasContent).map((m) => m.date).sort();
+  if (emptyIds.length > 0) {
+    await prisma.meeting.deleteMany({ where: { id: { in: emptyIds } } });
+  }
+  return { removed: emptyIds.length, keptDates };
+}

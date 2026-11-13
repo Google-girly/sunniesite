@@ -62,13 +62,24 @@ export function MeetingScheduleDetailClient({
       setError(await parseError(res));
       return;
     }
-    const updated: MeetingSchedule & { meetingsGenerated: number } = await res.json();
+    const updated: MeetingSchedule & {
+      meetingsGenerated: number;
+      meetingsRemoved: number;
+      meetingsKeptPastEnd: string[];
+    } = await res.json();
     setSaved(true);
-    if (updated.meetingsGenerated > 0) {
-      setGeneratedStatus(
-        `${updated.meetingsGenerated} meeting${updated.meetingsGenerated === 1 ? "" : "s"} auto-generated through the end date.`
+    const plural = (n: number) => `${n} meeting${n === 1 ? "" : "s"}`;
+    const parts: string[] = [];
+    if (updated.meetingsGenerated > 0) parts.push(`${plural(updated.meetingsGenerated)} auto-generated through the end date.`);
+    if (updated.meetingsRemoved > 0) parts.push(`${plural(updated.meetingsRemoved)} after the end date removed.`);
+    if (updated.meetingsKeptPastEnd.length > 0) {
+      parts.push(
+        `Kept ${plural(updated.meetingsKeptPastEnd.length)} after the end date because they already have reports, notes, files, or budgets/letters on them (${updated.meetingsKeptPastEnd.map(formatMeetingDate).join(", ")}) — remove them by hand if they're not needed.`
       );
-      // Newly auto-generated rows live server-side only until re-fetched
+    }
+    setGeneratedStatus(parts.length > 0 ? parts.join(" ") : null);
+    if (updated.meetingsGenerated > 0 || updated.meetingsRemoved > 0) {
+      // Generated/removed rows change server-side only until re-fetched
       // — router.refresh() alone wouldn't reach this component's own
       // `meetings` state (useState only reads its initial value once).
       const meetingsRes = await fetch(`/api/meeting-minutes/meetings?scheduleId=${schedule.id}`);

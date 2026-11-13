@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Meeting, MeetingSchedule, OfficerReport } from "@/app/generated/prisma/client";
 import { formatMeetingDate, OFFICER_POSITIONS } from "@/lib/meetingMinutes";
-import { formatTime12h, nextOccurrence, todayIso } from "@/lib/meetings";
+import { formatTime12h, isPastEnd, nextOccurrence, todayIso } from "@/lib/meetings";
 import { confirmDelete, confirmAction } from "@/lib/confirmDelete";
 import { FinishedMinutesPreview } from "./FinishedMinutesPreview";
 
@@ -30,8 +30,10 @@ function nextScheduledMeeting(
   schedules: MeetingSchedule[],
   fromIso: string
 ): { date: string; time: string; scheduleId: string } {
-  if (schedules.length === 0) return { date: fromIso, time: "", scheduleId: "" };
-  const withDates = schedules.map((s) => ({ schedule: s, date: nextOccurrence(s, fromIso) }));
+  const withDates = schedules
+    .map((s) => ({ schedule: s, date: nextOccurrence(s, fromIso) }))
+    .filter(({ schedule, date }) => !isPastEnd(schedule, date));
+  if (withDates.length === 0) return { date: fromIso, time: "", scheduleId: "" };
   withDates.sort((a, b) => a.date.localeCompare(b.date));
   const soonest = withDates[0];
   return {

@@ -5,7 +5,7 @@ import { showError } from "@/lib/feedback";
 import { useState } from "react";
 import Link from "next/link";
 import type { MeetingSchedule } from "@/app/generated/prisma/client";
-import { DAY_NAMES, nextMeetingDate, nextOccurrence, todayIso } from "@/lib/meetings";
+import { DAY_NAMES, isPastEnd, nextMeetingDate, nextOccurrence, todayIso } from "@/lib/meetings";
 import { confirmDelete } from "@/lib/confirmDelete";
 
 interface FormValues {
@@ -299,7 +299,9 @@ export function MeetingScheduleClient({
                 </td>
                 <td className="px-4 py-2.5 text-stone-600">{schedule.time || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-600">
-                  {formatDate(nextOccurrence(schedule, todayIso()))}
+                  {isPastEnd(schedule, nextOccurrence(schedule, todayIso()))
+                    ? "Ended"
+                    : formatDate(nextOccurrence(schedule, todayIso()))}
                 </td>
                 <td className="px-4 py-2.5 text-stone-600">
                   {schedule.endDate ? formatDate(schedule.endDate) : "—"}

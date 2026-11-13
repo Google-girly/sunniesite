@@ -144,7 +144,8 @@ export async function resolveCurrentVotingPeriod(): Promise<VotingPeriod | null>
 
   const dateSet = new Set<string>(loggedMeetings.map((m) => m.date));
   for (const schedule of schedules) {
-    for (const date of allOccurrences(schedule, horizon)) dateSet.add(date);
+    const until = schedule.endDate && schedule.endDate < horizon ? schedule.endDate : horizon;
+    for (const date of allOccurrences(schedule, until)) dateSet.add(date);
   }
   const meetingDates = [...dateSet].sort();
   const confirmedKeys = new Set(decided.map((d) => `${d.year}-${d.month}`));

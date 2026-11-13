@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireModuleOwnerApi } from "@/lib/session";
-import { fillMissingMeetings } from "@/lib/meetingGeneration";
+import { fillMissingMeetings, pruneMeetingsAfterEndDate } from "@/lib/meetingGeneration";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -89,7 +89,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     // and something else (day/interval/anchor) changed — see
     // lib/meetingGeneration.ts. No-ops (returns 0) if endDate is null.
     const meetingsGenerated = await fillMissingMeetings(schedule);
-    return NextResponse.json({ ...schedule, meetingsGenerated });
+    // ...and removes empty ones past the end date if it moved earlier.
+    const { removed: meetingsRemoved, keptDates: meetingsKeptPastEnd } =
+      await pruneMeetingsAfterEndDate(schedule);
+    return NextResponse.json({ ...schedule, meetingsGenerated, meetingsRemoved, meetingsKeptPastEnd });
   } catch {
     return NextResponse.json({ error: "Meeting schedule not found." }, { status: 404 });
   }
