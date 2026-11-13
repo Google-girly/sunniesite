@@ -4,10 +4,39 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ChapterFundEntry, ChapterStartingBalance } from "@/app/generated/prisma/client";
 import { INCOME_ACCOUNTS, incomeAccountLabel } from "@/lib/financialBooksAccounts";
-import { Section, inputClass, labelClass, th, td, parseFormError as parseError } from "@/components/FormSection";
+import { inputClass, labelClass, th, td, parseFormError as parseError } from "@/components/FormSection";
 import { confirmDelete } from "@/lib/confirmDelete";
+import { formatCurrency } from "@/lib/fines";
 
-function StartingBalanceSection({ initial }: { initial: ChapterStartingBalance[] }) {
+// Always-open card — these now live on their own Chapter Finances tab
+// (see FinancesTabs.tsx), so the collapsible FormSection chrome would
+// just be an extra click.
+function Panel({
+  title,
+  description,
+  actions,
+  children,
+}: {
+  title: string;
+  description: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-stone-200 bg-white">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-stone-100 px-5 py-4">
+        <div>
+          <h2 className="text-base font-semibold text-stone-900">{title}</h2>
+          <p className="mt-0.5 max-w-2xl text-xs text-stone-500">{description}</p>
+        </div>
+        {actions}
+      </div>
+      <div className="px-5 py-4">{children}</div>
+    </div>
+  );
+}
+
+export function StartingBalanceSection({ initial }: { initial: ChapterStartingBalance[] }) {
   const router = useRouter();
   const [balances, setBalances] = useState(initial);
   const [year, setYear] = useState(String(new Date().getFullYear()));
@@ -48,9 +77,9 @@ function StartingBalanceSection({ initial }: { initial: ChapterStartingBalance[]
   }
 
   return (
-    <Section
+    <Panel
       title="Starting Balance"
-      description="Set once per year — writes into the real Financial Books Checkbook sheet's own 'Starting Balance' row (H9) on export, the anchor every other row's running balance chains off of."
+      description="What was in the chapter account at the start of the year. Set it once per year — the current balance and the Financial Books export both count up from here. Saving the same year again replaces it."
     >
       <form onSubmit={handleSave} className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div>
@@ -103,7 +132,7 @@ function StartingBalanceSection({ initial }: { initial: ChapterStartingBalance[]
             {balances.map((b) => (
               <tr key={b.id}>
                 <td className={td}>{b.year}</td>
-                <td className={td}>${b.amount.toFixed(2)}</td>
+                <td className={td}>{formatCurrency(b.amount)}</td>
                 <td className={td}>{b.asOfDate || "—"}</td>
                 <td className={td}>{b.notes || "—"}</td>
               </tr>
@@ -111,7 +140,7 @@ function StartingBalanceSection({ initial }: { initial: ChapterStartingBalance[]
           </tbody>
         </table>
       </div>
-    </Section>
+    </Panel>
   );
 }
 
@@ -221,7 +250,7 @@ function FundEntryForm({
   );
 }
 
-function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
+export function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
   const router = useRouter();
   const [entries, setEntries] = useState(initial);
   const [form, setForm] = useState<FundEntryFormValues>(emptyFundForm);
@@ -292,17 +321,25 @@ function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
   }
 
   return (
-    <Section
+    <Panel
       title="Add Funds"
-      description="Deposits into the chapter account — dues, fundraiser income, donations, etc. Categorized by the same account codes the real Financial Books 'Accounts' sheet uses, so each one lands in Checkbook with a real, auditable code instead of a bare dollar figure. Fines cleared as paid from Fines & Member Accounts show up here automatically."
+      description="Log every deposit into the chapter account — dues, fundraiser sales, donations. Pick the account code it belongs to so it lands in the right row of the Financial Books. Fines marked paid in Fines & Member Accounts show up here on their own."
+      actions={
+        <a
+          href="/api/finances/funds-csv"
+          className="shrink-0 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+        >
+          Export CSV
+        </a>
+      }
     >
-      <FundEntryForm form={form} setForm={setForm} error={error} saving={saving} submitLabel="Add" onSubmit={handleAdd} />
+      <FundEntryForm form={form} setForm={setForm} error={error} saving={saving} submitLabel="Add Funds" onSubmit={handleAdd} />
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-6 overflow-x-auto">
         <table className="min-w-full divide-y divide-stone-200">
           <thead>
             <tr>
-              {["Date", "Description", "Amount", "Code", ""].map((h) => (
+              {["Date", "Description", "Amount", "Code", "Notes", ""].map((h) => (
                 <th key={h} className={th}>
                   {h}
                 </th>
@@ -312,15 +349,15 @@ function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
           <tbody className="divide-y divide-stone-100">
             {entries.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-stone-400">
-                  No fund entries on file.
+                <td colSpan={6} className="px-3 py-6 text-center text-stone-400">
+                  No funds added yet.
                 </td>
               </tr>
             )}
             {entries.map((e) =>
               editingId === e.id ? (
                 <tr key={e.id}>
-                  <td colSpan={5} className="bg-burgundy-50/40 px-3 py-4">
+                  <td colSpan={6} className="bg-burgundy-50/40 px-3 py-4">
                     <FundEntryForm
                       form={editForm}
                       setForm={setEditForm}
@@ -339,10 +376,11 @@ function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
                 <tr key={e.id}>
                   <td className={td}>{e.date}</td>
                   <td className={td}>{e.description}</td>
-                  <td className={td}>${e.amount.toFixed(2)}</td>
+                  <td className={`${td} font-medium text-stone-900`}>{formatCurrency(e.amount)}</td>
                   <td className={td}>
                     {e.accountCode} — {incomeAccountLabel(e.accountCode)}
                   </td>
+                  <td className={`${td} text-stone-500`}>{e.notes}</td>
                   <td className={`${td} whitespace-nowrap text-right`}>
                     <button onClick={() => startEdit(e)} className="text-xs font-medium text-burgundy-600 hover:text-burgundy-800">
                       Edit
@@ -355,24 +393,21 @@ function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
               )
             )}
           </tbody>
+          {entries.length > 0 && (
+            <tfoot className="border-t border-stone-200">
+              <tr>
+                <td colSpan={2} className={`${td} text-right text-xs font-semibold uppercase tracking-wide text-stone-500`}>
+                  Total added
+                </td>
+                <td className={`${td} font-semibold text-stone-900`}>
+                  {formatCurrency(entries.reduce((sum, e) => sum + e.amount, 0))}
+                </td>
+                <td colSpan={3} />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
-    </Section>
-  );
-}
-
-export function ChapterAccountLedgerSection({
-  initialStartingBalances,
-  initialFundEntries,
-}: {
-  initialStartingBalances: ChapterStartingBalance[];
-  initialFundEntries: ChapterFundEntry[];
-}) {
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-medium text-stone-900">Chapter Account Ledger</h2>
-      <StartingBalanceSection initial={initialStartingBalances} />
-      <FundEntrySection initial={initialFundEntries} />
-    </div>
+    </Panel>
   );
 }

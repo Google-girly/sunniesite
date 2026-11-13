@@ -58,7 +58,8 @@ export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithF
   const approvedRows = rows.filter((r) => isApprovedVersion(r.final));
   const queueRows = rows.filter((r) => !isApprovedVersion(r.final));
 
-  const grandTotal = approvedRows.reduce((sum, r) => sum + r.totals.total, 0);
+  const approvedTotal = approvedRows.reduce((sum, r) => sum + r.totals.total, 0);
+  const queueTotal = queueRows.reduce((sum, r) => sum + r.totals.total, 0);
 
   async function changeStatus(row: Row, status: string) {
     setApprovingId(row.budget.id);
@@ -143,23 +144,27 @@ export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithF
 
   return (
     <div>
-      <div className="rounded-lg border border-stone-200 bg-white p-4 sm:max-w-xs">
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-          Total Spent <span className="normal-case text-stone-400">(approved)</span>
-        </p>
-        <p className="mt-1 text-2xl font-semibold text-stone-900">{money(grandTotal)}</p>
-      </div>
+      <p className="text-sm text-stone-500">
+        Every event&apos;s Final Budget from Budgets &amp; Reimbursements shows up here. Set its Status to
+        &quot;Passed&quot; once the chapter votes on it — only then is it subtracted from the balance and
+        included in the Financial Books export.
+      </p>
 
       {approveError && <p className="mt-4 text-sm text-red-600">{approveError}</p>}
 
       {/* Awaiting Approval queue */}
-      <div className="mt-8">
-        <h2 className="text-lg font-medium text-stone-900">Awaiting Approval</h2>
-        <p className="mt-1 text-sm text-stone-500">
-          Final Budgets sitting in limbo — not counted in the total above and not
-          in the Financial Books export until Status is set to &quot;Passed&quot;
-          right here in the table.
-        </p>
+      <div className="mt-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-lg font-medium text-stone-900">
+            Waiting for Approval <span className="text-sm font-normal text-stone-400">({queueRows.length})</span>
+          </h2>
+          {queueRows.length > 0 && (
+            <p className="text-sm text-stone-500">
+              {money(queueTotal)} <span className="text-stone-400">not counted yet</span>
+            </p>
+          )}
+        </div>
+        <p className="mt-1 text-sm text-stone-500">Change the Status in the table to approve one.</p>
         <div className="mt-3 overflow-x-auto rounded-lg border border-stone-200 bg-white">
           <table className="min-w-full divide-y divide-stone-200 text-sm">
             <thead className="bg-stone-50">
@@ -192,10 +197,15 @@ export function FinancesClient({ initialBudgets }: { initialBudgets: BudgetWithF
 
       {/* Approved */}
       <div className="mt-8">
-        <h2 className="text-lg font-medium text-stone-900">Approved</h2>
-        <p className="mt-1 text-sm text-stone-500">
-          These make up the total above and the Financial Books export.
-        </p>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-lg font-medium text-stone-900">
+            Approved Spending <span className="text-sm font-normal text-stone-400">({approvedRows.length})</span>
+          </h2>
+          <p className="text-sm font-medium text-stone-900">
+            {money(approvedTotal)} <span className="font-normal text-stone-400">total spent</span>
+          </p>
+        </div>
+        <p className="mt-1 text-sm text-stone-500">Already subtracted from the chapter balance.</p>
         <div className="mt-3 overflow-x-auto rounded-lg border border-stone-200 bg-white">
           <table className="min-w-full divide-y divide-stone-200 text-sm">
             <thead className="bg-stone-50">
