@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { sendMeetingRemindersDueTomorrow } from "@/lib/meetingReminders";
+import { sendDueMeetingReminders } from "@/lib/meetingReminders";
 
-// Triggered by Vercel Cron (see vercel.json — once daily). Vercel signs
+// Triggered by Vercel Cron (see vercel.json — 24 daily entries, one per
+// hour, so effectively hourly; see lib/meetingReminders.ts). Vercel signs
 // every cron request with `Authorization: Bearer $CRON_SECRET`
 // automatically once CRON_SECRET is set as an env var in the project —
 // this route just has to check it matches, same secret on both sides.
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = await sendMeetingRemindersDueTomorrow();
+    const results = await sendDueMeetingReminders();
     return NextResponse.json({ ok: true, results });
   } catch (err) {
     // Most likely cause: GMAIL_USER/GMAIL_APP_PASSWORD not set yet —

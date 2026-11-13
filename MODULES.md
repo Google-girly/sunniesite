@@ -1055,21 +1055,23 @@ the permissions work above, most independent of each other:
   the day before each scheduled meeting (President confirmed: deployed
   to Vercel, sent from a chapter Gmail account). A few real constraints
   worth knowing:
-  - Driven off `MeetingSchedule` (the recurring *rule*), not logged
-    `Meeting` rows — tomorrow's Meeting record usually doesn't exist
-    yet (those get logged around/after the meeting via "+ Log a
-    Meeting"). What actually goes out is the *previous* logged
-    Meeting's minutes from that same series, as both a `.docx`
-    attachment and a link to its Final Version page — "review last
-    time's minutes before you come," not tonight's (which don't exist
-    yet 24 hours out).
-  - "24 hours before" is really "once daily, the day before" — Vercel's
-    free (Hobby) tier only allows once-a-day cron schedules, so
-    `vercel.json` runs `app/api/cron/meeting-reminders` once at a fixed
-    UTC hour rather than tracking each meeting's exact time. Good
-    enough for a reminder; a chapter that later wants hour-precision
-    timing would need a paid Vercel plan (more frequent cron allowed)
-    or a different scheduler.
+  - Driven off `MeetingSchedule` (the recurring *rule*) to find which
+    meeting is coming up, then sends *that* meeting's own minutes as
+    filled in so far (Officer Reports, notes, attachments, pending
+    budgets, letters) — this week's draft, not last meeting's. Meeting
+    rows auto-generate ahead of time once a series has an end date
+    (`lib/meetingGeneration.ts`).
+  - **Timing (Nov 2026):** sent 24 hours before the meeting's own start
+    time in Pacific time (`REMINDER_LEAD_MS`) — the Meeting row's time
+    if set, else the series' time; no time at all falls back to 7:00 PM
+    the evening before. Vercel's free (Hobby) plan allows 100 cron jobs
+    but each only once a day, so `vercel.json` registers the route 24
+    times (one per UTC hour) for an effectively hourly check. Each run
+    sends anything past its send time whose meeting hasn't started, so a
+    late/skipped run catches up. Hobby only guarantees a job fires
+    somewhere within its hour (±59 min), so emails land roughly 0–2
+    hours after the 24h mark. DST is handled by the Pacific-time math,
+    not the cron times.
   - `MeetingReminderLog` (new model, unique on `(scheduleId,
     meetingDate)`) makes the whole thing idempotent — a retried or
     manually re-triggered cron run just reports "already sent" instead

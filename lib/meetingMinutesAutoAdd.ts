@@ -16,7 +16,7 @@ export const MINUTES_ADD_CUTOFF_MS = (24 * 60 + 5) * 60 * 1000; // 24h 5m
 // lib/meetings.ts formatTime12h — either way, normally "H:MM AM/PM").
 // Lenient on purpose: anything that doesn't parse just falls through to
 // the "no time on file" branch below rather than throwing.
-function parseTimeOfDay(time: string | null): { hours: number; minutes: number } | null {
+export function parseTimeOfDay(time: string | null): { hours: number; minutes: number } | null {
   if (!time) return null;
   const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i.exec(time.trim());
   if (!match) return null;
@@ -48,7 +48,7 @@ function timeZoneOffsetMs(date: Date, tz: string): number {
 }
 
 // The real instant a chapter-local date + time happens.
-function chapterLocalToInstant(year: number, month: number, day: number, hours: number, minutes: number): Date {
+export function chapterLocalToInstant(year: number, month: number, day: number, hours: number, minutes: number): Date {
   const naive = Date.UTC(year, month - 1, day, hours, minutes);
   const offset = timeZoneOffsetMs(new Date(naive), CHAPTER_CALENDAR_TIMEZONE);
   let instant = naive - offset;
@@ -67,7 +67,7 @@ function chapterLocalToInstant(year: number, month: number, day: number, hours: 
 // in UTC, so a 7 PM meeting was treated as noon Pacific: anything
 // submitted in the ~7 hours before the real 24h05m cutoff got bumped to
 // the following week's meeting.
-function meetingDateTime(meeting: Pick<Meeting, "date" | "time">): Date {
+export function meetingDateTime(meeting: Pick<Meeting, "date" | "time">): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(meeting.date);
   if (!match) return new Date(meeting.date);
   const [year, month, day] = match.slice(1).map(Number);

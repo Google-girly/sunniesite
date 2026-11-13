@@ -11,23 +11,22 @@
 // last meeting's minutes — this week's draft, so everyone can review
 // what's actually on the agenda before they show up.
 //
-// This is meant to be driven by a daily cron job hitting
-// app/api/cron/meeting-reminders (see vercel.json — "30 2 * * *", i.e.
-// ~7:30pm Pacific during PDT/summer, chosen Aug 2026), not called from
-// anywhere in the UI — Vercel's free (Hobby) tier only allows once-a-day
-// cron schedules, so "24 hours before" here really means "the evening
-// before," checked once daily. Vercel cron times are fixed UTC
-// year-round (no DST awareness of their own), so this same schedule
-// drifts to ~6:30pm Pacific once Pacific switches to standard time
-// (PST) in November — a paid Vercel plan (more frequent cron, so the
-// job itself can check the local hour) or a different scheduler
-// entirely would be needed to hold it exactly at 7:30pm across the DST
-// change; flagged in MODULES.md. This UTC drift is purely cosmetic
-// (what hour it sends) — chapterTodayIso() below computes the actual
-// *date* boundary correctly regardless, so DST never shifts which
-// meeting counts as "tomorrow."
+// Timing (Nov 2026 — "schedule it based off of the meeting time"): the
+// email goes out REMINDER_LEAD_MS (24h) before the meeting's own start
+// time, in chapter (Pacific) time, rather than at one fixed hour the
+// evening before. vercel.json registers app/api/cron/meeting-reminders
+// 24 times, once per UTC hour — Vercel's free (Hobby) plan allows up to
+// 100 cron jobs but each only once a day, so 24 daily jobs is how this
+// gets an hourly check for free. Each run sends anything whose send
+// time has passed and whose meeting hasn't started yet, so a late or
+// skipped run just catches up on the next one. Hobby only promises a
+// job fires somewhere within its scheduled hour, so in practice the
+// email lands within ~1 hour (worst case ~2) after the 24h mark.
+// MeetingReminderLog's unique (scheduleId, meetingDate) is still the
+// guard against sending the same meeting twice.
 import { prisma } from "@/lib/prisma";
 import { nextOccurrence, formatTime12h } from "@/lib/meetings";
+import { chapterLocalToInstant, meetingDateTime, parseTimeOfDay } from "@/lib/meetingMinutesAutoAdd";
 import { formatMeetingDate } from "@/lib/meetingMinutes";
 import { buildMeetingMinutesDocx, meetingMinutesFilename } from "@/lib/meetingMinutesExport";
 import { buildBudgetWorkbook, budgetExportFilename } from "@/lib/budgetExport";
@@ -211,16 +210,48 @@ export interface ReminderRunResult {
   recipientCount?: number;
 }
 
-// The function the cron route calls. Safe to call more than once for
-// the same day — MeetingReminderLog's unique (scheduleId, meetingDate)
-// constraint means a second run just reports each schedule as already
-// sent rather than emailing twice.
-export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResult[]> {
-  const tomorrow = addDaysIso(chapterTodayIso(), 1);
+export const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000;
 
+// A meeting with no time on file (neither on its own Meeting row nor
+// its schedule) falls back to 7:00 PM Pacific the evening before —
+// roughly what the old once-daily job did.
+const NO_TIME_FALLBACK = { hours: 19, minutes: 0 };
+
+function sendAtFor(date: string, time: string | null): Date {
+  if (parseTimeOfDay(time)) {
+    return new Date(meetingDateTime({ date, time }).getTime() - REMINDER_LEAD_MS);
+  }
+  const [y, m, d] = addDaysIso(date, -1).split("-").map(Number);
+  return chapterLocalToInstant(y, m, d, NO_TIME_FALLBACK.hours, NO_TIME_FALLBACK.minutes);
+}
+
+// The function the cron route calls (hourly — see the timing note at
+// the top). Safe to call any number of times: MeetingReminderLog's
+// unique (scheduleId, meetingDate) constraint means a repeat run just
+// reports each meeting as already sent rather than emailing twice.
+export async function sendDueMeetingReminders(now: Date = new Date()): Promise<ReminderRunResult[]> {
+  const today = chapterTodayIso();
+
+  // With a 24h lead, the only meetings that can be due are each active
+  // series' next occurrence and the one after it.
   const schedules = await prisma.meetingSchedule.findMany({ where: { active: true } });
-  const dueTomorrow = schedules.filter((s) => nextOccurrence(s, tomorrow) === tomorrow);
-  if (dueTomorrow.length === 0) return [];
+  const candidates: { schedule: (typeof schedules)[number]; date: string; meetingAt: Date; sendAt: Date }[] = [];
+  for (const schedule of schedules) {
+    const first = nextOccurrence(schedule, today);
+    for (const date of [first, nextOccurrence(schedule, addDaysIso(first, 1))]) {
+      const row = await prisma.meeting.findFirst({
+        where: { scheduleId: schedule.id, date },
+        select: { time: true },
+      });
+      // The Meeting row's own time wins (it can be edited per meeting);
+      // otherwise the series' time, formatted the same way.
+      const time = row?.time ?? (schedule.time ? formatTime12h(schedule.time) : null);
+      const meetingAt = meetingDateTime({ date, time });
+      const sendAt = sendAtFor(date, time);
+      if (now >= sendAt && now < meetingAt) candidates.push({ schedule, date, meetingAt, sendAt });
+    }
+  }
+  if (candidates.length === 0) return [];
 
   const activeMembers = await prisma.member.findMany({
     where: { status: "ACTIVE", email: { not: null } },
@@ -229,18 +260,18 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
 
   const results: ReminderRunResult[] = [];
 
-  for (const schedule of dueTomorrow) {
+  for (const { schedule, date: meetingDate } of candidates) {
     const already = await prisma.meetingReminderLog.findUnique({
-      where: { scheduleId_meetingDate: { scheduleId: schedule.id, meetingDate: tomorrow } },
+      where: { scheduleId_meetingDate: { scheduleId: schedule.id, meetingDate } },
     });
     if (already) {
-      results.push({ scheduleId: schedule.id, label: schedule.label, meetingDate: tomorrow, sent: false, reason: "already sent" });
+      results.push({ scheduleId: schedule.id, label: schedule.label, meetingDate, sent: false, reason: "already sent" });
       continue;
     }
     if (recipients.length === 0) {
       // Not logged — if an email address gets added later today, a
       // re-run of this same cron day could still catch it.
-      results.push({ scheduleId: schedule.id, label: schedule.label, meetingDate: tomorrow, sent: false, reason: "no Active members with an email on file" });
+      results.push({ scheduleId: schedule.id, label: schedule.label, meetingDate, sent: false, reason: "no Active members with an email on file" });
       continue;
     }
 
@@ -250,7 +281,7 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
     // submitted against the upcoming meeting all week, so this should
     // already exist with whatever's been filled in so far.
     const thisMeeting = await prisma.meeting.findFirst({
-      where: { scheduleId: schedule.id, date: tomorrow },
+      where: { scheduleId: schedule.id, date: meetingDate },
       include: { officerReports: true, notes: true },
     });
 
@@ -262,7 +293,7 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
       results.push({
         scheduleId: schedule.id,
         label: schedule.label,
-        meetingDate: tomorrow,
+        meetingDate,
         sent: false,
         reason: "meeting cancelled",
       });
@@ -279,8 +310,8 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
       ({ subject, html, text, attachments } = await buildMeetingEmailContent(thisMeeting, { label }));
       subject = `Reminder: ${subject}`;
     } else {
-      const when = formatMeetingDate(tomorrow) + (schedule.time ? ` at ${formatTime12h(schedule.time)}` : "");
-      subject = `Reminder: ${label} tomorrow (${formatMeetingDate(tomorrow)})`;
+      const when = formatMeetingDate(meetingDate) + (schedule.time ? ` at ${formatTime12h(schedule.time)}` : "");
+      subject = `Reminder: ${label} tomorrow (${formatMeetingDate(meetingDate)})`;
       text = `${label} is tomorrow: ${when}.\n\nThere's no meeting record on file yet for this one — check the Minutes list closer to the date.\n\n— ${CHAPTER_FULL_NAME}`;
       html = `<p><strong>${label}</strong> is tomorrow: ${when}.</p><p>There's no meeting record on file yet for this one — check the Minutes list closer to the date.</p><p>— ${CHAPTER_FULL_NAME}</p>`;
     }
@@ -288,13 +319,13 @@ export async function sendMeetingRemindersDueTomorrow(): Promise<ReminderRunResu
     await sendEmail({ to: recipients, subject, html, text, attachments });
 
     await prisma.meetingReminderLog.create({
-      data: { scheduleId: schedule.id, meetingDate: tomorrow, recipientCount: recipients.length },
+      data: { scheduleId: schedule.id, meetingDate, recipientCount: recipients.length },
     });
 
     results.push({
       scheduleId: schedule.id,
       label: schedule.label,
-      meetingDate: tomorrow,
+      meetingDate,
       sent: true,
       recipientCount: recipients.length,
     });
