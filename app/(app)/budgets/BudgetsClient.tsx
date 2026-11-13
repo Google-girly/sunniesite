@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useState } from "react";
 import type { Budget, BudgetLineItem, BudgetVersion } from "@/app/generated/prisma/client";
@@ -110,7 +112,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
 
   async function handleDelete(budget: BudgetWithVersions) {
     if (
-      !confirmDelete(
+      !await confirmDelete(
         `Delete the budget for "${budget.eventName}"? This removes its Tentative and Final versions too, and can't be undone.`
       )
     )
@@ -121,7 +123,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
     if (res.ok) {
       setBudgets((prev) => prev.filter((b) => b.id !== budget.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -191,7 +193,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
             <label className="block text-xs font-medium text-stone-600">
               Event Name <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Event Name"
               value={form.eventName}
               onChange={(e) => setForm({ ...form, eventName: e.target.value })}
               autoFocus
@@ -203,7 +205,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
             <label className="block text-xs font-medium text-stone-600">
               Chair <span className="text-burgundy-500">*</span>
             </label>
-            <select
+            <select aria-label="Chair"
               value={form.chair}
               onChange={(e) => setForm({ ...form, chair: e.target.value })}
               required
@@ -221,7 +223,7 @@ export function BudgetsClient({ initialBudgets }: { initialBudgets: BudgetWithVe
             <label className="block text-xs font-medium text-stone-600">
               Date of Event <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Date of Event"
               type="date"
               value={form.eventDate}
               onChange={(e) => setForm({ ...form, eventDate: e.target.value })}

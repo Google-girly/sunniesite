@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useState } from "react";
 import Link from "next/link";
 import type { MeetingSchedule } from "@/app/generated/prisma/client";
@@ -118,12 +120,12 @@ export function MeetingScheduleClient({
       const updated: MeetingSchedule = await res.json();
       setSchedules((prev) => prev.map((s) => (s.id === schedule.id ? updated : s)));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
   async function handleDelete(schedule: MeetingSchedule) {
-    if (!confirmDelete(`Remove this meeting series${schedule.label ? ` ("${schedule.label}")` : ""}?`))
+    if (!await confirmDelete(`Remove this meeting series${schedule.label ? ` ("${schedule.label}")` : ""}?`))
       return;
     setDeletingId(schedule.id);
     const res = await fetch(`/api/meetings/${schedule.id}`, { method: "DELETE" });
@@ -131,7 +133,7 @@ export function MeetingScheduleClient({
     if (res.ok) {
       setSchedules((prev) => prev.filter((s) => s.id !== schedule.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -172,7 +174,7 @@ export function MeetingScheduleClient({
         >
           <div>
             <label className="block text-xs font-medium text-stone-600">Label</label>
-            <input
+            <input aria-label="Label"
               value={form.label}
               onChange={(e) => setForm({ ...form, label: e.target.value })}
               placeholder="e.g. General Body"
@@ -184,7 +186,7 @@ export function MeetingScheduleClient({
             <label className="block text-xs font-medium text-stone-600">
               Day of Week <span className="text-burgundy-500">*</span>
             </label>
-            <select
+            <select aria-label="Day of Week"
               value={form.dayOfWeek}
               onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })}
               required
@@ -200,7 +202,7 @@ export function MeetingScheduleClient({
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Every</label>
-            <select
+            <select aria-label="Every"
               value={form.intervalWeeks}
               onChange={(e) => setForm({ ...form, intervalWeeks: e.target.value })}
               className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -216,7 +218,7 @@ export function MeetingScheduleClient({
             <label className="block text-xs font-medium text-stone-600">
               A Date It Meets <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="A Date It Meets"
               type="date"
               value={form.anchorDate}
               onChange={(e) => setForm({ ...form, anchorDate: e.target.value })}
@@ -228,7 +230,7 @@ export function MeetingScheduleClient({
             <label className="block text-xs font-medium text-stone-600">
               End Date <span className="font-normal text-stone-400">(optional)</span>
             </label>
-            <input
+            <input aria-label="End Date"
               type="date"
               value={form.endDate}
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
@@ -238,7 +240,7 @@ export function MeetingScheduleClient({
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Time</label>
-            <input
+            <input aria-label="Time"
               type="time"
               value={form.time}
               onChange={(e) => setForm({ ...form, time: e.target.value })}

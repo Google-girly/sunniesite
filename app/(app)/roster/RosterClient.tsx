@@ -1,7 +1,10 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useState } from "react";
+import { SearchFilter, matchesSearch } from "@/components/SearchFilter";
 import type { Member } from "@/app/generated/prisma/client";
 import { MEMBER_STATUSES, MEMBER_STATUS_LABELS, type MemberStatus } from "@/lib/roster";
 import { confirmDelete } from "@/lib/confirmDelete";
@@ -94,6 +97,8 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const visibleMembers = members.filter((m) => matchesSearch(search, m.name, m.role));
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -161,14 +166,14 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
   }
 
   async function handleDelete(member: Member) {
-    if (!confirmDelete(`Remove ${member.name} from the roster?`)) return;
+    if (!await confirmDelete(`Remove ${member.name} from the roster?`)) return;
     setDeletingId(member.id);
     const res = await fetch(`/api/roster/${member.id}`, { method: "DELETE" });
     setDeletingId(null);
     if (res.ok) {
       setMembers((prev) => prev.filter((m) => m.id !== member.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -199,7 +204,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
             <label className="block text-xs font-medium text-stone-600">
               Class <span className="text-stone-400">(e.g. ΑΒ)</span>
             </label>
-            <input
+            <input aria-label="Class"
               value={addForm.class}
               onChange={(e) => setAddForm({ ...addForm, class: e.target.value })}
               placeholder="e.g. ΑΒ or Founding"
@@ -208,7 +213,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Line #</label>
-            <input
+            <input aria-label="Line #"
               type="number"
               value={addForm.crossingNumber}
               onChange={(e) => setAddForm({ ...addForm, crossingNumber: e.target.value })}
@@ -218,7 +223,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Name</label>
-            <input
+            <input aria-label="Name"
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
               autoFocus
@@ -227,7 +232,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Nickname</label>
-            <input
+            <input aria-label="Nickname"
               value={addForm.nickname}
               onChange={(e) => setAddForm({ ...addForm, nickname: e.target.value })}
               className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -235,7 +240,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Status</label>
-            <select
+            <select aria-label="Status"
               value={addForm.status}
               onChange={(e) =>
                 setAddForm({ ...addForm, status: e.target.value as MemberStatus })
@@ -253,7 +258,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
             <label className="block text-xs font-medium text-stone-600">
               Crossing Term
             </label>
-            <input
+            <input aria-label="Crossing Term"
               value={addForm.crossingTerm}
               onChange={(e) => setAddForm({ ...addForm, crossingTerm: e.target.value })}
               placeholder="e.g. Fall 2024"
@@ -262,7 +267,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Email</label>
-            <input
+            <input aria-label="Email"
               type="email"
               value={addForm.email}
               onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
@@ -271,7 +276,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Phone</label>
-            <input
+            <input aria-label="Phone"
               type="tel"
               value={addForm.phone}
               onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
@@ -291,6 +296,8 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
           </div>
         </form>
       )}
+
+      <SearchFilter value={search} onChange={setSearch} shown={visibleMembers.length} total={members.length} />
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-stone-200 bg-white">
         <table className="min-w-full divide-y divide-stone-200 text-sm">
@@ -326,7 +333,7 @@ export function RosterClient({ initialMembers }: { initialMembers: Member[] }) {
               </tr>
             )}
 
-            {members.map((member) => {
+            {visibleMembers.map((member) => {
               const isEditing = editingId === member.id;
 
               if (isEditing) {

@@ -188,7 +188,7 @@ export function ChapterAssistantWidget() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex h-[32rem] w-96 max-w-[calc(100vw-3rem)] flex-col rounded-lg border border-stone-200 bg-white shadow-xl">
+    <div className="fixed bottom-6 right-6 z-50 flex h-[32rem] max-h-[calc(100dvh-3rem)] w-96 max-w-[calc(100vw-3rem)] flex-col rounded-lg border border-stone-200 bg-white shadow-xl">
       <div className="flex items-center justify-between rounded-t-lg border-b border-stone-200 bg-rose-50 px-4 py-3">
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element -- small static mascot asset, not worth next/image's overhead here */}

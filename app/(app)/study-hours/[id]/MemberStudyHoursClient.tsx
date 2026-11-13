@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useState } from "react";
 import type { Member, StudyHourEntry } from "@/app/generated/prisma/client";
@@ -61,7 +63,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Date <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Date"
           type="date"
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -73,7 +75,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Study Location <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Study Location"
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
           placeholder="Library, Home, ..."
@@ -84,7 +86,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Hours <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Hours"
           type="number"
           step="0.25"
           min="0.25"
@@ -97,7 +99,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Time In <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Time In"
           type="time"
           required
           value={form.timeIn}
@@ -109,7 +111,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Time Out <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Time Out"
           type="time"
           required
           value={form.timeOut}
@@ -238,14 +240,14 @@ export function MemberStudyHoursClient({
   }
 
   async function handleDeleteEntry(entry: StudyHourEntry) {
-    if (!confirmDelete(`Remove this entry (${entry.location}, ${entry.date})?`)) return;
+    if (!await confirmDelete(`Remove this entry (${entry.location}, ${entry.date})?`)) return;
     setDeletingId(entry.id);
     const res = await fetch(`/api/study-hours/entries/${entry.id}`, { method: "DELETE" });
     setDeletingId(null);
     if (res.ok) {
       setEntries((prev) => prev.filter((e) => e.id !== entry.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 

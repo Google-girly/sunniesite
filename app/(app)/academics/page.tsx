@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePageAccess } from "@/lib/session";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { AcademicsClient } from "./AcademicsClient";
+import { moduleDescription } from "@/lib/modules";
 
 // Chapter Standards Section B (Academics) credits with no other home:
 // B1 (Member GPAs), B2 (Mentorship Program), B3 (Alpha Order), B5
@@ -37,6 +38,7 @@ export default async function AcademicsPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-stone-900">Academics</h1>
+      <p className="mt-1 text-sm text-stone-500">{moduleDescription("academics")}</p>
 
       <div className="mt-6">
         <AcademicsClient

@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -96,10 +98,10 @@ export function MinutesListClient({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this meeting and all its submitted reports?")) return;
+    if (!await confirmDelete("Remove this meeting and all its submitted reports?")) return;
     const res = await fetch(`/api/meeting-minutes/meetings/${id}`, { method: "DELETE" });
     if (res.ok) setMeetings((prev) => prev.filter((m) => m.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   // Sept 2026 — "add something where I can cancel a meeting and
@@ -118,7 +120,7 @@ export function MinutesListClient({
     const message = target
       ? `Cancel the meeting on ${formatMeetingDate(meeting.date)}? Its officer reports, notes, attachments, and any pending budgets/letters will move to the meeting on ${formatMeetingDate(target.date)}.`
       : `Cancel the meeting on ${formatMeetingDate(meeting.date)}? There's no upcoming meeting yet to move its minutes to — add one first, then cancel this one.`;
-    if (!confirmAction(message)) return;
+    if (!await confirmAction(message)) return;
     setCancellingId(meeting.id);
     const res = await fetch(`/api/meeting-minutes/meetings/${meeting.id}/cancel`, { method: "POST" });
     setCancellingId(null);
@@ -128,7 +130,7 @@ export function MinutesListClient({
       // hand) to just re-fetch the page's server data.
       router.refresh();
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -152,7 +154,7 @@ export function MinutesListClient({
             <label className="block text-xs font-medium text-stone-600">
               Date <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Date"
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -163,7 +165,7 @@ export function MinutesListClient({
             <label className="block text-xs font-medium text-stone-600">
               Time <span className="text-stone-400">(optional, e.g. 6:00 PM)</span>
             </label>
-            <input
+            <input aria-label="Time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               placeholder="6:00 PM"
@@ -174,7 +176,7 @@ export function MinutesListClient({
             <label className="block text-xs font-medium text-stone-600">
               Part of Series <span className="text-stone-400">(optional)</span>
             </label>
-            <select
+            <select aria-label="Part of Series"
               value={scheduleId}
               onChange={(e) => setScheduleId(e.target.value)}
               className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"

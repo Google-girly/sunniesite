@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useMemo, useState } from "react";
 import type { EventReport, Member } from "@/app/generated/prisma/client";
 import { EVENT_REPORT_STANDARDS, findStandardOption, standardLabel } from "@/lib/eventReports";
@@ -262,10 +264,10 @@ export function EventReportsClient({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this event report?")) return;
+    if (!await confirmDelete("Remove this event report?")) return;
     const res = await fetch(`/api/event-reports/${id}`, { method: "DELETE" });
     if (res.ok) setReports((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -291,7 +293,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Standard Being Fulfilled (section and sub-section) <span className="text-burgundy-500">*</span>
             </label>
-            <select
+            <select aria-label="Standard Being Fulfilled (section and sub-section)"
               value={form.standardSection}
               onChange={(e) => update("standardSection", e.target.value)}
               className={inputClass}
@@ -317,7 +319,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Event Name <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Event Name"
               value={form.eventName}
               onChange={(e) => update("eventName", e.target.value)}
               className={inputClass}
@@ -329,7 +331,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Hosting Organization <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Hosting Organization"
               value={form.hostingOrganization}
               onChange={(e) => update("hostingOrganization", e.target.value)}
               className={inputClass}
@@ -347,7 +349,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Location <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Location"
               value={form.location}
               onChange={(e) => update("location", e.target.value)}
               className={inputClass}
@@ -366,7 +368,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Date <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Date"
               type="date"
               value={form.date}
               onChange={(e) => update("date", e.target.value)}
@@ -378,7 +380,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Length of Time <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Length of Time"
               value={form.lengthOfTime}
               onChange={(e) => update("lengthOfTime", e.target.value)}
               placeholder="2 hours"
@@ -391,7 +393,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Number of Members in Attendance <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Number of Members in Attendance"
               type="number"
               min={0}
               value={form.membersInAttendance}
@@ -405,7 +407,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Purpose and description of the event <span className="text-burgundy-500">*</span>
             </label>
-            <textarea
+            <textarea aria-label="Purpose and description of the event"
               value={form.purpose}
               onChange={(e) => update("purpose", e.target.value)}
               rows={3}
@@ -418,7 +420,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Resources utilized in event <span className="text-burgundy-500">*</span>
             </label>
-            <textarea
+            <textarea aria-label="Resources utilized in event"
               value={form.resourcesUtilized}
               onChange={(e) => update("resourcesUtilized", e.target.value)}
               rows={2}
@@ -438,7 +440,7 @@ export function EventReportsClient({
 
           <div>
             <label className={labelClass}>Signer (from Roster)</label>
-            <select
+            <select aria-label="Signer (from Roster)"
               value={form.signerMemberId}
               onChange={(e) => handleSignerMemberChange(e.target.value)}
               className={inputClass}
@@ -456,7 +458,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Signed Date <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Signed Date"
               type="date"
               value={form.signedDate}
               onChange={(e) => update("signedDate", e.target.value)}
@@ -469,7 +471,7 @@ export function EventReportsClient({
             <label className={labelClass}>
               Printed Name <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Printed Name"
               value={form.signerName}
               onChange={(e) => update("signerName", e.target.value)}
               className={inputClass}

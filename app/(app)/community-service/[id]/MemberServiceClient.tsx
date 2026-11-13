@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useState } from "react";
 import type { MakeUpProject, Member, ServiceHourEntry } from "@/app/generated/prisma/client";
@@ -103,7 +105,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Date <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Date"
           type="date"
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -114,7 +116,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Event <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Event"
           value={form.event}
           onChange={(e) => setForm({ ...form, event: e.target.value })}
           className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -124,7 +126,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Hours <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Hours"
           type="number"
           step="0.25"
           min="0.25"
@@ -137,7 +139,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Category <span className="text-burgundy-500">*</span>
         </label>
-        <select
+        <select aria-label="Category"
           required
           value={form.category}
           onChange={(e) => setForm({ ...form, category: e.target.value as ServiceCategory })}
@@ -155,7 +157,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Description <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Description"
           required
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -166,7 +168,7 @@ function EntryFields({
         <label className="block text-xs font-medium text-stone-600">
           Volunteer Contact <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Volunteer Contact"
           required
           value={form.volunteerContact}
           onChange={(e) => setForm({ ...form, volunteerContact: e.target.value })}
@@ -292,7 +294,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
   }
 
   async function handleDeleteEntry(entry: ServiceHourEntry) {
-    if (!confirmDelete(`Remove this entry (${entry.event})?`)) return;
+    if (!await confirmDelete(`Remove this entry (${entry.event})?`)) return;
     setDeletingId(entry.id);
     const res = await fetch(`/api/community-service/entries/${entry.id}`, {
       method: "DELETE",
@@ -301,7 +303,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
     if (res.ok) {
       setEntries((prev) => prev.filter((e) => e.id !== entry.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -356,7 +358,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
   async function handleSaveMakeUpEdit(id: string) {
     const err = validateMakeUp(editMakeUpForm);
     if (err) {
-      alert(err);
+      showError(err);
       return;
     }
     setSavingMakeUpEdit(true);
@@ -374,7 +376,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
     });
     setSavingMakeUpEdit(false);
     if (!res.ok) {
-      alert(await parseError(res));
+      showError(await parseError(res));
       return;
     }
     const updated: MakeUpProject = await res.json();
@@ -383,14 +385,14 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
   }
 
   async function handleDeleteMakeUp(m: MakeUpProject) {
-    if (!confirmDelete(`Remove this make-up project (${m.term})?`)) return;
+    if (!await confirmDelete(`Remove this make-up project (${m.term})?`)) return;
     setDeletingMakeUpId(m.id);
     const res = await fetch(`/api/community-service/makeup/${m.id}`, { method: "DELETE" });
     setDeletingMakeUpId(null);
     if (res.ok) {
       setMakeUpProjects((prev) => prev.filter((p) => p.id !== m.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -600,7 +602,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
             <label className="block text-xs font-medium text-stone-600">
               Term <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Term"
               value={addMakeUpForm.term}
               onChange={(e) => setAddMakeUpForm({ ...addMakeUpForm, term: e.target.value })}
               className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -610,7 +612,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
             <label className="block text-xs font-medium text-stone-600">
               Hours Uncompleted <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Hours Uncompleted"
               type="number"
               step="0.25"
               min="0.25"
@@ -623,7 +625,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Due Date</label>
-            <input
+            <input aria-label="Due Date"
               type="date"
               value={addMakeUpForm.dueDate}
               onChange={(e) => setAddMakeUpForm({ ...addMakeUpForm, dueDate: e.target.value })}
@@ -634,7 +636,7 @@ export function MemberServiceClient({ member }: { member: MemberWithService }) {
             <label className="block text-xs font-medium text-stone-600">
               Make-Up Project <span className="text-stone-400">(optional)</span>
             </label>
-            <input
+            <input aria-label="Make-Up Project"
               value={addMakeUpForm.project}
               onChange={(e) => setAddMakeUpForm({ ...addMakeUpForm, project: e.target.value })}
               className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"

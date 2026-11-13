@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { Fragment, useState } from "react";
 import type { AccountEntry, Member } from "@/app/generated/prisma/client";
@@ -93,7 +95,7 @@ function EntryForm({
     >
       <div>
         <label className="block text-xs font-medium text-stone-600">Type</label>
-        <select
+        <select aria-label="Type"
           value={form.type}
           onChange={(e) => {
             const type = e.target.value as EntryType;
@@ -118,7 +120,7 @@ function EntryForm({
       {form.type === "FINE" && (
         <div>
           <label className="block text-xs font-medium text-stone-600">From Schedule</label>
-          <select
+          <select aria-label="From Schedule"
             value={form.fineCode}
             onChange={(e) => {
               const code = e.target.value;
@@ -150,7 +152,7 @@ function EntryForm({
         <label className="block text-xs font-medium text-stone-600">
           Description <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Description"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -161,7 +163,7 @@ function EntryForm({
         <label className="block text-xs font-medium text-stone-600">
           Amount <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Amount"
           type="number"
           step="0.01"
           min="0.01"
@@ -175,7 +177,7 @@ function EntryForm({
         <label className="block text-xs font-medium text-stone-600">
           Date <span className="text-burgundy-500">*</span>
         </label>
-        <input
+        <input aria-label="Date"
           type="date"
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -188,7 +190,7 @@ function EntryForm({
           <label className="block text-xs font-medium text-stone-600">
             Method <span className="text-stone-400">(optional)</span>
           </label>
-          <select
+          <select aria-label="Method"
             value={form.method}
             onChange={(e) => setForm({ ...form, method: e.target.value })}
             className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -207,7 +209,7 @@ function EntryForm({
         <label className="block text-xs font-medium text-stone-600">
           Notes <span className="text-stone-400">(optional)</span>
         </label>
-        <input
+        <input aria-label="Notes"
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
           className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -389,7 +391,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
   }
 
   async function handleDelete(entry: AccountEntry) {
-    if (!confirmDelete(`Remove this ${ENTRY_TYPE_LABELS[entry.type as EntryType] ?? entry.type} entry (${entry.description})?`))
+    if (!await confirmDelete(`Remove this ${ENTRY_TYPE_LABELS[entry.type as EntryType] ?? entry.type} entry (${entry.description})?`))
       return;
     setDeletingId(entry.id);
     const res = await fetch(`/api/fines/entries/${entry.id}`, { method: "DELETE" });
@@ -397,7 +399,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
     if (res.ok) {
       setEntries((prev) => prev.filter((e) => e.id !== entry.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -569,7 +571,7 @@ export function MemberAccountClient({ member }: { member: MemberWithEntries }) {
                       <div className="flex flex-wrap items-end gap-3">
                         <div>
                           <label className="block text-xs font-medium text-stone-600">Date paid</label>
-                          <input
+                          <input aria-label="Date paid"
                             type="date"
                             value={clearDate}
                             onChange={(e) => setClearDate(e.target.value)}

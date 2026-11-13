@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -88,7 +90,7 @@ export function MeetingScheduleDetailClient({
     });
     setLoggingMeeting(false);
     if (!res.ok) {
-      alert(await parseError(res));
+      showError(await parseError(res));
       return;
     }
     const created = await res.json();
@@ -98,10 +100,10 @@ export function MeetingScheduleDetailClient({
   }
 
   async function handleDeleteMeeting(id: string) {
-    if (!confirmDelete("Remove this meeting and all its submitted reports?")) return;
+    if (!await confirmDelete("Remove this meeting and all its submitted reports?")) return;
     const res = await fetch(`/api/meeting-minutes/meetings/${id}`, { method: "DELETE" });
     if (res.ok) setMeetings((prev) => prev.filter((m) => m.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -129,7 +131,7 @@ export function MeetingScheduleDetailClient({
       >
         <div>
           <label className="block text-xs font-medium text-stone-600">Label</label>
-          <input
+          <input aria-label="Label"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             disabled={!canManage}
@@ -138,7 +140,7 @@ export function MeetingScheduleDetailClient({
         </div>
         <div>
           <label className="block text-xs font-medium text-stone-600">Day of Week</label>
-          <select
+          <select aria-label="Day of Week"
             value={dayOfWeek}
             onChange={(e) => setDayOfWeek(e.target.value)}
             disabled={!canManage}
@@ -153,7 +155,7 @@ export function MeetingScheduleDetailClient({
         </div>
         <div>
           <label className="block text-xs font-medium text-stone-600">Every</label>
-          <select
+          <select aria-label="Every"
             value={intervalWeeks}
             onChange={(e) => setIntervalWeeks(e.target.value)}
             disabled={!canManage}
@@ -168,7 +170,7 @@ export function MeetingScheduleDetailClient({
         </div>
         <div>
           <label className="block text-xs font-medium text-stone-600">A Date It Meets</label>
-          <input
+          <input aria-label="A Date It Meets"
             type="date"
             value={anchorDate}
             onChange={(e) => setAnchorDate(e.target.value)}
@@ -180,7 +182,7 @@ export function MeetingScheduleDetailClient({
           <label className="block text-xs font-medium text-stone-600">
             End Date <span className="font-normal text-stone-400">(optional)</span>
           </label>
-          <input
+          <input aria-label="End Date"
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
@@ -191,7 +193,7 @@ export function MeetingScheduleDetailClient({
         </div>
         <div>
           <label className="block text-xs font-medium text-stone-600">Time</label>
-          <input
+          <input aria-label="Time"
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}

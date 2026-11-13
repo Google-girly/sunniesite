@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useState } from "react";
 import type {
   AlphaOrderRecord,
@@ -68,10 +70,10 @@ function GpaSection({ members, initial, term }: { members: Member[]; initial: Gp
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this GPA record?")) return;
+    if (!await confirmDelete("Remove this GPA record?")) return;
     const res = await fetch(`/api/standards/gpa/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -82,15 +84,15 @@ function GpaSection({ members, initial, term }: { members: Member[]; initial: Gp
       <form onSubmit={handleAdd} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <div>
           <label className={labelClass}>Member *</label>
-          <MemberSelect members={members} value={memberId} onChange={setMemberId} />
+          <MemberSelect aria-label="Member" members={members} value={memberId} onChange={setMemberId} />
         </div>
         <div>
           <label className={labelClass}>Term *</label>
-          <input value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
+          <input aria-label="Term" value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
+          <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
             <option value="">— Select —</option>
             {MEMBER_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -101,7 +103,7 @@ function GpaSection({ members, initial, term }: { members: Member[]; initial: Gp
         </div>
         <div>
           <label className={labelClass}>Term GPA</label>
-          <input
+          <input aria-label="Term GPA"
             type="number"
             step="0.01"
             value={termGpa}
@@ -111,7 +113,7 @@ function GpaSection({ members, initial, term }: { members: Member[]; initial: Gp
         </div>
         <div>
           <label className={labelClass}>Cum GPA</label>
-          <input
+          <input aria-label="Cum GPA"
             type="number"
             step="0.01"
             value={cumGpa}
@@ -121,7 +123,7 @@ function GpaSection({ members, initial, term }: { members: Member[]; initial: Gp
         </div>
         <div>
           <label className={labelClass}>Major</label>
-          <input value={major} onChange={(e) => setMajor(e.target.value)} className={inputClass} />
+          <input aria-label="Major" value={major} onChange={(e) => setMajor(e.target.value)} className={inputClass} />
         </div>
         <div className="col-span-2 sm:col-span-3 lg:col-span-6">
           {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
@@ -225,10 +227,10 @@ function MentorshipSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this mentorship pairing?")) return;
+    if (!await confirmDelete("Remove this mentorship pairing?")) return;
     const res = await fetch(`/api/standards/mentorships/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -239,15 +241,15 @@ function MentorshipSection({
       <form onSubmit={handleAdd} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div>
           <label className={labelClass}>Mentee *</label>
-          <MemberSelect members={members} value={menteeId} onChange={setMenteeId} />
+          <MemberSelect aria-label="Mentee" members={members} value={menteeId} onChange={setMenteeId} />
         </div>
         <div>
           <label className={labelClass}>Mentor *</label>
-          <MemberSelect members={members} value={mentorId} onChange={setMentorId} />
+          <MemberSelect aria-label="Mentor" members={members} value={mentorId} onChange={setMentorId} />
         </div>
         <div>
           <label className={labelClass}>Term *</label>
-          <input value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
+          <input aria-label="Term" value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
         </div>
         <div className="col-span-2 sm:col-span-3">
           {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
@@ -366,10 +368,10 @@ function AlphaOrderSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this Alpha Order record?")) return;
+    if (!await confirmDelete("Remove this Alpha Order record?")) return;
     const res = await fetch(`/api/standards/alpha-order/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -380,15 +382,15 @@ function AlphaOrderSection({
       <form onSubmit={handleAdd} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <div>
           <label className={labelClass}>Member *</label>
-          <MemberSelect members={members} value={memberId} onChange={setMemberId} />
+          <MemberSelect aria-label="Member" members={members} value={memberId} onChange={setMemberId} />
         </div>
         <div>
           <label className={labelClass}>Term *</label>
-          <input value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
+          <input aria-label="Term" value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Cum GPA *</label>
-          <input
+          <input aria-label="Cum GPA"
             type="number"
             step="0.01"
             value={cumGpa}
@@ -398,11 +400,11 @@ function AlphaOrderSection({
         </div>
         <div>
           <label className={labelClass}>Major</label>
-          <input value={major} onChange={(e) => setMajor(e.target.value)} className={inputClass} />
+          <input aria-label="Major" value={major} onChange={(e) => setMajor(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Scholarship $</label>
-          <input
+          <input aria-label="Scholarship $"
             type="number"
             step="0.01"
             value={scholarshipAmount}
@@ -533,10 +535,10 @@ function ProfessionalDevelopmentSection({
   }
 
   async function handleDeleteEvent(id: string) {
-    if (!confirmDelete("Remove this event and its attendee list?")) return;
+    if (!await confirmDelete("Remove this event and its attendee list?")) return;
     const res = await fetch(`/api/standards/professional-development/${id}`, { method: "DELETE" });
     if (res.ok) setEvents((prev) => prev.filter((e) => e.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   // One checkbox per Active member instead of a one-at-a-time "pick
@@ -553,7 +555,7 @@ function ProfessionalDevelopmentSection({
       });
       setTogglingAttendee(null);
       if (!res.ok) {
-        alert(await parseError(res));
+        showError(await parseError(res));
         return;
       }
       const created = await res.json();
@@ -577,7 +579,7 @@ function ProfessionalDevelopmentSection({
           )
         );
       } else {
-        alert(await parseError(res));
+        showError(await parseError(res));
       }
     }
   }
@@ -594,23 +596,23 @@ function ProfessionalDevelopmentSection({
         </div>
         <div>
           <label className={labelClass}>Term *</label>
-          <input value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
+          <input aria-label="Term" value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Presented By</label>
-          <input value={presentedBy} onChange={(e) => setPresentedBy(e.target.value)} className={inputClass} />
+          <input aria-label="Presented By" value={presentedBy} onChange={(e) => setPresentedBy(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Date</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
+          <input aria-label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Time</label>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputClass} />
+          <input aria-label="Time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputClass} />
         </div>
         <div className="col-span-2 sm:col-span-3">
           <label className={labelClass}>Location</label>
-          <input value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
+          <input aria-label="Location" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
         </div>
         <div className="col-span-2 sm:col-span-3 lg:col-span-6">
           {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
@@ -699,11 +701,11 @@ export function AcademicsClient({
         <div className="flex flex-wrap gap-4">
           <div>
             <label className={labelClass}>Export Term</label>
-            <input value={term} onChange={(e) => setTerm(e.target.value)} className={inputClass} />
+            <input aria-label="Export Term" value={term} onChange={(e) => setTerm(e.target.value)} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Export Year</label>
-            <input
+            <input aria-label="Export Year"
               type="number"
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value, 10) || year)}

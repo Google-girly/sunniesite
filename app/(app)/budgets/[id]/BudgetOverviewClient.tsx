@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -173,7 +175,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
 
   async function handleDeleteBudget() {
     if (
-      !confirmDelete(
+      !await confirmDelete(
         `Delete the budget for "${budget.eventName}"? This removes its Tentative and Final versions too, and can't be undone.`
       )
     )
@@ -185,7 +187,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
       router.push("/budgets");
       router.refresh();
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -237,7 +239,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
           <label className="block text-xs font-medium text-stone-600">
             Event Name <span className="text-burgundy-500">*</span>
           </label>
-          <input
+          <input aria-label="Event Name"
             value={headerForm.eventName}
             onChange={(e) => {
               setHeaderForm({ ...headerForm, eventName: e.target.value });
@@ -251,7 +253,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
           <label className="block text-xs font-medium text-stone-600">
             Chair <span className="text-burgundy-500">*</span>
           </label>
-          <select
+          <select aria-label="Chair"
             value={headerForm.chair}
             onChange={(e) => {
               setHeaderForm({ ...headerForm, chair: e.target.value });
@@ -272,7 +274,7 @@ export function BudgetOverviewClient({ initialBudget }: { initialBudget: BudgetW
           <label className="block text-xs font-medium text-stone-600">
             Date of Event <span className="text-burgundy-500">*</span>
           </label>
-          <input
+          <input aria-label="Date of Event"
             type="date"
             value={headerForm.eventDate}
             onChange={(e) => {

@@ -5,6 +5,7 @@ import { isOfficer, ownsModule } from "@/lib/permissions";
 import { parseRoles } from "@/lib/roster";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { MeetingMinutesClient } from "./MeetingMinutesClient";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 
 // Officers only (Aug 2026 — "I only want this page to be accessable to
 // officers"). Everyone else still downloads the finished minutes from
@@ -58,20 +59,22 @@ export default async function MeetingMinutesPage({
   });
 
   return (
-    <MeetingMinutesClient
-      meeting={meeting}
-      members={members}
-      viewerId={viewer.id}
-      viewerPositions={parseRoles(viewer.role)}
-      viewerOwnsModule={ownsModule(viewer, "meetings-reports")}
-      initialAttachments={attachments.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
-      initialFinalMinutes={
-        finalMinutes && {
-          ...finalMinutes,
-          createdAt: finalMinutes.createdAt.toISOString(),
-          updatedAt: finalMinutes.updatedAt.toISOString(),
+    <UnsavedChangesGuard>
+      <MeetingMinutesClient
+        meeting={meeting}
+        members={members}
+        viewerId={viewer.id}
+        viewerPositions={parseRoles(viewer.role)}
+        viewerOwnsModule={ownsModule(viewer, "meetings-reports")}
+        initialAttachments={attachments.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
+        initialFinalMinutes={
+          finalMinutes && {
+            ...finalMinutes,
+            createdAt: finalMinutes.createdAt.toISOString(),
+            updatedAt: finalMinutes.updatedAt.toISOString(),
+          }
         }
-      }
-    />
+      />
+    </UnsavedChangesGuard>
   );
 }

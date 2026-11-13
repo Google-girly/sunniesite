@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useState } from "react";
 import type { ChapterAdvisor, LeadershipPosition, Member, StrategicPlanGoal } from "@/app/generated/prisma/client";
 import { LetterSignoffFields } from "@/components/LetterSignoffFields";
@@ -51,10 +53,10 @@ function ChapterAdvisorSection({ initial }: { initial: ChapterAdvisor[] }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this Chapter Advisor record?")) return;
+    if (!await confirmDelete("Remove this Chapter Advisor record?")) return;
     const res = await fetch(`/api/standards/chapter-advisor/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -62,23 +64,23 @@ function ChapterAdvisorSection({ initial }: { initial: ChapterAdvisor[] }) {
       <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className={labelClass}>Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required />
+          <input aria-label="Name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required />
         </div>
         <div>
           <label className={labelClass}>Position/Title</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+          <input aria-label="Position/Title" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+          <input aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Phone</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
+          <input aria-label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
         </div>
         <div className="sm:col-span-2">
           <label className={labelClass}>Office Address</label>
-          <input value={officeAddress} onChange={(e) => setOfficeAddress(e.target.value)} className={inputClass} />
+          <input aria-label="Office Address" value={officeAddress} onChange={(e) => setOfficeAddress(e.target.value)} className={inputClass} />
         </div>
         <div className="sm:col-span-3 flex items-center gap-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -181,15 +183,15 @@ function StrategicPlanSection({ initial, members }: { initial: StrategicPlanGoal
       const updated = await res.json();
       setGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this strategic plan goal?")) return;
+    if (!await confirmDelete("Remove this strategic plan goal?")) return;
     const res = await fetch(`/api/standards/strategic-plan/${id}`, { method: "DELETE" });
     if (res.ok) setGoals((prev) => prev.filter((g) => g.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -200,7 +202,7 @@ function StrategicPlanSection({ initial, members }: { initial: StrategicPlanGoal
       <div className="mb-4 flex flex-wrap gap-4">
         <div>
           <label className={labelClass}>Academic Year</label>
-          <input
+          <input aria-label="Academic Year"
             value={academicYear}
             onChange={(e) => setAcademicYear(e.target.value)}
             placeholder="2026-2027"
@@ -209,7 +211,7 @@ function StrategicPlanSection({ initial, members }: { initial: StrategicPlanGoal
         </div>
         <div>
           <label className={labelClass}>Period</label>
-          <select value={period} onChange={(e) => setPeriod(e.target.value as PlanPeriod)} className={`${inputClass} max-w-xs`}>
+          <select aria-label="Period" value={period} onChange={(e) => setPeriod(e.target.value as PlanPeriod)} className={`${inputClass} max-w-xs`}>
             {PLAN_PERIODS.map((p) => (
               <option key={p} value={p}>
                 {PLAN_PERIOD_LABELS[p]}
@@ -222,7 +224,7 @@ function StrategicPlanSection({ initial, members }: { initial: StrategicPlanGoal
       <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className={labelClass}>Priority Area</label>
-          <select value={priorityArea} onChange={(e) => setPriorityArea(e.target.value)} className={inputClass}>
+          <select aria-label="Priority Area" value={priorityArea} onChange={(e) => setPriorityArea(e.target.value)} className={inputClass}>
             {STRATEGIC_PRIORITY_AREAS.map((a) => (
               <option key={a} value={a}>
                 {a}
@@ -232,11 +234,11 @@ function StrategicPlanSection({ initial, members }: { initial: StrategicPlanGoal
         </div>
         <div>
           <label className={labelClass}>Responsible Officer</label>
-          <input value={responsibleOfficer} onChange={(e) => setResponsibleOfficer(e.target.value)} className={inputClass} />
+          <input aria-label="Responsible Officer" value={responsibleOfficer} onChange={(e) => setResponsibleOfficer(e.target.value)} className={inputClass} />
         </div>
         <div className="sm:col-span-2">
           <label className={labelClass}>Goal</label>
-          <input
+          <input aria-label="Goal"
             value={goalDescription}
             onChange={(e) => setGoalDescription(e.target.value)}
             className={inputClass}
@@ -245,7 +247,7 @@ function StrategicPlanSection({ initial, members }: { initial: StrategicPlanGoal
         </div>
         <div>
           <label className={labelClass}>Target Timeline</label>
-          <input value={targetTimeline} onChange={(e) => setTargetTimeline(e.target.value)} className={inputClass} />
+          <input aria-label="Target Timeline" value={targetTimeline} onChange={(e) => setTargetTimeline(e.target.value)} className={inputClass} />
         </div>
         <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -396,10 +398,10 @@ function LeadershipPositionSection({ initial, members }: { initial: LeadershipPo
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this leadership position record?")) return;
+    if (!await confirmDelete("Remove this leadership position record?")) return;
     const res = await fetch(`/api/standards/leadership-positions/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -409,7 +411,7 @@ function LeadershipPositionSection({ initial, members }: { initial: LeadershipPo
     >
       <div className="mb-4">
         <label className={labelClass}>Academic Year</label>
-        <input
+        <input aria-label="Academic Year"
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
           placeholder="2026-2027"
@@ -420,7 +422,7 @@ function LeadershipPositionSection({ initial, members }: { initial: LeadershipPo
       <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className={labelClass}>Member (from Roster)</label>
-          <select
+          <select aria-label="Member (from Roster)"
             value={memberId}
             onChange={(e) => {
               setMemberId(e.target.value);
@@ -439,11 +441,11 @@ function LeadershipPositionSection({ initial, members }: { initial: LeadershipPo
         </div>
         <div>
           <label className={labelClass}>Member Name</label>
-          <input value={memberName} onChange={(e) => setMemberName(e.target.value)} className={inputClass} required />
+          <input aria-label="Member Name" value={memberName} onChange={(e) => setMemberName(e.target.value)} className={inputClass} required />
         </div>
         <div>
           <label className={labelClass}>Category</label>
-          <select value={category} onChange={(e) => setCategory(e.target.value as LeadershipCategory)} className={inputClass}>
+          <select aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value as LeadershipCategory)} className={inputClass}>
             {LEADERSHIP_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {LEADERSHIP_CATEGORY_LABELS[c]}
@@ -453,11 +455,11 @@ function LeadershipPositionSection({ initial, members }: { initial: LeadershipPo
         </div>
         <div>
           <label className={labelClass}>Organization</label>
-          <input value={organization} onChange={(e) => setOrganization(e.target.value)} className={inputClass} required />
+          <input aria-label="Organization" value={organization} onChange={(e) => setOrganization(e.target.value)} className={inputClass} required />
         </div>
         <div>
           <label className={labelClass}>Position Held</label>
-          <input value={position} onChange={(e) => setPosition(e.target.value)} className={inputClass} required />
+          <input aria-label="Position Held" value={position} onChange={(e) => setPosition(e.target.value)} className={inputClass} required />
         </div>
         <div className="flex items-end">
           <button

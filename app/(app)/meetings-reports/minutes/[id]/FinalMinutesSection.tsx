@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useRef, useState } from "react";
 import { MAX_DOCUMENT_BYTES } from "@/lib/meetingFinalMinutes";
 import { confirmDelete } from "@/lib/confirmDelete";
@@ -87,14 +89,14 @@ export function FinalMinutesSection({
 
   async function handleRemove() {
     if (!current) return;
-    if (!confirmDelete(`Remove the finished minutes (${current.fileName})? Anyone with the list page will no longer be able to download it.`)) return;
+    if (!await confirmDelete(`Remove the finished minutes (${current.fileName})? Anyone with the list page will no longer be able to download it.`)) return;
     setRemoving(true);
     const res = await fetch(`/api/meeting-minutes/meetings/${meetingId}/final-minutes`, { method: "DELETE" });
     setRemoving(false);
     if (res.ok) {
       setCurrent(null);
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 

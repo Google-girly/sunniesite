@@ -116,7 +116,7 @@ export function LetterSignoffFields({
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div>
         <label className={labelClass}>Signer (from Roster)</label>
-        <select
+        <select aria-label="Signer (from Roster)"
           value={signerMemberId}
           onChange={(e) => handleSignerMemberChange(e.target.value)}
           className={inputClass}
@@ -132,15 +132,15 @@ export function LetterSignoffFields({
       </div>
       <div>
         <label className={labelClass}>Signed Date</label>
-        <input type="date" value={signedDate} onChange={(e) => setSignedDate(e.target.value)} className={inputClass} />
+        <input aria-label="Signed Date" type="date" value={signedDate} onChange={(e) => setSignedDate(e.target.value)} className={inputClass} />
       </div>
       <div>
         <label className={labelClass}>Printed Name</label>
-        <input value={signerName} onChange={(e) => setSignerName(e.target.value)} className={inputClass} />
+        <input aria-label="Printed Name" value={signerName} onChange={(e) => setSignerName(e.target.value)} className={inputClass} />
       </div>
       <div>
         <label className={labelClass}>Title/Office</label>
-        <input value={signerTitle} onChange={(e) => setSignerTitle(e.target.value)} className={inputClass} />
+        <input aria-label="Title/Office" value={signerTitle} onChange={(e) => setSignerTitle(e.target.value)} className={inputClass} />
       </div>
       <div className="sm:col-span-2">
         <label className={labelClass}>Draw Signature</label>

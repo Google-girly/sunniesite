@@ -40,3 +40,28 @@
   --color-gold-800: #4c3a0e;
   --color-gold-900: #2f2408;
 }
+
+/*
+ * Phones (Nov 2026): every data table already sits in an
+ * `overflow-x-auto` wrapper, so it scrolls sideways — but the member's
+ * name (almost always the first column) used to scroll away with it.
+ * Below md, pin that first column so you can still tell whose row
+ * you're reading. Rows that set their own background (e.g. a highlighted
+ * row) keep it on the pinned cell too.
+ */
+@media (max-width: 767px) {
+  .overflow-x-auto > table > thead > tr > :first-child,
+  .overflow-x-auto > table > tbody > tr > :first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--color-white);
+    box-shadow: 1px 0 0 var(--color-stone-200);
+  }
+  .overflow-x-auto > table > thead > tr > :first-child {
+    background-color: var(--color-stone-50);
+  }
+  .overflow-x-auto > table > tbody > tr[class*="bg-"] > :first-child {
+    background-color: inherit;
+  }
+}

@@ -41,7 +41,7 @@ export function AccountClient() {
       <h2 className="text-sm font-semibold text-stone-900">Change Password</h2>
 
       <label className="mt-4 block text-xs font-medium text-stone-600">Current password</label>
-      <input
+      <input aria-label="Current password"
         type="password"
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
@@ -49,7 +49,7 @@ export function AccountClient() {
       />
 
       <label className="mt-3 block text-xs font-medium text-stone-600">New password</label>
-      <input
+      <input aria-label="New password"
         type="password"
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
@@ -57,7 +57,7 @@ export function AccountClient() {
       />
 
       <label className="mt-3 block text-xs font-medium text-stone-600">Confirm new password</label>
-      <input
+      <input aria-label="Confirm new password"
         type="password"
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}

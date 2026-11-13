@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -222,7 +224,7 @@ export function VersionDetailClient({
       setDetailsSaved(true);
       router.refresh();
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -257,7 +259,7 @@ export function VersionDetailClient({
       setVersion(updated);
       setTreasurerSaved(true);
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -347,12 +349,12 @@ export function VersionDetailClient({
   }
 
   async function handleDeleteItem(item: BudgetLineItem) {
-    if (!confirmDelete(`Remove "${item.item}" from this budget?`)) return;
+    if (!await confirmDelete(`Remove "${item.item}" from this budget?`)) return;
     const res = await fetch(`${apiBase}/items/${item.id}`, { method: "DELETE" });
     if (res.ok) {
       setLineItems((prev) => prev.filter((i) => i.id !== item.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -441,7 +443,7 @@ export function VersionDetailClient({
   }
 
   async function handleDeleteReceipt(receipt: ReceiptSummary) {
-    if (!confirmDelete(`Remove "${receipt.filename}"? This can't be undone.`)) return;
+    if (!await confirmDelete(`Remove "${receipt.filename}"? This can't be undone.`)) return;
     setDeletingReceiptId(receipt.id);
     const res = await fetch(`${apiBase}/receipts/${receipt.id}`, { method: "DELETE" });
     setDeletingReceiptId(null);
@@ -454,7 +456,7 @@ export function VersionDetailClient({
 
   async function handleDeleteVersion() {
     if (
-      !confirmDelete(
+      !await confirmDelete(
         `Delete the ${BUDGET_STAGE_LABELS[stage]} budget for "${budget.eventName}"? This can't be undone.`
       )
     )
@@ -466,7 +468,7 @@ export function VersionDetailClient({
       router.push(`/budgets/${budget.id}`);
       router.refresh();
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -534,7 +536,7 @@ export function VersionDetailClient({
           <label className="block text-xs font-medium text-stone-600">
             Sales Tax % <span className="text-burgundy-500">*</span>
           </label>
-          <input
+          <input aria-label="Sales Tax %"
             type="number"
             step="0.01"
             value={detailsForm.salesTaxRatePercent}
@@ -554,7 +556,7 @@ export function VersionDetailClient({
               (special circumstances, who to reimburse, etc.)
             </span>
           </label>
-          <textarea
+          <textarea aria-label="Notes"
             value={detailsForm.notes}
             onChange={(e) => {
               setDetailsForm({ ...detailsForm, notes: e.target.value });
@@ -655,7 +657,7 @@ export function VersionDetailClient({
         >
           <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-stone-600">Item</label>
-            <input
+            <input aria-label="Item"
               value={addItemForm.item}
               onChange={(e) => setAddItemForm({ ...addItemForm, item: e.target.value })}
               autoFocus
@@ -664,7 +666,7 @@ export function VersionDetailClient({
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Quantity</label>
-            <input
+            <input aria-label="Quantity"
               type="number"
               step="1"
               value={addItemForm.quantity}
@@ -674,7 +676,7 @@ export function VersionDetailClient({
           </div>
           <div>
             <label className="block text-xs font-medium text-stone-600">Price</label>
-            <input
+            <input aria-label="Price"
               type="number"
               step="0.01"
               value={addItemForm.price}
@@ -686,7 +688,7 @@ export function VersionDetailClient({
             <label className="block text-xs font-medium text-stone-600">
               Category <span className="text-burgundy-500">*</span>
             </label>
-            <select
+            <select aria-label="Category"
               value={addItemForm.accountCode}
               onChange={(e) => setAddItemForm({ ...addItemForm, accountCode: e.target.value })}
               required

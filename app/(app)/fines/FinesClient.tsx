@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { SearchFilter, matchesSearch } from "@/components/SearchFilter";
 import type { AccountEntry, Member } from "@/app/generated/prisma/client";
 import { calculateBalance, formatCurrency } from "@/lib/fines";
 import { MEMBER_STATUS_LABELS, type MemberStatus } from "@/lib/roster";
@@ -46,6 +47,8 @@ export function FinesClient({ initialMembers }: { initialMembers: MemberWithEntr
     .filter((m) => m.balance > 0)
     .reduce((sum, m) => sum + m.balance, 0);
   const membersOwing = withBalances.filter((m) => m.balance > 0).length;
+  const [search, setSearch] = useState("");
+  const visibleBalances = withBalances.filter((row) => matchesSearch(search, row.member.name, row.member.role));
 
   return (
     <div>
@@ -65,6 +68,8 @@ export function FinesClient({ initialMembers }: { initialMembers: MemberWithEntr
           <p className="mt-1 text-xl font-semibold text-stone-900">{membersOwing}</p>
         </div>
       </div>
+
+      <SearchFilter value={search} onChange={setSearch} shown={visibleBalances.length} total={withBalances.length} />
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-stone-200 bg-white">
         <table className="min-w-full divide-y divide-stone-200 text-sm">
@@ -89,7 +94,7 @@ export function FinesClient({ initialMembers }: { initialMembers: MemberWithEntr
               </tr>
             )}
 
-            {withBalances.map(({ member, balance }) => (
+            {visibleBalances.map(({ member, balance }) => (
               <tr key={member.id}>
                 <td className="px-4 py-2.5 font-medium text-stone-900">{member.name}</td>
                 <td className="px-4 py-2.5 text-stone-600">{member.role || "—"}</td>

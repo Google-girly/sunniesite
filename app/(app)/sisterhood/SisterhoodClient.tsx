@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useEffect, useState } from "react";
 import type {
   CertificationRecord,
@@ -79,10 +81,10 @@ function ProbationSection({ members, initial }: { members: Member[]; initial: Pr
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this record?")) return;
+    if (!await confirmDelete("Remove this record?")) return;
     const res = await fetch(`/api/standards/probation/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -93,11 +95,11 @@ function ProbationSection({ members, initial }: { members: Member[]; initial: Pr
       <form onSubmit={handleAdd} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <div>
           <label className={labelClass}>Member *</label>
-          <MemberSelect members={members} value={memberId} onChange={setMemberId} />
+          <MemberSelect aria-label="Member" members={members} value={memberId} onChange={setMemberId} />
         </div>
         <div>
           <label className={labelClass}>Status</label>
-          <select
+          <select aria-label="Status"
             value={status}
             onChange={(e) => setStatus(e.target.value as ProbationStatus)}
             className={inputClass}
@@ -111,19 +113,19 @@ function ProbationSection({ members, initial }: { members: Member[]; initial: Pr
         </div>
         <div>
           <label className={labelClass}>Effective From</label>
-          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className={inputClass} />
+          <input aria-label="Effective From" type="date" value={start} onChange={(e) => setStart(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Effective To</label>
-          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
+          <input aria-label="Effective To" type="date" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Offense</label>
-          <input value={offense} onChange={(e) => setOffense(e.target.value)} className={inputClass} />
+          <input aria-label="Offense" value={offense} onChange={(e) => setOffense(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Additional Sanctions</label>
-          <input value={sanctions} onChange={(e) => setSanctions(e.target.value)} className={inputClass} />
+          <input aria-label="Additional Sanctions" value={sanctions} onChange={(e) => setSanctions(e.target.value)} className={inputClass} />
         </div>
         <div className="col-span-2 sm:col-span-3 lg:col-span-6">
           {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
@@ -242,10 +244,10 @@ function MeetingAttendanceSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this meeting record?")) return;
+    if (!await confirmDelete("Remove this meeting record?")) return;
     const res = await fetch(`/api/standards/meeting-attendance/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -256,7 +258,7 @@ function MeetingAttendanceSection({
       <form onSubmit={handleAdd} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
         <div>
           <label className={labelClass}>Meeting #</label>
-          <select value={meetingNumber} onChange={(e) => setMeetingNumber(e.target.value)} className={inputClass}>
+          <select aria-label="Meeting #" value={meetingNumber} onChange={(e) => setMeetingNumber(e.target.value)} className={inputClass}>
             {Array.from({ length: MEETINGS_PER_TERM }, (_, i) => i + 1).map((n) => (
               <option key={n} value={n}>
                 {n}
@@ -266,15 +268,15 @@ function MeetingAttendanceSection({
         </div>
         <div>
           <label className={labelClass}>Term *</label>
-          <input value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
+          <input aria-label="Term" value={recordTerm} onChange={(e) => setRecordTerm(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Date</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
+          <input aria-label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}># Actives Attended</label>
-          <input
+          <input aria-label="# Actives Attended"
             type="number"
             value={activesAttended}
             onChange={(e) => setActivesAttended(e.target.value)}
@@ -283,7 +285,7 @@ function MeetingAttendanceSection({
         </div>
         <div>
           <label className={labelClass}># Officers Attended</label>
-          <input
+          <input aria-label="# Officers Attended"
             type="number"
             value={officersAttended}
             onChange={(e) => setOfficersAttended(e.target.value)}
@@ -292,7 +294,7 @@ function MeetingAttendanceSection({
         </div>
         <div>
           <label className={labelClass}>Other Attendees</label>
-          <input value={otherAttendees} onChange={(e) => setOtherAttendees(e.target.value)} className={inputClass} />
+          <input aria-label="Other Attendees" value={otherAttendees} onChange={(e) => setOtherAttendees(e.target.value)} className={inputClass} />
         </div>
         <label className="flex items-end gap-2 pb-1.5 text-sm text-stone-700">
           <input
@@ -422,10 +424,10 @@ function SisterOfMonthSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this Sister of the Month record?")) return;
+    if (!await confirmDelete("Remove this Sister of the Month record?")) return;
     const res = await fetch(`/api/standards/sister-of-month/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -467,7 +469,7 @@ function SisterOfMonthSection({
         </div>
         <div>
           <label className={labelClass}>Year *</label>
-          <input
+          <input aria-label="Year"
             type="number"
             value={recordYear}
             onChange={(e) => setRecordYear(e.target.value)}
@@ -476,7 +478,7 @@ function SisterOfMonthSection({
         </div>
         <div>
           <label className={labelClass}>Member</label>
-          <MemberSelect members={members} value={memberId} onChange={setMemberId} />
+          <MemberSelect aria-label="Member" members={members} value={memberId} onChange={setMemberId} />
         </div>
         <label className="flex items-end gap-2 pb-1.5 text-sm text-stone-700">
           <input
@@ -590,10 +592,10 @@ function CertificationSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this certification record?")) return;
+    if (!await confirmDelete("Remove this certification record?")) return;
     const res = await fetch(`/api/standards/certifications/${id}`, { method: "DELETE" });
     if (res.ok) setRecords((prev) => prev.filter((r) => r.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -608,7 +610,7 @@ function CertificationSection({
         </div>
         <div>
           <label className={labelClass}>Type</label>
-          <select value={type} onChange={(e) => setType(e.target.value as CertificationType)} className={inputClass}>
+          <select aria-label="Type" value={type} onChange={(e) => setType(e.target.value as CertificationType)} className={inputClass}>
             {CERTIFICATION_TYPES.map((t) => (
               <option key={t} value={t}>
                 {CERTIFICATION_TYPE_LABELS[t]}
@@ -618,7 +620,7 @@ function CertificationSection({
         </div>
         <div>
           <label className={labelClass}>Issued Date</label>
-          <input
+          <input aria-label="Issued Date"
             type="date"
             value={issuedDate}
             onChange={(e) => setIssuedDate(e.target.value)}
@@ -627,7 +629,7 @@ function CertificationSection({
         </div>
         <div>
           <label className={labelClass}>Expiration Date</label>
-          <input
+          <input aria-label="Expiration Date"
             type="date"
             value={expirationDate}
             onChange={(e) => setExpirationDate(e.target.value)}
@@ -713,11 +715,11 @@ export function SisterhoodClient({
         <div className="flex flex-wrap gap-4">
           <div>
             <label className={labelClass}>Export Term</label>
-            <input value={term} onChange={(e) => setTerm(e.target.value)} className={inputClass} />
+            <input aria-label="Export Term" value={term} onChange={(e) => setTerm(e.target.value)} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Export Year</label>
-            <input
+            <input aria-label="Export Year"
               type="number"
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value, 10) || year)}

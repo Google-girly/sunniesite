@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ChapterFundEntry, ChapterStartingBalance } from "@/app/generated/prisma/client";
@@ -84,19 +86,19 @@ export function StartingBalanceSection({ initial }: { initial: ChapterStartingBa
       <form onSubmit={handleSave} className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div>
           <label className={labelClass}>Year</label>
-          <input type="number" value={year} onChange={(e) => setYear(e.target.value)} className={inputClass} required />
+          <input aria-label="Year" type="number" value={year} onChange={(e) => setYear(e.target.value)} className={inputClass} required />
         </div>
         <div>
           <label className={labelClass}>Starting Balance</label>
-          <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} required />
+          <input aria-label="Starting Balance" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} required />
         </div>
         <div>
           <label className={labelClass}>As Of</label>
-          <input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} className={inputClass} />
+          <input aria-label="As Of" type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Notes</label>
-          <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
+          <input aria-label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
         </div>
         <div className="sm:col-span-4 flex items-center gap-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -192,19 +194,19 @@ function FundEntryForm({
     <form onSubmit={onSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <div>
         <label className={labelClass}>Date *</label>
-        <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputClass} required />
+        <input aria-label="Date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputClass} required />
       </div>
       <div className="lg:col-span-2">
         <label className={labelClass}>Description *</label>
-        <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass} required />
+        <input aria-label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass} required />
       </div>
       <div>
         <label className={labelClass}>Amount *</label>
-        <input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={inputClass} required />
+        <input aria-label="Amount" type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={inputClass} required />
       </div>
       <div>
         <label className={labelClass}>Code *</label>
-        <select
+        <select aria-label="Code"
           value={form.accountCode}
           onChange={(e) => setForm({ ...form, accountCode: e.target.value })}
           className={inputClass}
@@ -305,12 +307,12 @@ export function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this fund entry?")) return;
+    if (!await confirmDelete("Remove this fund entry?")) return;
     const res = await fetch(`/api/finances/fund-entries/${id}`, { method: "DELETE" });
     if (res.ok) {
       setEntries((prev) => prev.filter((e) => e.id !== id));
       router.refresh();
-    } else alert(await parseError(res));
+    } else showError(await parseError(res));
   }
 
   return (

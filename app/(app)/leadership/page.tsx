@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePageAccess } from "@/lib/session";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { LeadershipClient } from "./LeadershipClient";
+import { moduleDescription } from "@/lib/modules";
 
 // Chapter Standards credits about chapter governance/leadership with no
 // other home: A.4 (Chapter Advisor), F.5 (Annual Strategic Plan /
@@ -24,6 +25,7 @@ export default async function LeadershipPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-stone-900">Leadership</h1>
+      <p className="mt-1 text-sm text-stone-500">{moduleDescription("leadership")}</p>
 
       <div className="mt-6">
         <LeadershipClient

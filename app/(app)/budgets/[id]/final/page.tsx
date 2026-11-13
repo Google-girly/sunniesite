@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { RECEIPT_SELECT } from "@/lib/receipts";
 import { findRoleHolderNames } from "@/lib/roster";
 import { VersionDetailClient } from "../VersionDetailClient";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 
 export default async function FinalBudgetPage({
   params,
@@ -50,13 +51,15 @@ export default async function FinalBudgetPage({
   const nextMeetingIso = nextMeetingDate(schedules, todayIso());
 
   return (
-    <VersionDetailClient
-      budget={budget}
-      initialVersion={version}
-      stage="FINAL"
-      importSource={tentativeVersion}
-      chairHolderName={chairHolderName}
-      nextMeetingIso={nextMeetingIso}
-    />
+    <UnsavedChangesGuard>
+      <VersionDetailClient
+        budget={budget}
+        initialVersion={version}
+        stage="FINAL"
+        importSource={tentativeVersion}
+        chairHolderName={chairHolderName}
+        nextMeetingIso={nextMeetingIso}
+      />
+    </UnsavedChangesGuard>
   );
 }

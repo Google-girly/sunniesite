@@ -10,6 +10,7 @@ import { NotAuthorized } from "@/components/NotAuthorized";
 import { ChapterStandardsChecklistClient } from "./ChapterStandardsChecklistClient";
 import { ChecklistDocumentsSection } from "./ChecklistDocumentsSection";
 import { TermPicker } from "./TermPicker";
+import { moduleDescription } from "@/lib/modules";
 
 // Official Standards Forms — as of Aug 2026, a pure checklist over
 // every Chapter Standards credit (Sections A-I), not a data-entry page.
@@ -140,6 +141,7 @@ export default async function StandardsFormsPage({
   return (
     <div>
       <h1 className="text-2xl font-semibold text-stone-900">Official Standards Forms</h1>
+      <p className="mt-1 text-sm text-stone-500">{moduleDescription("standards-forms")}</p>
 
       {canPickTerm ? (
         <TermPicker terms={listTerms()} selected={term} />

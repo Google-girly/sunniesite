@@ -28,7 +28,12 @@ export default async function OfficersPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-stone-900">Manage Officers &amp; Logins</h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-stone-900">Manage Officers &amp; Logins</h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Approve sign-ups, invite members, assign positions, and reset passwords.
+          </p>
+        </div>
         <PendingSignupsPanel buttonClassName="flex items-center gap-2 rounded-md border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50" />
       </div>
 

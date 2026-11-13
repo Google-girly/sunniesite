@@ -4,6 +4,8 @@ import { getCurrentMember } from "@/lib/session";
 import { canAccessModule, isPresident } from "@/lib/permissions";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { EventReportsClient } from "./EventReportsClient";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
+import { moduleDescription } from "@/lib/modules";
 
 export default async function EventReportsPage() {
   const viewer = await getCurrentMember();
@@ -23,14 +25,17 @@ export default async function EventReportsPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-stone-900">Event Reports</h1>
+      <p className="mt-1 text-sm text-stone-500">{moduleDescription("event-reports")}</p>
 
       <div className="mt-6">
-        <EventReportsClient
-          members={members}
-          initialReports={reports}
-          viewerId={viewer.id}
-          viewerIsPresident={isPresident(viewer)}
-        />
+        <UnsavedChangesGuard>
+          <EventReportsClient
+            members={members}
+            initialReports={reports}
+            viewerId={viewer.id}
+            viewerIsPresident={isPresident(viewer)}
+          />
+        </UnsavedChangesGuard>
       </div>
     </div>
   );

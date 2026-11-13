@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useState } from "react";
 import type { Member } from "@/app/generated/prisma/client";
 import { parseRoles } from "@/lib/roster";
@@ -140,13 +142,13 @@ function OfficerRow({
   }
 
   async function revokeLogin() {
-    if (!confirmDelete(`Revoke ${member.name}'s login? She won't be able to sign in until a new password is set.`)) return;
+    if (!await confirmDelete(`Revoke ${member.name}'s login? She won't be able to sign in until a new password is set.`)) return;
     const res = await fetch(`/api/officers/${member.id}/password`, { method: "DELETE" });
     if (res.ok) {
       setPasswordSet(false);
       onUpdated({ ...member, passwordHash: null });
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 

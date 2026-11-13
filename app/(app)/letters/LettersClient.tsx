@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useState } from "react";
 import type { Letter } from "@/app/generated/prisma/client";
 import { LETTER_TYPES, letterTitle, type LetterType } from "@/lib/letters";
@@ -142,10 +144,10 @@ export function LettersClient({
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this letter?")) return;
+    if (!await confirmDelete("Remove this letter?")) return;
     const res = await fetch(`/api/letters/${id}`, { method: "DELETE" });
     if (res.ok) setLetters((prev) => prev.filter((l) => l.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -171,7 +173,7 @@ export function LettersClient({
             <label className={labelClass}>
               Type <span className="text-burgundy-500">*</span>
             </label>
-            <select value={form.type} onChange={(e) => update("type", e.target.value as LetterType)} className={inputClass}>
+            <select aria-label="Type" value={form.type} onChange={(e) => update("type", e.target.value as LetterType)} className={inputClass}>
               {LETTER_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -184,7 +186,7 @@ export function LettersClient({
               <label className={labelClass}>
                 What kind of letter? <span className="text-burgundy-500">*</span>
               </label>
-              <input
+              <input aria-label="What kind of letter?"
                 value={form.typeOther}
                 onChange={(e) => update("typeOther", e.target.value)}
                 className={inputClass}
@@ -193,11 +195,11 @@ export function LettersClient({
           )}
           <div>
             <label className={labelClass}>Date</label>
-            <input type="date" value={form.date} onChange={(e) => update("date", e.target.value)} className={inputClass} />
+            <input aria-label="Date" type="date" value={form.date} onChange={(e) => update("date", e.target.value)} className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>To / Recipient</label>
-            <input
+            <input aria-label="To / Recipient"
               value={form.recipientName}
               onChange={(e) => update("recipientName", e.target.value)}
               placeholder="Optional — e.g. a professor's name"
@@ -206,7 +208,7 @@ export function LettersClient({
           </div>
           <div className="sm:col-span-2">
             <label className={labelClass}>Purpose / Letter Body</label>
-            <textarea
+            <textarea aria-label="Purpose / Letter Body"
               value={form.purpose}
               onChange={(e) => update("purpose", e.target.value)}
               rows={5}

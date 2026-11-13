@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePageAccess } from "@/lib/session";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { SisterhoodClient } from "./SisterhoodClient";
+import { moduleDescription } from "@/lib/modules";
 
 // Chapter Standards Section D (Sisterhood) credits with no other home:
 // D4 (Probation & Suspension), D9 (General Meeting Attendance), D10
@@ -38,6 +39,7 @@ export default async function SisterhoodPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-stone-900">Sisterhood</h1>
+      <p className="mt-1 text-sm text-stone-500">{moduleDescription("sisterhood")}</p>
 
       <div className="mt-6">
         <SisterhoodClient

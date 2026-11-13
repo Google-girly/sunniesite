@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePageAccess } from "@/lib/session";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { BudgetsClient } from "./BudgetsClient";
+import { moduleDescription } from "@/lib/modules";
 
 // Aug 2026: previously ungated (every "open-submit" module was — see
 // lib/permissions.ts's four-pattern comment), now checked for real
@@ -23,6 +24,7 @@ export default async function BudgetsPage() {
       <h1 className="text-2xl font-semibold text-stone-900">
         Budgets &amp; Reimbursements
       </h1>
+      <p className="mt-1 text-sm text-stone-500">{moduleDescription("budgets")}</p>
 
       <div className="mt-6">
         <BudgetsClient initialBudgets={budgets} />

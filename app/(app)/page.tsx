@@ -74,6 +74,7 @@ export default async function DashboardPage() {
                 </span>
               )}
             </div>
+            <p className="mt-1 text-sm text-stone-500">{mod.description}</p>
             {mod.key === "roster" && (
               <p className="mt-3 text-sm font-medium text-burgundy-700">
                 {memberCount} member{memberCount === 1 ? "" : "s"} on file

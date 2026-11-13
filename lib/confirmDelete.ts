@@ -5,39 +5,26 @@
 // not a real server-side security boundary — the actual access control
 // is lib/permissions.ts's position-based gating on every API route
 // (a member who can't reach a module's delete button can't hit its
-// DELETE route either way). Uses window.prompt rather than two separate
-// dialogs (a plain confirm, then a password prompt) — typing the
-// password back correctly already doubles as "yes, I mean it."
+// DELETE route either way).
+//
+// Nov 2026 — moved from window.prompt to an in-app dialog
+// (components/FeedbackHost.tsx): the password is now masked, a wrong
+// password shows an inline error and lets you retry instead of silently
+// doing nothing, and the dialog matches the rest of the app. Both
+// functions are now async — call sites use `if (!(await confirmDelete(...)))`.
+import { requestConfirm } from "@/lib/feedback";
+
 const DELETE_PASSWORD = "1996";
 
-/** Prompts for the delete password with `message` as context. True only if it matches. */
-export function confirmDelete(message: string): boolean {
-  const input = window.prompt(`${message}\n\nEnter the delete password to confirm.`);
-  if (input === null) return false; // actually cancelled — no need to say anything
-  if (input !== DELETE_PASSWORD) {
-    // Aug 2026 fix — this used to return false here with zero feedback,
-    // indistinguishable from hitting Cancel. "I removed a letter of
-    // excuse and it still sent why" turned out to be exactly this: a
-    // wrong/mistyped password silently no-ops the whole delete, so it
-    // looks like it worked when nothing was actually removed.
-    window.alert("Wrong password — nothing was removed.");
-    return false;
-  }
-  return true;
+/** Asks for the delete password with `message` as context. Resolves true only if confirmed. */
+export function confirmDelete(message: string): Promise<boolean> {
+  return requestConfirm({ message, confirmLabel: "Remove", password: DELETE_PASSWORD });
 }
 
 // Sept 2026 — Cancel Meeting isn't a delete (the record stays, its
 // content just moves to the next meeting), so it shouldn't say
-// "removed" or ask for the *delete* password by name — but it's still
-// consequential enough (real reports/notes/attachments get reassigned
-// off of it) to deserve the same speed bump as an actual delete, not a
-// bare window.confirm. Same password, neutral wording.
-export function confirmAction(message: string): boolean {
-  const input = window.prompt(`${message}\n\nEnter the confirmation password.`);
-  if (input === null) return false;
-  if (input !== DELETE_PASSWORD) {
-    window.alert("Wrong password — nothing was changed.");
-    return false;
-  }
-  return true;
+// "Remove" — but it's still consequential enough (real reports/notes/
+// attachments get reassigned off of it) to deserve the same speed bump.
+export function confirmAction(message: string): Promise<boolean> {
+  return requestConfirm({ message, confirmLabel: "Confirm", password: DELETE_PASSWORD });
 }

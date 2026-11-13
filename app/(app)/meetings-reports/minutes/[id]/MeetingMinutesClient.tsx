@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import Link from "next/link";
 import { useState } from "react";
 import type { Member, Meeting, MeetingNote, OfficerReport } from "@/app/generated/prisma/client";
@@ -173,14 +175,14 @@ function OfficerReportRow({
 
   async function handleRemove() {
     if (!existing) return;
-    if (!confirmDelete(`Remove the ${position} report?`)) return;
+    if (!await confirmDelete(`Remove the ${position} report?`)) return;
     const res = await fetch(`/api/meeting-minutes/reports/${existing.id}`, { method: "DELETE" });
     if (res.ok) {
       setText("");
       setEditing(canEdit);
       onDeleted();
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -212,7 +214,8 @@ function OfficerReportRow({
           />
           <div className="mt-2 flex items-center gap-3">
             <button
-              onClick={handleSave}
+              data-saves
+            onClick={handleSave}
               disabled={saving}
               className="rounded-md bg-burgundy-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
             >
@@ -351,6 +354,7 @@ function QuorumSection({
       {canEdit && (
         <div className="mt-3 flex items-center gap-3">
           <button
+            data-saves
             onClick={handleSave}
             disabled={saving}
             className="rounded-md bg-burgundy-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-burgundy-700 disabled:opacity-50"
@@ -406,10 +410,10 @@ function MeetingNoteSection({
   }
 
   async function handleRemove(note: MeetingNoteWithAuthor) {
-    if (!confirmDelete(`Remove this ${MEETING_NOTE_CATEGORY_LABELS[category]} entry?`)) return;
+    if (!await confirmDelete(`Remove this ${MEETING_NOTE_CATEGORY_LABELS[category]} entry?`)) return;
     const res = await fetch(`/api/meeting-minutes/notes/${note.id}`, { method: "DELETE" });
     if (res.ok) onRemoved(note.id);
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -449,10 +453,12 @@ function MeetingNoteSection({
           onKeyDown={(e) => {
             if (e.key === "Enter") handleAdd();
           }}
+          data-saves-on-enter
           placeholder={`Add to ${MEETING_NOTE_CATEGORY_LABELS[category].toLowerCase()}...`}
           className="flex-1 rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
         />
         <button
+          data-saves
           onClick={handleAdd}
           disabled={saving || !text.trim()}
           className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"

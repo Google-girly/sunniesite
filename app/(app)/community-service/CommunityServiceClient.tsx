@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { SearchFilter, matchesSearch } from "@/components/SearchFilter";
 import type { MakeUpProject, Member, ServiceHourEntry } from "@/app/generated/prisma/client";
 import {
   ANNUAL_HOURS_REQUIRED,
@@ -87,6 +88,8 @@ export function CommunityServiceClient({
     totals: calculateServiceTotals(m.serviceHours),
     onMakeUp: m.makeUpProjects.length > 0,
   }));
+  const [search, setSearch] = useState("");
+  const visibleTotals = withTotals.filter((row) => matchesSearch(search, row.member.name, row.member.role));
 
   const metCount = withTotals.filter((m) => m.totals.total >= ANNUAL_HOURS_REQUIRED).length;
 
@@ -199,7 +202,7 @@ export function CommunityServiceClient({
             <label className="block text-xs font-medium text-stone-600">
               Who <span className="text-burgundy-500">*</span>
             </label>
-            <select
+            <select aria-label="Who"
               value={logForm.memberId}
               onChange={(e) => setLogForm({ ...logForm, memberId: e.target.value })}
               autoFocus
@@ -216,7 +219,7 @@ export function CommunityServiceClient({
             <label className="block text-xs font-medium text-stone-600">
               Date <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Date"
               type="date"
               value={logForm.date}
               onChange={(e) => setLogForm({ ...logForm, date: e.target.value })}
@@ -227,7 +230,7 @@ export function CommunityServiceClient({
             <label className="block text-xs font-medium text-stone-600">
               Event <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Event"
               value={logForm.event}
               onChange={(e) => setLogForm({ ...logForm, event: e.target.value })}
               className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1.5 text-sm focus:border-burgundy-400 focus:outline-none focus:ring-1 focus:ring-burgundy-400"
@@ -237,7 +240,7 @@ export function CommunityServiceClient({
             <label className="block text-xs font-medium text-stone-600">
               Hours <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Hours"
               type="number"
               step="0.25"
               min="0.25"
@@ -250,7 +253,7 @@ export function CommunityServiceClient({
             <label className="block text-xs font-medium text-stone-600">
               Category <span className="text-burgundy-500">*</span>
             </label>
-            <select
+            <select aria-label="Category"
               required
               value={logForm.category}
               onChange={(e) =>
@@ -270,7 +273,7 @@ export function CommunityServiceClient({
             <label className="block text-xs font-medium text-stone-600">
               Description <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Description"
               required
               value={logForm.description}
               onChange={(e) => setLogForm({ ...logForm, description: e.target.value })}
@@ -281,7 +284,7 @@ export function CommunityServiceClient({
             <label className="block text-xs font-medium text-stone-600">
               Volunteer Contact <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Volunteer Contact"
               required
               value={logForm.volunteerContact}
               onChange={(e) => setLogForm({ ...logForm, volunteerContact: e.target.value })}
@@ -301,6 +304,8 @@ export function CommunityServiceClient({
           </div>
         </form>
       )}
+
+      <SearchFilter value={search} onChange={setSearch} shown={visibleTotals.length} total={withTotals.length} />
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-stone-200 bg-white">
         <table className="min-w-full divide-y divide-stone-200 text-sm">
@@ -325,7 +330,7 @@ export function CommunityServiceClient({
               </tr>
             )}
 
-            {withTotals.map(({ member, totals, onMakeUp }) => (
+            {visibleTotals.map(({ member, totals, onMakeUp }) => (
               <tr key={member.id}>
                 <td className="px-4 py-2.5 font-medium text-stone-900">{member.name}</td>
                 <td className="px-4 py-2.5">

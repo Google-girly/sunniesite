@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { RECEIPT_SELECT } from "@/lib/receipts";
 import { findRoleHolderNames } from "@/lib/roster";
 import { VersionDetailClient } from "../VersionDetailClient";
+import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 
 export default async function TentativeBudgetPage({
   params,
@@ -34,12 +35,14 @@ export default async function TentativeBudgetPage({
   const nextMeetingIso = nextMeetingDate(schedules, todayIso());
 
   return (
-    <VersionDetailClient
-      budget={budget}
-      initialVersion={version}
-      stage="TENTATIVE"
-      chairHolderName={chairHolderName}
-      nextMeetingIso={nextMeetingIso}
-    />
+    <UnsavedChangesGuard>
+      <VersionDetailClient
+        budget={budget}
+        initialVersion={version}
+        stage="TENTATIVE"
+        chairHolderName={chairHolderName}
+        nextMeetingIso={nextMeetingIso}
+      />
+    </UnsavedChangesGuard>
   );
 }

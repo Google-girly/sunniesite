@@ -60,7 +60,7 @@ export function PendingSignupsPanel({
   }
 
   async function deny(member: Member) {
-    if (!confirmDelete(`Deny ${member.name}'s sign-up request? This deletes it — she'd have to request again.`))
+    if (!await confirmDelete(`Deny ${member.name}'s sign-up request? This deletes it — she'd have to request again.`))
       return;
     setBusyId(member.id);
     setError(null);

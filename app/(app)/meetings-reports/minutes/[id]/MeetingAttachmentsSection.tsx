@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useRef, useState } from "react";
 import { MAX_DOCUMENT_BYTES } from "@/lib/meetingAttachments";
 import { confirmDelete } from "@/lib/confirmDelete";
@@ -99,14 +101,14 @@ export function MeetingAttachmentsSection({
   }
 
   async function handleDelete(attachment: MeetingAttachmentRow) {
-    if (!confirmDelete(`Remove "${attachment.label}" (${attachment.fileName})?`)) return;
+    if (!await confirmDelete(`Remove "${attachment.label}" (${attachment.fileName})?`)) return;
     setDeletingId(attachment.id);
     const res = await fetch(`/api/meeting-minutes/attachments/${attachment.id}`, { method: "DELETE" });
     setDeletingId(null);
     if (res.ok) {
       setAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
     } else {
-      alert(await parseError(res));
+      showError(await parseError(res));
     }
   }
 
@@ -123,7 +125,7 @@ export function MeetingAttachmentsSection({
           <label className="block text-xs font-medium text-stone-600">
             Label <span className="text-burgundy-500">*</span>
           </label>
-          <input
+          <input aria-label="Label"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="e.g. Retreat flyer"
@@ -134,7 +136,7 @@ export function MeetingAttachmentsSection({
           <label className="block text-xs font-medium text-stone-600">
             File{files.length > 1 ? "s" : ""} <span className="text-burgundy-500">*</span>
           </label>
-          <input
+          <input aria-label="File"
             ref={fileInputRef}
             type="file"
             multiple

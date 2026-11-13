@@ -135,3 +135,8 @@ export const MODULES: ModuleDef[] = [
     group: "Meetings & Events",
   },
 ];
+
+/** One-line description shown under a module page's title (and on its dashboard card). */
+export function moduleDescription(key: string): string {
+  return MODULES.find((m) => m.key === key)?.description ?? "";
+}

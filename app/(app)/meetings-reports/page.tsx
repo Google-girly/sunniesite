@@ -4,6 +4,7 @@ import { requirePageAccess } from "@/lib/session";
 import { ownsModule } from "@/lib/permissions";
 import { NotAuthorized } from "@/components/NotAuthorized";
 import { MeetingScheduleClient } from "./MeetingScheduleClient";
+import { moduleDescription } from "@/lib/modules";
 
 export default async function MeetingsReportsPage() {
   // Open-submit — every member can get in to submit her own Officer
@@ -23,6 +24,7 @@ export default async function MeetingsReportsPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-stone-900">Meetings &amp; Reports</h1>
+          <p className="mt-1 text-sm text-stone-500">{moduleDescription("meetings-reports")}</p>
         </div>
         <Link
           href="/meetings-reports/minutes"

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { SearchFilter, matchesSearch } from "@/components/SearchFilter";
 import type { Member, StudyHourEntry } from "@/app/generated/prisma/client";
 import {
   calculateWeeklyCompletion,
@@ -101,6 +102,8 @@ export function StudyHoursClient({
     missed: missedWeeks(weeklyBreakdown(m.studyHours, term.start, term.end)),
     total: totalHours(m.studyHours),
   }));
+  const [search, setSearch] = useState("");
+  const visibleCompletion = withCompletion.filter((row) => matchesSearch(search, row.member.name, row.member.role));
 
   const metCount = withCompletion.filter(
     (m) => m.completion.percentage >= WEEKLY_COMPLETION_THRESHOLD * 100
@@ -236,7 +239,7 @@ export function StudyHoursClient({
             <label className="block text-xs font-medium text-stone-600">
               Who <span className="text-burgundy-500">*</span>
             </label>
-            <select
+            <select aria-label="Who"
               value={logForm.memberId}
               onChange={(e) => setLogForm({ ...logForm, memberId: e.target.value })}
               autoFocus
@@ -253,7 +256,7 @@ export function StudyHoursClient({
             <label className="block text-xs font-medium text-stone-600">
               Date <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Date"
               type="date"
               value={logForm.date}
               onChange={(e) => setLogForm({ ...logForm, date: e.target.value })}
@@ -267,7 +270,7 @@ export function StudyHoursClient({
             <label className="block text-xs font-medium text-stone-600">
               Study Location <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Study Location"
               value={logForm.location}
               onChange={(e) => setLogForm({ ...logForm, location: e.target.value })}
               placeholder="Library, Home, ..."
@@ -278,7 +281,7 @@ export function StudyHoursClient({
             <label className="block text-xs font-medium text-stone-600">
               Hours <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Hours"
               type="number"
               step="0.25"
               min="0.25"
@@ -291,7 +294,7 @@ export function StudyHoursClient({
             <label className="block text-xs font-medium text-stone-600">
               Time In <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Time In"
               type="time"
               required
               value={logForm.timeIn}
@@ -303,7 +306,7 @@ export function StudyHoursClient({
             <label className="block text-xs font-medium text-stone-600">
               Time Out <span className="text-burgundy-500">*</span>
             </label>
-            <input
+            <input aria-label="Time Out"
               type="time"
               required
               value={logForm.timeOut}
@@ -324,6 +327,8 @@ export function StudyHoursClient({
           </div>
         </form>
       )}
+
+      <SearchFilter value={search} onChange={setSearch} shown={visibleCompletion.length} total={withCompletion.length} />
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-stone-200 bg-white">
         <table className="min-w-full divide-y divide-stone-200 text-sm">
@@ -348,7 +353,7 @@ export function StudyHoursClient({
               </tr>
             )}
 
-            {withCompletion.map(({ member, completion, missed, total }) => (
+            {visibleCompletion.map(({ member, completion, missed, total }) => (
               <tr key={member.id}>
                 <td className="px-4 py-2.5 font-medium text-stone-900">{member.name}</td>
                 <td className="px-4 py-2.5 text-stone-600">{member.phone || "—"}</td>

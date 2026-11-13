@@ -15,8 +15,10 @@ export function PasswordInput({
   inputClassName,
   autoFocus,
   placeholder,
+  "aria-label": ariaLabel,
 }: {
   id?: string;
+  "aria-label"?: string;
   value: string;
   onChange: (value: string) => void;
   inputClassName: string;
@@ -29,6 +31,7 @@ export function PasswordInput({
     <div className="relative">
       <input
         id={id}
+        aria-label={ariaLabel}
         type={visible ? "text" : "password"}
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -1,5 +1,7 @@
 "use client";
 
+import { showError } from "@/lib/feedback";
+
 import { useMemo, useRef, useState } from "react";
 import { Section, inputClass, labelClass, th, td } from "@/components/FormSection";
 import { CHECKLIST_ITEMS } from "@/lib/chapterStandardsChecklist";
@@ -112,10 +114,10 @@ export function ChecklistDocumentsSection({ initialDocuments }: { initialDocumen
   }
 
   async function handleDelete(id: string) {
-    if (!confirmDelete("Remove this document?")) return;
+    if (!await confirmDelete("Remove this document?")) return;
     const res = await fetch(`/api/standards/documents/${id}`, { method: "DELETE" });
     if (res.ok) setDocuments((prev) => prev.filter((d) => d.id !== id));
-    else alert(await parseError(res));
+    else showError(await parseError(res));
   }
 
   return (
@@ -126,7 +128,7 @@ export function ChecklistDocumentsSection({ initialDocuments }: { initialDocumen
       <form onSubmit={handleUpload} className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div>
           <label className={labelClass}>Credit</label>
-          <select value={code} onChange={(e) => setCode(e.target.value)} className={inputClass}>
+          <select aria-label="Credit" value={code} onChange={(e) => setCode(e.target.value)} className={inputClass}>
             <option value="General">General / Other</option>
             {grouped.map((g) => (
               <optgroup key={g.section} label={g.section}>
@@ -143,7 +145,7 @@ export function ChecklistDocumentsSection({ initialDocuments }: { initialDocumen
           <label className={labelClass}>
             Label <span className="text-burgundy-500">*</span>
           </label>
-          <input
+          <input aria-label="Label"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="e.g. Club charter copy"
@@ -155,7 +157,7 @@ export function ChecklistDocumentsSection({ initialDocuments }: { initialDocumen
             File{files.length > 1 ? "s" : ""} <span className="text-burgundy-500">*</span>{" "}
             <span className="text-stone-400">(one credit can have several)</span>
           </label>
-          <input
+          <input aria-label="File"
             ref={fileInputRef}
             type="file"
             multiple
