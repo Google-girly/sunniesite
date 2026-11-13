@@ -149,10 +149,9 @@ interface FundEntryFormValues {
   description: string;
   amount: string;
   accountCode: string;
-  notes: string;
 }
 
-const emptyFundForm: FundEntryFormValues = { date: "", description: "", amount: "", accountCode: "", notes: "" };
+const emptyFundForm: FundEntryFormValues = { date: "", description: "", amount: "", accountCode: "" };
 
 function fundEntryToForm(e: ChapterFundEntry): FundEntryFormValues {
   return {
@@ -160,7 +159,6 @@ function fundEntryToForm(e: ChapterFundEntry): FundEntryFormValues {
     description: e.description,
     amount: String(e.amount),
     accountCode: String(e.accountCode),
-    notes: e.notes,
   };
 }
 
@@ -170,7 +168,6 @@ function fundFormToBody(form: FundEntryFormValues) {
     description: form.description,
     amount: Number(form.amount),
     accountCode: Number(form.accountCode),
-    notes: form.notes,
   };
 }
 
@@ -220,10 +217,6 @@ function FundEntryForm({
             </option>
           ))}
         </select>
-      </div>
-      <div className="sm:col-span-2 lg:col-span-5">
-        <label className={labelClass}>Notes *</label>
-        <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inputClass} required />
       </div>
       <div className="sm:col-span-2 lg:col-span-5">
         {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
@@ -339,7 +332,7 @@ export function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
         <table className="min-w-full divide-y divide-stone-200">
           <thead>
             <tr>
-              {["Date", "Description", "Amount", "Code", "Notes", ""].map((h) => (
+              {["Date", "Description", "Amount", "Code", ""].map((h) => (
                 <th key={h} className={th}>
                   {h}
                 </th>
@@ -349,7 +342,7 @@ export function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
           <tbody className="divide-y divide-stone-100">
             {entries.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-stone-400">
+                <td colSpan={5} className="px-3 py-6 text-center text-stone-400">
                   No funds added yet.
                 </td>
               </tr>
@@ -357,7 +350,7 @@ export function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
             {entries.map((e) =>
               editingId === e.id ? (
                 <tr key={e.id}>
-                  <td colSpan={6} className="bg-burgundy-50/40 px-3 py-4">
+                  <td colSpan={5} className="bg-burgundy-50/40 px-3 py-4">
                     <FundEntryForm
                       form={editForm}
                       setForm={setEditForm}
@@ -380,7 +373,6 @@ export function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
                   <td className={td}>
                     {e.accountCode} — {incomeAccountLabel(e.accountCode)}
                   </td>
-                  <td className={`${td} text-stone-500`}>{e.notes}</td>
                   <td className={`${td} whitespace-nowrap text-right`}>
                     <button onClick={() => startEdit(e)} className="text-xs font-medium text-burgundy-600 hover:text-burgundy-800">
                       Edit
@@ -402,7 +394,7 @@ export function FundEntrySection({ initial }: { initial: ChapterFundEntry[] }) {
                 <td className={`${td} font-semibold text-stone-900`}>
                   {formatCurrency(entries.reduce((sum, e) => sum + e.amount, 0))}
                 </td>
-                <td colSpan={3} />
+                <td colSpan={2} />
               </tr>
             </tfoot>
           )}

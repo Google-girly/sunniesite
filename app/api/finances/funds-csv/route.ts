@@ -20,14 +20,13 @@ export async function GET() {
   const entries = await prisma.chapterFundEntry.findMany({ orderBy: { date: "desc" } });
 
   const rows: (string | number)[][] = [
-    ["Date", "Description", "Amount", "Account Code", "Account", "Notes"],
+    ["Date", "Description", "Amount", "Account Code", "Account"],
     ...entries.map((e) => [
       e.date,
       e.description,
       e.amount.toFixed(2),
       e.accountCode,
       incomeAccountLabel(e.accountCode) ?? "",
-      e.notes,
     ]),
   ];
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";

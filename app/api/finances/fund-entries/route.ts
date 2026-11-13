@@ -39,10 +39,9 @@ export async function POST(request: Request) {
   if (!Number.isFinite(accountCode) || !isIncomeAccountCode(accountCode)) {
     return NextResponse.json({ error: "Unrecognized income account code." }, { status: 400 });
   }
+  // Notes were dropped from the Add Funds form (Nov 2026); the column
+  // stays for older entries, so new ones just get an empty string.
   const notes = typeof body.notes === "string" ? body.notes.trim() : "";
-  if (!notes) {
-    return NextResponse.json({ error: "Notes are required." }, { status: 400 });
-  }
 
   const entry = await prisma.chapterFundEntry.create({
     data: { date, description, amount, accountCode, notes },

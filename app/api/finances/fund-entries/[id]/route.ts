@@ -46,9 +46,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     data.accountCode = code;
   }
   if (typeof body.notes === "string") {
-    const notes = body.notes.trim();
-    if (!notes) return NextResponse.json({ error: "Notes are required." }, { status: 400 });
-    data.notes = notes;
+    data.notes = body.notes.trim();
   }
 
   try {

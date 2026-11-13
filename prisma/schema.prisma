@@ -167,7 +167,7 @@ model ChapterFundEntry {
   description String
   amount      Float
   accountCode Int // required — see lib/financialBooksAccounts.ts INCOME_ACCOUNTS. Every fund entry must be categorized.
-  notes       String // every field on this form is required, notes included, on request
+  notes       String // no longer on the Add Funds form (Nov 2026) — "" for new entries, kept for older ones
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
